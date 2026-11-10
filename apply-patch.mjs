@@ -1688,14 +1688,77 @@ function mindMapSidebarProps() {
 function openMindMapSidebar() {
   return mindMapOpenSidebarTab(mindMapSidebarSeat.service);
 }
+/** 单实例宿主：地图只创建一次 React root，切会话时只把 DOM 节点搬进新占位，
+ *  组件（模拟、相机、悬停、选中）全程不卸载 —— 这就是「一套全局的思维图」。 */
+var mindMapSingleton = { host: null, root: null, standard: null, engine: null };
+var mindMapReactDom = (function () {
+  try { return require("react-dom/client"); } catch (error) {
+    mindMapSingleton.requireError = String(error && error.message).slice(0, 200);
+    return null;
+  }
+})();
+(function resolveReactDom() {
+  var candidate = mindMapReactDom;
+  if (candidate !== null && candidate !== void 0 && typeof candidate.createRoot !== "function" && candidate.default !== void 0) candidate = candidate.default;
+  if (candidate !== null && candidate !== void 0 && typeof candidate.createRoot === "function") {
+    mindMapReactDom = candidate;
+    mindMapSingleton.supported = true;
+  } else {
+    mindMapSingleton.supported = false;
+    if (mindMapSingleton.requireError === null) {
+      var shape = mindMapReactDom === null || mindMapReactDom === void 0 ? String(mindMapReactDom) : Object.keys(mindMapReactDom).join(",");
+      mindMapSingleton.requireError = "no createRoot (" + shape + ")";
+    }
+  }
+})();
+try { if (typeof window !== "undefined" && window !== null) window.__mindMapSingleton = mindMapSingleton; } catch (error) { }
+function mindMapEnsureSingleton(standard) {
+  if (typeof document === "undefined" || document === null) return null;
+  if (mindMapSingleton.host === null) {
+    var host = document.createElement("div");
+    host.className = "tm_sbHostInner";
+    host.setAttribute("data-mind-map-singleton", "1");
+    mindMapSingleton.host = host;
+  }
+  if (mindMapSingleton.root === null && mindMapSingleton.supported === true) {
+    try {
+      mindMapSingleton.standard = standard;
+      mindMapSingleton.root = mindMapReactDom.createRoot(mindMapSingleton.host);
+      mindMapSingleton.root.render(import_react13.createElement(MapCanvas, standard));
+      mindMapSingleton.engine = "singleton";
+    } catch (error) {
+      mindMapSingleton.root = null;
+      mindMapSingleton.supported = false;
+      mindMapSingleton.requireError = String(error && error.message).slice(0, 200);
+    }
+  }
+  return mindMapSingleton.host;
+}
+function mindMapDetachSingleton() {
+  var host = mindMapSingleton.host;
+  if (host !== null && host.parentNode !== null && host.parentNode !== void 0) {
+    try { host.parentNode.removeChild(host); } catch (error) { }
+  }
+}
 function MapSidebarTab(tabProps) {
   var standard = mindMapSidebarProps();
   var ui = import_react13.useSyncExternalStore(mapUi.subscribe, mapUi.get, mapUi.get);
+  var holderRef = import_react13.useRef(null);
   // 挂载即说明这一栏真的开出来了：自动恢复的轮询凭这个信号停止。
   import_react13.useEffect(function () {
     mindMapSidebarSeat.mounted = true;
     return function () { mindMapSidebarSeat.mounted = false; };
   }, []);
+  import_react13.useEffect(function () {
+    var holder = holderRef.current;
+    if (holder === null) return;
+    // 全屏面板接管时把宿主摘掉（同一时刻只让一处可见）。
+    if (ui.open === true) { mindMapDetachSingleton(); return; }
+    var host = null;
+    try { host = mindMapEnsureSingleton(standard); } catch (error) { host = null; }
+    if (host !== null && host.parentNode !== holder) holder.appendChild(host);
+  }, [ui.open]);
+  var singletonReady = mindMapSingleton.supported === true;
   return (0, import_jsx_runtime16.jsxs)("div", {
     className: "tm_sbPanel",
     children: [
@@ -1711,7 +1774,9 @@ function MapSidebarTab(tabProps) {
       ] }),
       ui.open === true
         ? (0, import_jsx_runtime16.jsx)("div", { className: "tm_sbNote", children: "地图正在中间栏全屏显示" })
-        : (0, import_jsx_runtime16.jsx)(MapCanvas, standard)
+        : singletonReady
+          ? (0, import_jsx_runtime16.jsx)("div", { className: "tm_sbHost", ref: holderRef })
+          : (0, import_jsx_runtime16.jsx)(MapCanvas, standard)
     ]
   });
 }
@@ -1748,7 +1813,7 @@ function MindMapPanelIcon(props) {
 
 const GRAPH_CSS = String.raw` .tm_graphBar { position: absolute; top: 12px; right: 12px; z-index: 25; display: flex; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 999px; background: var(--dsw-alias-bg-layer-1); box-shadow: 0 8px 24px var(--dsw-alias-bg-mask-2); } .tm_graphBtn { padding: 4px 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: calc(12px + var(--tm-font-step, 0px)); cursor: pointer; white-space: nowrap; } .tm_graphBtn:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); } .tm_graphBtn:disabled { opacity: 0.5; cursor: default; } .tm_graphBtnActive { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary); background: var(--dsw-alias-interactive-bg-active); } .tm_graphHint { padding: 0 4px; font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); white-space: nowrap; } .tm_cardTags { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 4px; } .tm_tagChip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 6px; border-radius: 4px; font-size: calc(9.5px + var(--tm-font-step, 0px)); line-height: 1.7; color: rgba(140, 200, 255, 0.92); background: rgba(90, 160, 255, 0.14); } .tm_canvas[data-lod="far"] .tm_cardSummary, .tm_canvas[data-lod="far"] .tm_cardTags, .tm_canvas[data-lod="far"] .tm_cardFooter, .tm_canvas[data-lod="far"] .tm_cardNext, .tm_canvas[data-lod="far"] .tm_cardHandle, .tm_canvas[data-lod="far"] .tm_cardReticle { display: none !important; } .tm_canvas[data-lod="far"] .tm_card { box-shadow: none; border-color: var(--dsw-alias-border-l1); } .tm_canvas[data-lod="far"] .tm_cardTitle { -webkit-line-clamp: 1; font-size: calc(12px + var(--tm-font-step, 0px)); } .tm_canvas[data-lod="far"] .react-flow__edge path { stroke-width: 0.8; } .tm_canvas[data-lod="far"] .react-flow__node { transition: none; } .tm_canvas[data-lod="far"] .tm_cardLampRunning, .tm_canvas[data-lod="far"] .tm_cardLampDone, .tm_canvas[data-lod="far"] .tm_cardLampError, .tm_canvas[data-lod="far"] .tm_cardLampWaiting, .tm_canvas[data-lod="far"] .tm_cardPin { animation: none; } .tm_canvas[data-lod="far"] .tm_cardLampRunning::after { display: none; } .tm_dot { width: 16px; height: 16px; border-radius: 50%; background: rgba(198, 206, 220, 0.6); border: 2px solid var(--dsw-alias-bg-layer-1); box-shadow: 0 0 0 1px rgba(198, 206, 220, 0.22); transition: transform 120ms ease, background 120ms ease; cursor: pointer; } .tm_dot:hover { transform: scale(1.55); background: var(--dsw-alias-brand-primary); } .tm_dotRunning { background: #ffffff; animation: tm_mindmap-pulse 1.6s ease-in-out infinite; } .tm_dotWaiting { background: rgb(245, 178, 46); } .tm_dotDone { background: rgb(52, 199, 89); } .tm_dotHandle { width: 1px !important; height: 1px !important; min-width: 1px; min-height: 1px; opacity: 0; border: none; background: transparent; } .tm_dotPeek { position: fixed; z-index: 90; width: 272px; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1); box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5); pointer-events: none; display: flex; flex-direction: column; gap: 5px; } .tm_dotPeekTitle { font-size: calc(12.5px + var(--tm-font-step, 0px)); font-weight: 600; line-height: 1.35; color: var(--dsw-alias-label-primary); word-break: break-word; } .tm_dotPeekBody { font-size: calc(11.5px + var(--tm-font-step, 0px)); line-height: 1.5; color: var(--dsw-alias-label-secondary); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; } .tm_dotPeekTags { display: flex; flex-wrap: wrap; gap: 4px; } .tm_graphSurface { position: absolute; inset: 0; overflow: hidden; } .tm_graphCanvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; } .tm_graphSurface:active .tm_graphCanvas { cursor: grabbing; } .tm_canvasCtl { position: absolute; left: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 4px; z-index: 5; } .tm_canvasCtl button { width: 30px; height: 30px; padding: 0; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-secondary); font: inherit; font-size: 15px; line-height: 1; cursor: pointer; } .tm_canvasCtl button:hover { color: var(--dsw-alias-label-primary); background: var(--dsw-alias-interactive-bg-hover); }`;
 
-const GRAPH_SIDEBAR_CSS = String.raw` .tm_sbPanel { display: flex; flex-direction: column; height: 100%; min-height: 0; gap: 6px; } .tm_sbPanel > :last-child { flex: 1 1 0; min-height: 0; } .tm_sbBar { display: flex; align-items: center; gap: 8px; padding: 2px 2px 6px; } .tm_sbTitle { font-size: calc(12px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); } .tm_sbBar .tm_sbFull { margin-left: auto; } .tm_sbNote { display: flex; align-items: center; justify-content: center; height: 100%; padding: 16px; font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); text-align: center; }
+const GRAPH_SIDEBAR_CSS = String.raw` .tm_sbPanel { display: flex; flex-direction: column; height: 100%; min-height: 0; gap: 6px; } .tm_sbPanel > :last-child { flex: 1 1 0; min-height: 0; } .tm_sbBar { display: flex; align-items: center; gap: 8px; padding: 2px 2px 6px; } .tm_sbTitle { font-size: calc(12px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); } .tm_sbBar .tm_sbFull { margin-left: auto; } .tm_sbHost { position: relative; flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; } .tm_sbHostInner { position: relative; flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; } .tm_sbHostInner > * { flex: 1 1 0; min-height: 0; } .tm_sbNote { display: flex; align-items: center; justify-content: center; height: 100%; padding: 16px; font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); text-align: center; }
 `;
 const GRAPH_EDGES_BLOCK = String.raw`    if (graphOn) {
       // Hidden archived cards are out of the graph entirely, so the chains are

@@ -547,3 +547,17 @@ CSS module 文件改名 `mind_map.module.css`）。`mind-map.module.css` 之类�
 当前是「每个会话一个 tab，但内容/镜头/布局完全一致」。要做到**同一个 React 实例**常驻（连一帧都不闪），
 需要把 `MapCanvas` 挂到自建持久 root + 按需把 DOM 搬进侧栏占位（createPortal / DOM move），
 要引入 `react-dom/client` 并自己管容器尺寸——目前没做，因为切会话时状态已从持久化恢复，肉眼无差别。
+
+### 13.3 真·单实例（2026-11-10 追加）
+
+上一版是「每个会话一个 tab + 持久化恢复」，用户实测拖动后跳会话仍会弹回。改为**真单实例**：
+
+- 用 `require("react-dom/client").createRoot` 在模块里创建**一个**持久 root，渲染 `<MapCanvas />`；
+  组件（力导向模拟、相机、悬停、选中）**永不卸载**。
+- 侧栏 tab 只渲染一个空的占位 `.tm_sbHost`；tab 挂载时把宿主节点 `appendChild` 进去（DOM 搬移，
+  React 实例不变），切会话 = 关 tab + 开 tab = 换占位，**不是重建**。
+- 中间栏「全屏」时把宿主摘下来（同一时刻只一处可见），返回时再挂回去；状态照样保留。
+- `createRoot` 不可用时自动回退成原来的内联渲染（`mindMapSingleton.supported` 判定）。
+
+实测：给宿主节点打 `data-probe="instance-1"`，拖动卡片→关掉 tab→重开，标记仍在、
+相机字符串一模一样、卡片坐标（177,722）没回弹、可见集合不变。
