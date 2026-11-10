@@ -1659,6 +1659,37 @@ function mindMapOpenSidebarTab(service) {
   }
 }
 
+/**
+ * 右栏为空时的占位按钮：只有点它才 openTab。
+ * better-sidebar 被连续 openTab 会把整页拖到 1fps，所以这里绝不自动开。
+ */
+function mindMapMountLauncher(service) {
+  if (typeof document === "undefined" || document === null) return;
+  var button = null;
+  var ensure = function () {
+    if (button === null) {
+      button = document.createElement("button");
+      button.type = "button";
+      button.className = "tm_launcher";
+      button.setAttribute("data-mind-map-launcher", "1");
+      button.title = "打开思维图（只有点这里才会开，避免自动开栏把侧栏拖卡）";
+      button.appendChild(document.createTextNode("\u{1F9E0} 打开思维图"));
+      button.addEventListener("click", function () {
+        var now = Date.now();
+        if (now - mindMapSidebarSeat.lastOpenAt < 1500) return;
+        mindMapOpenSidebarTab(service);
+      });
+      if (document.body !== null) document.body.appendChild(button);
+    }
+    var onScreen = document.querySelector(".tm_sbPanel .tm_graphSurface") !== null;
+    button.style.display = onScreen ? "none" : "flex";
+  };
+  ensure();
+  if (window.__mindMapLauncherTimer !== void 0 && window.__mindMapLauncherTimer !== null) window.clearInterval(window.__mindMapLauncherTimer);
+  window.__mindMapLauncherTimer = window.setInterval(ensure, 1500);
+  window.__mindMapLauncher = button;
+}
+
 function mindMapSelectorHook(store) {
   return function (selector, equality) {
     var select = typeof selector === "function" ? selector : function (state) { return state; };
@@ -1836,7 +1867,7 @@ function MindMapPanelIcon(props) {
 
 const GRAPH_CSS = String.raw` .tm_graphBar { position: absolute; top: 12px; right: 12px; z-index: 25; display: flex; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 999px; background: var(--dsw-alias-bg-layer-1); box-shadow: 0 8px 24px var(--dsw-alias-bg-mask-2); } .tm_graphBtn { padding: 4px 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: calc(12px + var(--tm-font-step, 0px)); cursor: pointer; white-space: nowrap; } .tm_graphBtn:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); } .tm_graphBtn:disabled { opacity: 0.5; cursor: default; } .tm_graphBtnActive { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary); background: var(--dsw-alias-interactive-bg-active); } .tm_graphHint { padding: 0 4px; font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); white-space: nowrap; } .tm_cardTags { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 4px; } .tm_tagChip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 6px; border-radius: 4px; font-size: calc(9.5px + var(--tm-font-step, 0px)); line-height: 1.7; color: rgba(140, 200, 255, 0.92); background: rgba(90, 160, 255, 0.14); } .tm_canvas[data-lod="far"] .tm_cardSummary, .tm_canvas[data-lod="far"] .tm_cardTags, .tm_canvas[data-lod="far"] .tm_cardFooter, .tm_canvas[data-lod="far"] .tm_cardNext, .tm_canvas[data-lod="far"] .tm_cardHandle, .tm_canvas[data-lod="far"] .tm_cardReticle { display: none !important; } .tm_canvas[data-lod="far"] .tm_card { box-shadow: none; border-color: var(--dsw-alias-border-l1); } .tm_canvas[data-lod="far"] .tm_cardTitle { -webkit-line-clamp: 1; font-size: calc(12px + var(--tm-font-step, 0px)); } .tm_canvas[data-lod="far"] .react-flow__edge path { stroke-width: 0.8; } .tm_canvas[data-lod="far"] .react-flow__node { transition: none; } .tm_canvas[data-lod="far"] .tm_cardLampRunning, .tm_canvas[data-lod="far"] .tm_cardLampDone, .tm_canvas[data-lod="far"] .tm_cardLampError, .tm_canvas[data-lod="far"] .tm_cardLampWaiting, .tm_canvas[data-lod="far"] .tm_cardPin { animation: none; } .tm_canvas[data-lod="far"] .tm_cardLampRunning::after { display: none; } .tm_dot { width: 16px; height: 16px; border-radius: 50%; background: rgba(198, 206, 220, 0.6); border: 2px solid var(--dsw-alias-bg-layer-1); box-shadow: 0 0 0 1px rgba(198, 206, 220, 0.22); transition: transform 120ms ease, background 120ms ease; cursor: pointer; } .tm_dot:hover { transform: scale(1.55); background: var(--dsw-alias-brand-primary); } .tm_dotRunning { background: #ffffff; animation: tm_mindmap-pulse 1.6s ease-in-out infinite; } .tm_dotWaiting { background: rgb(245, 178, 46); } .tm_dotDone { background: rgb(52, 199, 89); } .tm_dotHandle { width: 1px !important; height: 1px !important; min-width: 1px; min-height: 1px; opacity: 0; border: none; background: transparent; } .tm_dotPeek { position: fixed; z-index: 90; width: 272px; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1); box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5); pointer-events: none; display: flex; flex-direction: column; gap: 5px; } .tm_dotPeekTitle { font-size: calc(12.5px + var(--tm-font-step, 0px)); font-weight: 600; line-height: 1.35; color: var(--dsw-alias-label-primary); word-break: break-word; } .tm_dotPeekBody { font-size: calc(11.5px + var(--tm-font-step, 0px)); line-height: 1.5; color: var(--dsw-alias-label-secondary); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; } .tm_dotPeekTags { display: flex; flex-wrap: wrap; gap: 4px; } .tm_graphSurface { position: absolute; inset: 0; overflow: hidden; } .tm_graphCanvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; } .tm_graphSurface:active .tm_graphCanvas { cursor: grabbing; } .tm_canvasCtl { position: absolute; left: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 4px; z-index: 5; } .tm_canvasCtl button { width: 30px; height: 30px; padding: 0; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-secondary); font: inherit; font-size: 15px; line-height: 1; cursor: pointer; } .tm_canvasCtl button:hover { color: var(--dsw-alias-label-primary); background: var(--dsw-alias-interactive-bg-hover); }`;
 
-const GRAPH_SIDEBAR_CSS = String.raw` .tm_sbPanel { display: flex; flex-direction: column; height: 100%; min-height: 0; gap: 6px; } .tm_sbPanel > :last-child { flex: 1 1 0; min-height: 0; } .tm_sbBar { display: flex; align-items: center; gap: 8px; padding: 2px 2px 6px; } .tm_sbTitle { font-size: calc(12px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); } .tm_sbBar .tm_sbFull { margin-left: auto; } .tm_sbHost { position: relative; flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; } .tm_sbHostInner { position: relative; flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; } .tm_sbHostInner > * { flex: 1 1 0; min-height: 0; } .tm_sbNote { display: flex; align-items: center; justify-content: center; height: 100%; padding: 16px; font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); text-align: center; }
+const GRAPH_SIDEBAR_CSS = String.raw` .tm_sbPanel { display: flex; flex-direction: column; height: 100%; min-height: 0; gap: 6px; } .tm_sbPanel > :last-child { flex: 1 1 0; min-height: 0; } .tm_sbBar { display: flex; align-items: center; gap: 8px; padding: 2px 2px 6px; } .tm_sbTitle { font-size: calc(12px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); } .tm_sbBar .tm_sbFull { margin-left: auto; } .tm_launcher { position: fixed; right: 14px; top: 104px; z-index: 60; display: none; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 10px; border: 1px solid rgba(126, 136, 158, 0.42); background: rgba(24, 26, 33, 0.94); color: #cfd6e4; font-size: 12px; line-height: 1; cursor: pointer; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); } .tm_launcher:hover { border-color: #5b8cff; color: #fff; } .tm_sbHost { position: relative; flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; } .tm_sbHostInner { position: relative; flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; } .tm_sbHostInner > * { flex: 1 1 0; min-height: 0; } .tm_sbNote { display: flex; align-items: center; justify-content: center; height: 100%; padding: 16px; font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); text-align: center; }
 `;
 const GRAPH_EDGES_BLOCK = String.raw`    if (graphOn) {
       // Hidden archived cards are out of the graph entirely, so the chains are
@@ -2480,11 +2511,9 @@ const CLIENT_EDITS = [
     // exactly the behaviour before this patch.
     find: "    }, MapOverlay), \"main panel\");",
     replace: "    }, MapOverlay), \"main panel\");\n" +
-      "    // 侧栏席位。两个不确定点都要兜住：\n" +
-      "    //  1) 启动时 betterSidebar 可能还没注册 —— 以前直接 return，那一窗就永远没有这个 tab\n" +
-      "    //     （用户看到的「重启后右侧又没有思维图」就是它）。现在每 500ms 重试，最多 60 次。\n" +
-      "    //  2) better-sidebar 只按会话记已开的 tab，冷启动不回填 —— 拿到服务后自己轮询 openTab，\n" +
-      "    //     直到 tab 真的挂载（MapSidebarTab 的 effect 置 mounted）为止。\n" +
+      "    // 侧栏席位：只注册，绝不自动 openTab。\n" +
+      "    // 连打开栏会把 better-sidebar 拖进每帧重排（实测 6 次 openTab 后整页 60→1fps 且不恢复），\n" +
+      "    // 所以这里只在用户点「打开思维图」时开一次。\n" +
       "    (function registerSidebarSeat() {\n" +
       "      var acquired = false;\n" +
       "      var tries = 0;\n" +
@@ -2511,18 +2540,7 @@ const CLIENT_EDITS = [
       "            return function () { mindMapSidebarSeat.service = null; dispose(); };\n" +
       "          }, \"mind_map: sidebar tab\");\n" +
       "        } catch (error) { console.error(\"[mind_map] sidebar tab registration failed:\", error); }\n" +
-      "        // 启动即尝试把那一栏开出来（不再看「上次关没关」的偏好：重启后就是要回来）。\n" +
-      "        var seatAttempts = 0;\n" +
-      "        var seatTimer = window.setInterval(function () {\n" +
-      "          seatAttempts += 1;\n" +
-      "          if (mindMapSidebarSeat.mounted === true || seatAttempts > 20) {\n" +
-      "            window.clearInterval(seatTimer);\n" +
-      "            seatTimer = 0;\n" +
-      "            return;\n" +
-      "          }\n" +
-      "          mindMapOpenSidebarTab(better);\n" +
-      "        }, 1200);\n" +
-      "        mindMapOpenSidebarTab(better);\n" +
+      "        mindMapMountLauncher(better);\n" +
       "        return true;\n" +
       "      };\n" +
       "      var acquireTimer = window.setInterval(function () {\n" +
@@ -2532,43 +2550,7 @@ const CLIENT_EDITS = [
       "          acquireTimer = 0;\n" +
       "        }\n" +
       "      }, 500);\n" +
-      "      tryAcquire();\n" +
-      "      // 切换对话时也把这一栏开出来：tab 在 better-sidebar 里是按会话存的，切过去\n" +
-      "      // 就没有「已开」记录了。这里盯 sessionId 变化补开一次，配合「锚点钉住 +\n" +
-      "      // 成员没变不重排」，看到的就始终是同一张图。\n" +
-      "      var lastSeatSession = null;\n" +
-      "      var ensureSeat = function () {\n" +
-      "        var service = mindMapSidebarSeat.service;\n" +
-      "        if (service === null || service === void 0 || typeof service.getSnapshot !== \"function\") return;\n" +
-      "        var snap = null;\n" +
-      "        try { snap = service.getSnapshot(); } catch (error) { return; }\n" +
-      "        var sessionId = snap === null || snap === void 0 ? void 0 : snap.sessionId;\n" +
-      "        if (sessionId === void 0 || sessionId === lastSeatSession) return;\n" +
-      "        lastSeatSession = sessionId;\n" +
-      "        var attempts = 0;\n" +
-      "        var timer = window.setInterval(function () {\n" +
-      "          attempts += 1;\n" +
-      "          if (mindMapOpenSidebarTab(service) === true || attempts > 12) {\n" +
-      "            window.clearInterval(timer);\n" +
-      "            timer = 0;\n" +
-      "          }\n" +
-      "        }, 300);\n" +
-      "      };\n" +
-      "      var attachSessionWatch = function () {\n" +
-      "        var service = mindMapSidebarSeat.service;\n" +
-      "        if (service === null || service === void 0) return false;\n" +
-      "        try {\n" +
-      "          if (typeof service.subscribeState === \"function\") service.subscribeState(ensureSeat);\n" +
-      "          else if (typeof service.subscribe === \"function\") service.subscribe(ensureSeat);\n" +
-      "          else return false;\n" +
-      "        } catch (error) { return false; }\n" +
-      "        ensureSeat();\n" +
-      "        return true;\n" +
-      "      };\n" +
-      "      attachSessionWatch();\n" +
-      "      // 兜底：即便 subscribeState 不在会话切换时通知，也每 2 秒对一次 sessionId。\n" +
-      "      if (window.__mindMapWatchTimer !== void 0 && window.__mindMapWatchTimer !== null) window.clearInterval(window.__mindMapWatchTimer);\n" +
-      "      window.__mindMapWatchTimer = window.setInterval(ensureSeat, 2000);\n" +
+      "      tryAcquire();" +
       "    })();"
   },
   {
