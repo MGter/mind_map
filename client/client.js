@@ -15116,8 +15116,14 @@ function CanvasInner(props) {
   // FOCUS_DEPTH hops. Null means "no filtering".
   const focusSet = (0, import_react13.useMemo)(() => {
     if (!focusOn) { focusAnchorRef.current = null; return null; }
-    const anchorSession = currentSessionId();
-    let anchorCardId = anchorSession === void 0 ? void 0 : sessionIdToCardId.get(anchorSession);
+    // 锚点钉住：优先用上次锚定的卡（切换对话时不再换中心），板上没有它了才退化成
+    // 「当前会话 → 最近更新的卡」并重新钉住。
+    const pinnedAnchor = mindMapFocusAnchorGet();
+    let anchorCardId = pinnedAnchor !== null && visibleCards[pinnedAnchor] !== void 0 ? pinnedAnchor : void 0;
+    if (anchorCardId === void 0) {
+      const anchorSession = currentSessionId();
+      anchorCardId = anchorSession === void 0 ? void 0 : sessionIdToCardId.get(anchorSession);
+    }
     if (anchorCardId === void 0) {
       let newest;
       for (const entry of Object.entries(visibleCards)) {
@@ -15127,6 +15133,7 @@ function CanvasInner(props) {
       anchorCardId = newest === void 0 ? void 0 : newest.cardId;
     }
     focusAnchorRef.current = anchorCardId === void 0 ? null : anchorCardId;
+    if (anchorCardId !== void 0) mindMapFocusAnchorSet(anchorCardId);
     if (anchorCardId === void 0) return null;
     const adjacency = new Map();
     const connect = function (left, right) {
@@ -16034,6 +16041,8 @@ function CanvasInner(props) {
     // The canvas keeps its own simulation: hand the new coordinates over and
     // heat it back up, otherwise the button would only move the cards on paper.
     if (mindMapSimKick !== null && typeof mindMapSimKick.fn === "function") mindMapSimKick.fn();
+    // 重排之后把镜头缩放到刚排好的范围（收敛完成后 canvas 还会再 fit 一次）。
+    if (mindMapFitKick !== null && typeof mindMapFitKick.fn === "function") mindMapFitKick.fn();
   };
   // New cards only: keep every card the user has already placed exactly where it
   // is, and drop the newcomer next to its workspace peers in the first free spot.
@@ -16326,7 +16335,7 @@ function CanvasInner(props) {
           }
         ),
         /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(StatusRail, { entries: statusEntries, cardWidth: CARD_W, onFocus: focusCard }),
-        /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(GraphBar, { onRelayout: relayoutGraph, onGenerateTags: generateTags, tagBusy: tagBusy, tagCount: graphTagCount, focusOn: focusOn, focusCount: focusCount, onToggleFocus: function () { focusModeSet(!focusOn); }, hideArchived: hideArchivedOn, archivedCount: archivedCardCount, onToggleHideArchived: function () { hideArchivedSet(!hideArchivedOn); } }),
+        /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(GraphBar, { onRelayout: relayoutGraph, onGenerateTags: generateTags, tagBusy: tagBusy, tagCount: graphTagCount, focusOn: focusOn, focusCount: focusCount, onToggleFocus: function () { mindMapFocusAnchorReset(); focusModeSet(!focusOn); }, hideArchived: hideArchivedOn, archivedCount: archivedCardCount, onToggleHideArchived: function () { hideArchivedSet(!hideArchivedOn); } }),
         batchMode ? /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(
           BatchBar,
           {
@@ -16797,6 +16806,41 @@ function apply(ctx) {
         }
       }, 500);
       tryAcquire();
+      // 切换对话时也把这一栏开出来：tab 在 better-sidebar 里是按会话存的，切过去
+      // 就没有「已开」记录了。这里盯 sessionId 变化补开一次，配合「锚点钉住 +
+      // 成员没变不重排」，看到的就始终是同一张图。
+      var lastSeatSession = null;
+      var ensureSeat = function () {
+        var service = mindMapSidebarSeat.service;
+        if (service === null || service === void 0 || typeof service.getSnapshot !== "function") return;
+        var snap = null;
+        try { snap = service.getSnapshot(); } catch (error) { return; }
+        var sessionId = snap === null || snap === void 0 ? void 0 : snap.sessionId;
+        if (sessionId === void 0 || sessionId === lastSeatSession) return;
+        lastSeatSession = sessionId;
+        var attempts = 0;
+        var timer = window.setInterval(function () {
+          attempts += 1;
+          if (mindMapOpenSidebarTab(service) === true || attempts > 12) {
+            window.clearInterval(timer);
+            timer = 0;
+          }
+        }, 300);
+      };
+      var attachSessionWatch = function () {
+        var service = mindMapSidebarSeat.service;
+        if (service === null || service === void 0) return false;
+        try {
+          if (typeof service.subscribeState === "function") service.subscribeState(ensureSeat);
+          else if (typeof service.subscribe === "function") service.subscribe(ensureSeat);
+          else return false;
+        } catch (error) { return false; }
+        ensureSeat();
+        return true;
+      };
+      attachSessionWatch();
+      // 兜底：即便 subscribeState 不在会话切换时通知，也每 2 秒对一次 sessionId。
+      window.setInterval(ensureSeat, 2000);
     })();
     attachServices({
       sessions: ctx.sessions,
@@ -17346,6 +17390,8 @@ function GraphCanvasSurface(props) {
   // just moved the cards: the next tick re-reads every position from the store
   // instead of keeping the simulation's old coordinates.
   var reseedRef = react.useRef(false);
+  /** 「⟲ 重新排布」把坐标写完之后要自动缩放到合适大小（收敛后再来一次）。 */
+  var pendingFitRef = react.useRef(false);
   var simSettings = {
     // Sized for 224x120 cards: an isolated pair settles at roughly 420 px
     // (k*(d-L) = charge/d^2). d3's defaults are for 30 px dots, so they are
@@ -17530,6 +17576,13 @@ function GraphCanvasSurface(props) {
       any = true;
     });
     if (any) live.commit(points);
+    // 收敛后：记住这次布局的成员签名（下次挂载/切会话时成员没变就不再重排），
+    // 并且如果刚才点过「重新排布」，把镜头缩放到合适大小。
+    try { window.localStorage.setItem(MIND_MAP_LAID_SIG_KEY, laidSignatureRef.current); } catch (error) { }
+    if (pendingFitRef.current === true) {
+      pendingFitRef.current = false;
+      fitRef.current({ ease: true });
+    }
   };
 
   var animateCameraTo = function (target, duration) {
@@ -18079,6 +18132,7 @@ function GraphCanvasSurface(props) {
     // this may not have re-rendered yet, and re-seeding from the old props would
     // throw the new layout away. The next tick re-seeds from the fresh props.
     var offLive = mindMapLive.subscribe(function () { schedule(); });
+    mindMapFitKick.fn = function () { pendingFitRef.current = true; reheat(1); schedule(); };
     mindMapSimKick.fn = function () {
       reseedRef.current = true;
       var sim = simRef.current;
@@ -18106,6 +18160,7 @@ function GraphCanvasSurface(props) {
       root.removeEventListener("wheel", wheelHandler);
       if (typeof offLive === "function") offLive();
       mindMapSimKick.fn = null;
+      mindMapFitKick.fn = null;
       mindMapCanvasToFlow.fn = null;
       if (animationFrame !== 0) window.cancelAnimationFrame(animationFrame);
       if (observer !== null) observer.disconnect();
@@ -18115,20 +18170,30 @@ function GraphCanvasSurface(props) {
   }, []);
 
   var signatureRef = react.useRef("");
+  var laidSignatureRef = react.useRef("");
   react.useEffect(function () {
     var nodes = props.nodes || [];
     var ids = [];
     for (var index = 0; index < nodes.length; index += 1) if (nodes[index].hidden !== true) ids.push(nodes[index].id);
     ids.sort();
     var signature = ids.join(",");
+    var laidSignature = "";
+    try { laidSignature = window.localStorage.getItem(MIND_MAP_LAID_SIG_KEY) || ""; } catch (error) { laidSignature = ""; }
     if (signature !== signatureRef.current) {
       signatureRef.current = signature;
-      // A different set of cards is in play (focus switched, a card appeared):
-      // re-seed from the store, heat the layout up and ease the camera onto the
-      // new bounding box instead of snapping.
-      simRef.current = null;
-      reheat(1);
-      fitRef.current({ ease: cameraRef.current !== null });
+      laidSignatureRef.current = signature;
+      if (signature !== laidSignature) {
+        // A different set of cards is in play (focus switched, a card appeared):
+        // re-seed from the store, heat the layout up and ease the camera onto the
+        // new bounding box instead of snapping.
+        simRef.current = null;
+        reheat(1);
+        fitRef.current({ ease: cameraRef.current !== null });
+      } else {
+        // 成员和上次收敛时一模一样：只可能是面板重挂（切对话/切 tab）——
+        // 保持原样，不重跑布局也不动镜头，图看起来就没变。
+        schedule();
+      }
     } else {
       schedule();
     }
@@ -18238,6 +18303,31 @@ var mindMapStandardCache = null;
 var mindMapApplyCtx = null;
 /** 侧栏那一栏的「要不要开着」记在浏览器里：关掉就置 '0'，之后重启不自动弹。 */
 var MIND_MAP_SIDEBAR_TAB_KEY = "dsh.mind_map.sidebar-tab.v1";
+/** 聚焦锚点：钉在某个卡片上，切换对话时不再跟着当前会话跑（点「聚焦」会重新锚定）。 */
+var MIND_MAP_FOCUS_ANCHOR_KEY = "dsh.mind_map.focus-anchor.v1";
+var mindMapFocusAnchor = { cardId: null, loaded: false };
+function mindMapFocusAnchorGet() {
+  if (mindMapFocusAnchor.loaded !== true) {
+    mindMapFocusAnchor.loaded = true;
+    try { mindMapFocusAnchor.cardId = window.localStorage.getItem(MIND_MAP_FOCUS_ANCHOR_KEY); } catch (error) { mindMapFocusAnchor.cardId = null; }
+  }
+  return mindMapFocusAnchor.cardId;
+}
+function mindMapFocusAnchorSet(cardId) {
+  mindMapFocusAnchor.loaded = true;
+  if (mindMapFocusAnchor.cardId === cardId) return;
+  mindMapFocusAnchor.cardId = cardId;
+  try {
+    if (cardId === null) window.localStorage.removeItem(MIND_MAP_FOCUS_ANCHOR_KEY);
+    else window.localStorage.setItem(MIND_MAP_FOCUS_ANCHOR_KEY, cardId);
+  } catch (error) { }
+}
+/** 点「聚焦」= 以当前会话为中心重新锚定。 */
+function mindMapFocusAnchorReset() { mindMapFocusAnchorSet(null); }
+/** 上次收敛后的可见集合签名：切换会话/重挂面板时如果成员没变，就不再重跑布局和镜头。 */
+var MIND_MAP_LAID_SIG_KEY = "dsh.mind_map.layout-signature.v1";
+/** 「⟲ 重新排布」后请求一次自动缩放：canvas 挂上这个钩子。 */
+var mindMapFitKick = { fn: null };
 function mindMapSidebarTabWanted() {
   try { return window.localStorage.getItem(MIND_MAP_SIDEBAR_TAB_KEY) !== "0"; } catch (error) { return true; }
 }
