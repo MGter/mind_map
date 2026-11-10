@@ -16070,7 +16070,9 @@ function CanvasInner(props) {
     if (entries.length === 0) return;
     const links = [];
     for (const drawn of focusEdges) links.push([drawn.source, drawn.target]);
-    const placed = graphLayoutForce(entries, links, { width: CARD_W, height: CARD_H });
+    // ideal 从默认的 ~390 收到 232：重排后卡片紧挨着（略大于一张卡宽），
+    // 再由画布的近距硬芯把重叠推开 —— 「先紧凑、再被阻力快速弹开」。
+    const placed = graphLayoutForce(entries, links, { width: CARD_W, height: CARD_H, ideal: 232 });
     const points = {};
     for (const cardId of Object.keys(placed)) points[cardId] = { x: snap(placed[cardId].x), y: snap(placed[cardId].y) };
     canvas.moveCards(points);
@@ -17394,19 +17396,18 @@ function GraphCanvasSurface(props) {
     // Sized for 224x120 cards: an isolated pair settles at roughly 420 px
     // (k*(d-L) = charge/d^2). d3's defaults are for 30 px dots, so they are
     // useless here — with charge -30 nothing moves at all.
-    charge: -320000,       // repulsion constant: a = charge / d^2
-    linkDistance: 330,     // spring rest length, a little over one card width
+    charge: -90000,        // 远距斥力调弱：不再把整块板撑开
+    linkDistance: 200,     // 弹簧自然长度压到 200（比一张卡窄），卡会挤在一起
+    collisionGap: 210,     // 近距硬芯：中心距小于它就开始线性弹开
+    collisionPush: 0.5,    // 硬芯强度（线性，比 1/d^2 陡得多）
     stiffness: 0.02,       // spring constant below the ceiling
     stiffCeiling: 0.3,     // pull when stretched past maxStretch * linkDistance
     maxStretch: 1.35,
-    gravity: 0.003,        // weak pull to the centroid so nothing escapes
-    repulsionRange: 1150,  // beyond this the pairs stop pushing: dragging one
-                           // card then relaxes its neighbourhood instead of
-                           // rearranging the whole board
+    gravity: 0.004,        // 轻微向心：整体更紧凑
+    repulsionRange: 560,   // 斥力半径收到 560：远处的卡不再互相推，整体更紧
     forceScale: 1,         // multiplier on every force
-    velocityDecay: 0.5,    // v = (v + a) * 0.5 — heavy damping: the board stops
-                           // where it is instead of gliding on for seconds
-    maxVelocity: 45,
+    velocityDecay: 0.42,   // 阻尼略降：被硬芯推开时走得更快、更快停住
+    maxVelocity: 30,
     alphaDecay: 0.955,     // ~2.0 s from rest-heat to a standstill at 60 fps
     alphaMin: 0.004
   };
@@ -17487,8 +17488,14 @@ function GraphCanvasSurface(props) {
           distanceSquared = deltaX * deltaX + deltaY * deltaY;
         }
         var distance = Math.sqrt(distanceSquared);
-        if (distance > settings.repulsionRange) continue;
-        var push = (settings.charge / distanceSquared) * alpha * settings.forceScale;
+        var push;
+        if (distance < settings.collisionGap) {
+          // 近距硬芯：贴太近时用线性斥力快速弹开
+          push = -((settings.collisionGap - distance) * settings.collisionPush) * alpha * settings.forceScale;
+        } else {
+          if (distance > settings.repulsionRange) continue;
+          push = (settings.charge / distanceSquared) * alpha * settings.forceScale;
+        }
         var unitX = deltaX / distance;
         var unitY = deltaY / distance;
         list[left].fx += unitX * push;
