@@ -17607,6 +17607,11 @@ function GraphCanvasSurface(props) {
     if (pendingFitRef.current === true) {
       pendingFitRef.current = false;
       fitRef.current({ ease: true });
+      mindMapCameraTouched = false;
+    } else if (mindMapCameraTouched !== true) {
+      // 用户没碰过镜头：布局每次收敛都重新收到合适大小。
+      // （否则一旦内容被力导向撑开，镜头就永久停在旧位置，出现贴边/出界。）
+      fitRef.current({ ease: true });
     }
   };
 
@@ -17732,7 +17737,8 @@ function GraphCanvasSurface(props) {
     // teleports the camera (250 ms ease-out, the same beat the plugin's own
     // setCenter uses).
     var ease = options !== undefined && options !== null && options.ease === true;
-    if (ease) animateCameraTo(target, 250);
+    mindMapCameraTouched = false;
+  if (ease) animateCameraTo(target, 250);
     else {
       cameraRef.current = target;
       writeGraphCamera(target);
@@ -18084,7 +18090,8 @@ function GraphCanvasSurface(props) {
     }
     if (hit === null) {
       var camera = cameraRef.current;
-      dragRef.current = { kind: "pan", startClientX: event.clientX, startClientY: event.clientY, cameraX: camera.x, cameraY: camera.y, moved: false, preview: null };
+      mindMapCameraTouched = true;
+    dragRef.current = { kind: "pan", startClientX: event.clientX, startClientY: event.clientY, cameraX: camera.x, cameraY: camera.y, moved: false, preview: null };
     } else if (event.shiftKey === true) {
       // Shift + drag out of a card is the fork gesture: it never moves the card,
       // it draws a rubber band and hands the release point to the plugin.
@@ -18208,6 +18215,7 @@ function GraphCanvasSurface(props) {
     // React attaches wheel listeners as passive, where preventDefault() throws;
     // register a native non-passive one so the canvas can own the zoom gesture.
     var wheelHandler = function (event) {
+    mindMapCameraTouched = true;
       event.preventDefault();
       var target = rootRef.current;
       var camera = cameraRef.current;
@@ -18588,6 +18596,8 @@ var mindMapGroupAnchors = new Map();
 var mindMapPendingFit = { until: 0, last: 0, width: 0, height: 0 };
 /** 上次「重新排布」的同步耗时（ms），调试用。 */
 var mindMapLastRelayoutMs = 0;
+/** 用户自己拖过/缩放过镜头之后，布局收敛时就不再强行 fit（respect 手动视角）。 */
+var mindMapCameraTouched = false;
 /** C. 悬停星形：cardId -> 共享标签的邻居 cardId（上限 24）。 */
 var mindMapStarIndex = new Map();
 var MIND_MAP_GROUP_W = 96;
