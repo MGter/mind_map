@@ -1690,6 +1690,42 @@ function mindMapMountLauncher(service) {
   window.__mindMapLauncher = button;
 }
 
+/**
+ * 一个会话只应该有一张卡。历史上两套补卡逻辑（上游自动同步 + 子代理补卡）会给同一个
+ * 会话各建一张，于是同一 session 出现 2~5 张卡。这里直接读 canvas store，同一 sessionId
+ * 只保留最早创建的那张，其余 removeCard（连线随卡删除）。
+ */
+function mindMapDedupeCards() {
+  try {
+    var state = canvas.get();
+    if (state === null || state === void 0 || state.phase !== "ready") return 0;
+    var cards = state.cards || {};
+    var bySession = new Map();
+    var key;
+    for (key in cards) {
+      if (Object.prototype.hasOwnProperty.call(cards, key) !== true) continue;
+      var sessionId = cards[key].sessionId;
+      var list = bySession.get(sessionId);
+      if (list === void 0) bySession.set(sessionId, [key]);
+      else list.push(key);
+    }
+    var removed = 0;
+    bySession.forEach(function (ids) {
+      if (ids.length < 2) return;
+      ids.sort(function (left, right) {
+        return (cards[left].createdAt || 0) - (cards[right].createdAt || 0);
+      });
+      for (var index = 1; index < ids.length; index += 1) {
+        try { canvas.removeCard(ids[index]); removed += 1; } catch (error) { }
+      }
+    });
+    if (removed > 0) console.warn("[mind_map] removed " + removed + " duplicate card(s)");
+    return removed;
+  } catch (error) {
+    return 0;
+  }
+}
+
 function mindMapSelectorHook(store) {
   return function (selector, equality) {
     var select = typeof selector === "function" ? selector : function (state) { return state; };
@@ -2541,6 +2577,8 @@ const CLIENT_EDITS = [
       "          }, \"mind_map: sidebar tab\");\n" +
       "        } catch (error) { console.error(\"[mind_map] sidebar tab registration failed:\", error); }\n" +
       "        mindMapMountLauncher(better);\n" +
+      "        window.setTimeout(mindMapDedupeCards, 2500);\n" +
+      "        window.setTimeout(mindMapDedupeCards, 7000);\n" +
       "        return true;\n" +
       "      };\n" +
       "      var acquireTimer = window.setInterval(function () {\n" +

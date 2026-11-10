@@ -596,3 +596,20 @@ CSS module 文件改名 `mind_map.module.css`）。`mind-map.module.css` 之类�
 
 实测：新开页面 `mindMapSidebarSeat.opens = 0`（旧版启动即 1）；手动摘掉面板后按钮
 `display: flex`；点一下 `opens` 变 1，全程 60fps 无卡顿。
+
+### 13.6 同一会话出现多张卡（2026-11-10 修复）
+
+现象：某个只有 2 个子代理的会话，在地图上冒出 4~5 张子代理卡。
+
+排查：直接读 `~/.dsh/storages/mind_map.json`，按 `sessionId` 分组 ——
+`4150cc42…` 有 **5 张**卡、`0a55f112…` 有 2 张，全盘 120 张卡里有两个 session 重复。
+原因：**两套补卡逻辑并存**——上游的自动同步（每个工作区补缺卡）和我加的子代理补卡
+（`subagent-place-cards`）都在「发现没有卡就建一张」，两边各建一次；加上卡片写入是异步的，
+新挂载时前一次还没落库，就会再建一张。
+
+修复：模块级 `mindMapDedupeCards()` —— 读 `canvas.get().cards`，按 `sessionId` 分组，
+只保留 `createdAt` 最小的那张，其余 `canvas.removeCard()`（连线随卡删除）；启动后
+2.5s / 7s 各跑一次（store 是异步加载的）。
+
+实测：120 → **115** 张卡，图上 `sessionId` 重复数 **0**，无 console 报错。
+（注意：子代理再生子代理是**不同 session**，各自一张卡是对的，不算重复。）
