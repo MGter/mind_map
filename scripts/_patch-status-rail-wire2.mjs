@@ -19,7 +19,7 @@ if (flowAt < 0) { console.log('useReactFlow anchor missing'); process.exit(1) }
 lines[flowAt] = '  const { screenToFlowPosition, zoomTo, setNodes, setCenter, getZoom } = useReactFlow()'
 
 // 3) entries memo + focus handler, right before liveNodes
-const liveAt = lines.findIndex(line => line.includes('const liveNodes = useMemo<TalkMapNode[]>(() => {'))
+const liveAt = lines.findIndex(line => line.includes('const liveNodes = useMemo<MindMapNode[]>(() => {'))
 if (liveAt < 0) { console.log('liveNodes anchor missing'); process.exit(1) }
 const block = `  /**
    * The status rail lists only the cards that carry a lamp right now. It is derived, not

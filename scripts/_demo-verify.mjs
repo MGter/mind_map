@@ -47,7 +47,7 @@ const report = await page.evaluate(() => {
     probe.setAttribute('d', path)
     try { return probe.getTotalLength() } catch { return 0 }
   }
-  const cards = [...document.querySelectorAll('[data-talkmap-session]')].map(element => {
+  const cards = [...document.querySelectorAll('[data-mindmap-session]')].map(element => {
     const rect = element.getBoundingClientRect()
     return { x: rect.left, y: rect.top, w: rect.width, h: rect.height }
   })
@@ -100,7 +100,7 @@ const report = await page.evaluate(() => {
 // Arrow heads: they are drawn behind the cards, so a head that straddles a border loses
 // half of itself; and a head whose angle came from the wrong segment points backwards.
 const arrowReport = await page.evaluate(() => {
-  const cards = [...document.querySelectorAll('[data-talkmap-session]')].map(element => {
+  const cards = [...document.querySelectorAll('[data-mindmap-session]')].map(element => {
     const rect = element.getBoundingClientRect()
     return { x: rect.left, y: rect.top, w: rect.width, h: rect.height }
   })

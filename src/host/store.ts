@@ -1,5 +1,5 @@
 /**
- * The talk-map storage domain: canvas-private data only. Session content,
+ * The mind-map storage domain: canvas-private data only. Session content,
  * titles, and lineage stay with dsh's own services — this domain stores what
  * the map adds on top (positions, user-drawn injection edges, digests, and
  * per-board camera). Persisted by the profile's storage-json backend under
@@ -12,7 +12,7 @@ import { z } from 'zod'
 import type { Domain, DomainSpec, KvTable } from './dsh-host.ts'
 
 /** Storage unit names must match /^[a-z][a-z0-9_]*$/ — no hyphens. */
-export const DOMAIN_NAME = 'talk_map'
+export const DOMAIN_NAME = 'mind_map'
 /** The bootstrap board every unfiled card lands on. */
 export const INBOX_BOARD_ID = 'inbox'
 
@@ -111,7 +111,7 @@ export const globalSchema = z.object({
 })
 export type MapGlobal = z.infer<typeof globalSchema>
 
-export const TALK_MAP_SPEC: DomainSpec = {
+export const MIND_MAP_SPEC: DomainSpec = {
   name: DOMAIN_NAME,
   version: 1,
   global: {
@@ -127,7 +127,7 @@ export const TALK_MAP_SPEC: DomainSpec = {
 }
 
 /** Typed table handles over the untyped structural Domain. */
-export interface TalkMapStore {
+export interface MindMapStore {
   domain: Domain
   boards: KvTable<Board>
   cards: KvTable<Card>
@@ -137,11 +137,11 @@ export interface TalkMapStore {
   setGlobal(value: MapGlobal): Promise<void>
 }
 
-export async function openTalkMapStore(
+export async function openMindMapStore(
   storageDomain: { open(spec: DomainSpec): Promise<Domain> },
-): Promise<TalkMapStore> {
-  const domain = await storageDomain.open(TALK_MAP_SPEC)
-  const store: TalkMapStore = {
+): Promise<MindMapStore> {
+  const domain = await storageDomain.open(MIND_MAP_SPEC)
+  const store: MindMapStore = {
     domain,
     boards: domain.table('boards') as KvTable<Board>,
     cards: domain.table('cards') as KvTable<Card>,

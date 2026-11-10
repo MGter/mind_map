@@ -110,7 +110,7 @@ const oldLinesMarkup = `                      {hit.lines.map((line, index) => (
                           key={index}
                           type="button"
                           className={styles['drawerHitLine']}
-                          data-talkmap-search-line={hit.sessionId}
+                          data-mindmap-search-line={hit.sessionId}
                           onClick={() => { props.onOpenSession?.(hit.sessionId) }}
                         >
                           {highlight(line, query)}
@@ -123,7 +123,7 @@ const newLinesMarkup = `                      {hit.blocks.map((block, blockIndex
                               key={lineIndex}
                               type="button"
                               className={styles['drawerHitLine']}
-                              data-talkmap-search-line={hit.sessionId}
+                              data-mindmap-search-line={hit.sessionId}
                               onClick={() => { props.onOpenSession?.(hit.sessionId) }}
                             >
                               {highlight(line, query)}

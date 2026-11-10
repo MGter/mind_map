@@ -77,7 +77,7 @@ source = source.replace(
   ]),
   J([
     '                draggable',
-    '                data-talkmap-drag={dragId === item.cardId ? "1" : undefined}',
+    '                data-mindmap-drag={dragId === item.cardId ? "1" : undefined}',
     '                onDragStart={(event) => {',
     '                  setDragId(item.cardId)',
     "                  event.dataTransfer.effectAllowed = 'move'",
@@ -112,12 +112,12 @@ source = source.replace(
   J([
     '                {item.links !== undefined && item.links.length > 0',
     '                  ? (',
-    "                      <div className={styles['cardLinks']} data-talkmap-card-links={item.links.length}>",
+    "                      <div className={styles['cardLinks']} data-mindmap-card-links={item.links.length}>",
     '                        {item.links.slice(0, 3).map(link => (',
     '                          <span',
     '                            key={(link.outgoing ? \'out-\' : \'in-\') + link.toCardId}',
     "                            className={styles['cardLinkChip']}",
-    "                            data-talkmap-link={link.outgoing ? 'out' : 'in'}",
+    "                            data-mindmap-link={link.outgoing ? 'out' : 'in'}",
     '                            title={link.kind}',
     '                          >',
     "                            {link.outgoing ? '→ ' : '← '}{link.title}",

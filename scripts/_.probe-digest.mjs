@@ -26,7 +26,7 @@ const block = [
   '    await page.mouse.click(digestRow.x, digestRow.y)',
   '    await page.waitForTimeout(500)',
   '    const digestDialog = await page.evaluate(() => {',
-  "      const dialog = document.querySelector('[data-talkmap-digest-dialog]')",
+  "      const dialog = document.querySelector('[data-mindmap-digest-dialog]')",
   '      if (dialog === null) return null',
   "      const areas = [...dialog.querySelectorAll('textarea')].map(node => node.value)",
   "      return { areas: areas.length, hasRecall: areas.some(text => text.includes('提醒')), sample: (areas[0] ?? '').slice(0, 50) }",

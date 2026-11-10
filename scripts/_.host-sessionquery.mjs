@@ -9,7 +9,7 @@ const file = new URL('../lib/index.js', import.meta.url)
 let text = fs.readFileSync(file, 'utf8')
 
 const injectAnchor = '\tctx.inject(["agentPresets"], (injected) => {'
-if (text.includes('dsh-talk-map: session query')) {
+if (text.includes('mind_map: session query')) {
   console.log('already applied')
   process.exit(0)
 }
@@ -26,7 +26,7 @@ const injectBlock = [
   '\t\t\treturn () => {',
   '\t\t\t\tif (runtime.sessionQuery === services.sessionQuery) delete runtime.sessionQuery;',
   '\t\t\t};',
-  '\t\t}, "dsh-talk-map: session query");',
+  '\t\t}, "mind_map: session query");',
   '\t});',
   '',
 ].join('\n')

@@ -9,7 +9,7 @@ text = text.replace(
   [
     "const layoutWidth = await page.evaluate(() => {",
     "  const rail = document.querySelector('[class*=\"statusRailCard\"]')",
-    "  const board = document.querySelector('[data-talkmap-session]')",
+    "  const board = document.querySelector('[data-mindmap-session]')",
     "  return { rail: rail === null ? 0 : rail.offsetWidth, board: board === null ? 0 : board.offsetWidth }",
     "})",
     "const allCards = opened.rows.length > 0 && layoutWidth.rail === layoutWidth.board && opened.rows.every(row => row.chip !== '')",

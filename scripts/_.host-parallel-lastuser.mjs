@@ -14,7 +14,7 @@ if (text.includes('await Promise.all(ids.map(async (sessionId) => {')) {
   process.exit(0)
 }
 
-const marker = 'if (route === "POST /talk-map/last-user") {'
+const marker = 'if (route === "POST /mind-map/last-user") {'
 const start = text.indexOf(marker)
 if (start < 0) {
   console.error('route not found')
@@ -38,7 +38,7 @@ if (end < 0) {
 
 const T = '\t'
 const block = [
-  'if (route === "POST /talk-map/last-user") {',
+  'if (route === "POST /mind-map/last-user") {',
   `${T}const body = await readJsonBody(request);`,
   `${T}const ids = Array.isArray(body?.sessionIds) ? body.sessionIds.filter((id) => typeof id === "string").slice(0, 200) : [];`,
   `${T}const texts = {};`,

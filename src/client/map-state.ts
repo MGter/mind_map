@@ -74,7 +74,7 @@ export interface MapServices {
 }
 
 /** Key of this plugin's `main` entry — the id `selectPanel` selects. */
-export const MAP_PANEL_ID = 'talk-map'
+export const MAP_PANEL_ID = 'mind-map'
 
 let services: MapServices | undefined
 
@@ -199,7 +199,7 @@ export function openMapPanel(): void {
   try {
     layout.selectPanel(MAP_PANEL_ID)
   } catch (error) {
-    console.error('[dsh-talk-map] selectPanel failed:', error)
+    console.error('[mind_map] selectPanel failed:', error)
     mapUi.setOpen(true)
   }
 }
@@ -215,7 +215,7 @@ export function closeMapPanel(): void {
   try {
     layout.selectPanel(null)
   } catch (error) {
-    console.error('[dsh-talk-map] selectPanel(null) failed:', error)
+    console.error('[mind_map] selectPanel(null) failed:', error)
     mapUi.setOpen(false)
   }
 }
@@ -247,7 +247,7 @@ export function hideSidebarForMap(): void {
     layout.toggleSidebar()
     sidebarHiddenByMap = true
   } catch (error) {
-    console.error('[dsh-talk-map] collapsing the sidebar failed:', error)
+    console.error('[mind_map] collapsing the sidebar failed:', error)
   }
 }
 
@@ -261,7 +261,7 @@ export function restoreSidebarAfterMap(): void {
   try {
     layout.toggleSidebar()
   } catch (error) {
-    console.error('[dsh-talk-map] restoring the sidebar failed:', error)
+    console.error('[mind_map] restoring the sidebar failed:', error)
   }
 }
 
@@ -315,21 +315,21 @@ export function openSessionInUi(sessionId: string): boolean {
       return true
     }
   } catch (error) {
-    console.error('[dsh-talk-map] opening session failed:', sessionId, error)
+    console.error('[mind_map] opening session failed:', sessionId, error)
     return false
   }
-  console.error('[dsh-talk-map] this DSH build exposes no session navigation service; cannot open', sessionId)
+  console.error('[mind_map] this DSH build exposes no session navigation service; cannot open', sessionId)
   return false
 }
 
 /** Fork a Session through the Workspace service when the runtime has it. */
 export function forkSessionInUi(sessionId: string): Promise<string> {
   const current = getServices()
-  if (current === undefined) return Promise.reject(new Error('dsh-talk-map: services are not attached'))
+  if (current === undefined) return Promise.reject(new Error('mind_map: services are not attached'))
   const ui = resolveUiWorkspace(current)
   if (ui !== undefined && typeof ui.forkSession === 'function') return ui.forkSession(sessionId)
   if (typeof current.sessions.fork === 'function') return current.sessions.fork({ sessionId, increaseTitle: true })
-  return Promise.reject(new Error('dsh-talk-map: this DSH build exposes no fork API'))
+  return Promise.reject(new Error('mind_map: this DSH build exposes no fork API'))
 }
 
 /**

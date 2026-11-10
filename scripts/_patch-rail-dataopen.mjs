@@ -9,7 +9,7 @@ text = text.replace(
 fs.writeFileSync(tsx, text, 'utf8')
 
 // 2) CSS: drive the open state from that attribute
-const css = 'src/client/talk-map.module.css'
+const css = 'src/client/mind-map.module.css'
 let sheet = fs.readFileSync(css, 'utf8')
 sheet = sheet.replace('.statusRailOpen .statusRailPanel {', '.statusRail[data-open="1"] .statusRailPanel {')
 sheet = sheet.replace('.statusRailOpen .statusRailTab {', '.statusRail[data-open="1"] .statusRailTab {')

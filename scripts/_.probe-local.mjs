@@ -87,13 +87,13 @@ const insertAt = source.indexOf('\n', cursor) + 1
 const block = `
   // The search is LOCAL now: it filters the rows this folder is rendering.
   const routeCallsBeforeSearch = await page.evaluate(() => window.__harness.searchRouteCalls().length)
-  await page.fill('[data-talkmap-drawer-search]', '清理')
+  await page.fill('[data-mindmap-drawer-search]', '清理')
   await page.keyboard.press('Enter')
   await page.waitForTimeout(500)
   const localHits = await page.evaluate(() => ({
-    hits: document.querySelectorAll('[data-talkmap-search-hit]').length,
-    text: document.querySelector('[data-talkmap-search-hit]')?.textContent ?? null,
-    marks: document.querySelectorAll('[data-talkmap-search-hit] mark').length,
+    hits: document.querySelectorAll('[data-mindmap-search-hit]').length,
+    text: document.querySelector('[data-mindmap-search-hit]')?.textContent ?? null,
+    marks: document.querySelectorAll('[data-mindmap-search-hit] mark').length,
     routeCalls: window.__harness.searchRouteCalls().length,
   }))
   check('抽屉搜索命中卡片正文（不查宿主语料）',
@@ -103,13 +103,13 @@ const block = `
   check('命中处有高亮', localHits.marks >= 1, JSON.stringify(localHits))
 
   // Header search: same idea, over the cards on the board.
-  await page.fill('[data-talkmap-global-search]', '网格')
+  await page.fill('[data-mindmap-global-search]', '网格')
   await page.keyboard.press('Enter')
   await page.waitForTimeout(600)
   const globalLocal = await page.evaluate(() => ({
     panel: document.querySelector('[class*="globalSearchPanel"]') !== null,
-    hits: document.querySelectorAll('[data-talkmap-search-hit]').length,
-    marks: document.querySelectorAll('[data-talkmap-search-hit] mark').length,
+    hits: document.querySelectorAll('[data-mindmap-search-hit]').length,
+    marks: document.querySelectorAll('[data-mindmap-search-hit] mark').length,
     routeCalls: window.__harness.searchRouteCalls().length,
   }))
   check('顶栏搜索也只在地图上的卡片里找',

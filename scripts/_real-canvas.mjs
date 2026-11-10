@@ -1,6 +1,6 @@
 /**
  * Render the user's REAL board through the REAL plugin canvas (test/index.html +
- * harness.js), by seeding the harness's saved state with talk_map.json.
+ * harness.js), by seeding the harness's saved state with mind_map.json.
  *
  * This is the faithful repro: same component, same CSS, same data — then the
  * rendered SVG paths are measured against the rendered cards in screen space.
@@ -13,7 +13,7 @@ import path from 'node:path'
 import { spawn } from 'node:child_process'
 import { chromium } from 'playwright-core'
 
-const raw = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.dsh', 'storages', 'talk_map.json'), 'utf8'))
+const raw = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.dsh', 'storages', 'mind_map.json'), 'utf8'))
 const seed = {
   cards: raw.tables.cards,
   edges: raw.tables.edges,
@@ -41,7 +41,7 @@ while (Date.now() - started < 20000 && !ready) {
 const browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`)
 const context = browser.contexts()[0]
 await context.addInitScript(payload => {
-  window.localStorage.setItem('dsh-talk-map.demo-state.v1', JSON.stringify(payload))
+  window.localStorage.setItem('mind_map.demo-state.v1', JSON.stringify(payload))
 }, seed)
 
 const page = context.pages()[0] ?? await context.newPage()
@@ -60,9 +60,9 @@ console.log('BOOT', JSON.stringify(booted))
 await page.waitForTimeout(2500)
 
 const report = await page.evaluate(() => {
-  const cards = [...document.querySelectorAll('[data-talkmap-session]')].map(element => {
+  const cards = [...document.querySelectorAll('[data-mindmap-session]')].map(element => {
     const rect = element.getBoundingClientRect()
-    return { id: element.getAttribute('data-talkmap-session'), x: rect.left, y: rect.top, w: rect.width, h: rect.height }
+    return { id: element.getAttribute('data-mindmap-session'), x: rect.left, y: rect.top, w: rect.width, h: rect.height }
   })
   const out = []
   for (const group of document.querySelectorAll('.react-flow__edge')) {

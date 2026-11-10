@@ -38,5 +38,5 @@ http.createServer((request, response) => {
     response.end(data)
   })
 }).listen(PORT, '127.0.0.1', () => {
-  console.log(`talk-map harness: http://127.0.0.1:${PORT}/test/index.html`)
+  console.log(`mind-map harness: http://127.0.0.1:${PORT}/test/index.html`)
 })

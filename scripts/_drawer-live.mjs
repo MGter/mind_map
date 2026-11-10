@@ -74,7 +74,7 @@ await build({
 })
 // The plugin's own stylesheet, scoped exactly the way the build scopes it (tm_ prefix),
 // so the harness lays the drawer out like the app instead of guessing.
-const rawCss = fs.readFileSync('src/client/talk-map.module.css', 'utf8')
+const rawCss = fs.readFileSync('src/client/mind-map.module.css', 'utf8')
 const scopedCss = rawCss
   .replace(/:global\(([^()]*)\)/g, '$1')
   .replace(/\.([a-zA-Z][\w-]*)/g, '.tm_$1')

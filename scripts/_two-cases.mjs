@@ -2,7 +2,7 @@
  * The two connections the user reported as broken, rendered with the real component:
  *   A. two side-by-side cards, connected bottom → bottom
  *   B. two stacked cards, connected left → left
- * Both are drawn by TalkMapEdge with exactly the props the canvas would give it.
+ * Both are drawn by MindMapEdge with exactly the props the canvas would give it.
  *
  *   node scripts/_two-cases.mjs [--shot name.png]
  */
@@ -16,7 +16,7 @@ import { chromium } from 'playwright-core'
 const entry = `
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { TalkMapEdge } from '../../src/client/TalkMapEdge.tsx'
+import { MindMapEdge } from '../../src/client/MindMapEdge.tsx'
 
 const CARD = { w: 224, h: 120 }
 const GAP = 56
@@ -53,7 +53,7 @@ function scene(spec, offsetX, offsetY) {
     sourcePosition: clock(spec.fromHandle), targetPosition: clock(spec.toHandle),
     sourceHandleId: spec.fromHandle, targetHandleId: spec.toHandle,
     selected: false, animated: false, interactionWidth: 18,
-    type: 'talkMap', markerEnd: undefined,
+    type: 'mindMap', markerEnd: undefined,
     data: {
       sync: 'idle',
       obstacles: [],                       // only the two endpoints exist in this scene
@@ -69,11 +69,11 @@ const b = scene(B, 40, 260)
 createRoot(document.getElementById('root')).render(
   <>
     <svg width={1200} height={900} style={{ position: 'absolute', inset: 0 }}>
-      <TalkMapEdge {...a.props} />
-      <TalkMapEdge {...b.props} />
+      <MindMapEdge {...a.props} />
+      <MindMapEdge {...b.props} />
     </svg>
     {[...a.cards, ...b.cards].map(card => (
-      <div key={card.id} data-talkmap-session={card.id}
+      <div key={card.id} data-mindmap-session={card.id}
         style={{ position: 'absolute', left: card.x, top: card.y, width: CARD.w, height: CARD.h,
           boxSizing: 'border-box', background: '#23262d', border: '1px solid #333a45',
           borderRadius: 10, color: '#cfd6e3', fontSize: 11 }}>{card.id}</div>
@@ -119,9 +119,9 @@ await page.goto('file:///' + path.resolve('test/shots/two.html').replace(/\\/g, 
 await page.waitForTimeout(600)
 
 const report = await page.evaluate(() => {
-  const cards = [...document.querySelectorAll('[data-talkmap-session]')].map(element => {
+  const cards = [...document.querySelectorAll('[data-mindmap-session]')].map(element => {
     const rect = element.getBoundingClientRect()
-    return { id: element.getAttribute('data-talkmap-session'), x: rect.left, y: rect.top, w: rect.width, h: rect.height }
+    return { id: element.getAttribute('data-mindmap-session'), x: rect.left, y: rect.top, w: rect.width, h: rect.height }
   })
   return [...document.querySelectorAll('svg path')].map(element => {
     const d = element.getAttribute('d') ?? ''

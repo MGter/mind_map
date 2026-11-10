@@ -17,7 +17,7 @@ if (!text.includes(oldFlow)) { console.log('useReactFlow anchor missing'); proce
 text = text.replace(oldFlow, 'const { screenToFlowPosition, zoomTo, setNodes, setCenter, getZoom } = useReactFlow()')
 
 // 3) entries memo + focus handler right after glowOf
-const glowEnd = 'const liveNodes = useMemo<TalkMapNode[]>(() => {'
+const glowEnd = 'const liveNodes = useMemo<MindMapNode[]>(() => {'
 if (!text.includes(glowEnd)) { console.log('glow anchor missing'); process.exit(1) }
 const block = `  /**
    * The status rail only ever lists cards that are carrying a lamp right now. It is

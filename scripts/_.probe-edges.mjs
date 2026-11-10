@@ -14,7 +14,7 @@ if (anchor < 0) {
 
 const block = [
   '  // ---- edges render through the custom component ---------------------',
-  '  if ((await page.evaluate(() => window.__harness.panelState())).selectedPanel !== \'talk-map\') await openMap()',
+  '  if ((await page.evaluate(() => window.__harness.panelState())).selectedPanel !== \'mind-map\') await openMap()',
   '  await page.waitForTimeout(700)',
   '  const edgeShapes = await page.evaluate(() => {',
   '    const groups = [...document.querySelectorAll(\'.react-flow__edge\')]',

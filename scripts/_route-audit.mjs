@@ -13,7 +13,7 @@ import { routeEdge } from '../src/client/edge-route.ts'
 const CARD_W = 224
 const CARD_H = 120
 
-const file = path.join(os.homedir(), '.dsh', 'storages', 'talk_map.json')
+const file = path.join(os.homedir(), '.dsh', 'storages', 'mind_map.json')
 const raw = JSON.parse(fs.readFileSync(file, 'utf8'))
 const cardsTable = raw.tables?.cards ?? {}
 const edgesTable = raw.tables?.edges ?? {}

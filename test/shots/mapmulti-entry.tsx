@@ -2,7 +2,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { ReactFlowProvider, ReactFlow } from '@xyflow/react'
-import { TalkMapEdge, edgeTypes } from '../../src/client/TalkMapEdge.tsx'
+import { MindMapEdge, edgeTypes } from '../../src/client/MindMapEdge.tsx'
 
 const W = 224
 const H = 120
@@ -46,7 +46,7 @@ const edges = LINKS.map(([from, to, fromFace, toFace], index) => {
     id: 'e' + index,
     source: from,
     target: to,
-    type: 'talkMap',
+    type: 'mindMap',
     sourcePosition: position(fromFace),
     targetPosition: position(toFace),
     data: {
@@ -71,7 +71,7 @@ const nodes = cards.map(card => ({
     borderRadius: 10, color: '#cfd6e3', fontSize: 12 },
 }))
 
-// TalkMapEdge gets its coordinates from React Flow; mirror them onto the node handles.
+// MindMapEdge gets its coordinates from React Flow; mirror them onto the node handles.
 const withHandles = edges.map(edge => {
   const a = boxOf(edge.source)
   const b = boxOf(edge.target)

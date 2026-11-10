@@ -8,10 +8,10 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
 const bundle = fs.readFileSync('client/client.js', 'utf8')
-const css = fs.readFileSync('src/client/talk-map.module.css', 'utf8')
+const css = fs.readFileSync('src/client/mind-map.module.css', 'utf8')
 
 // 1. every edge renders through the custom component
-assert.match(bundle, /type: TALK_MAP_EDGE_TYPE/, 'edges must use the custom renderer')
+assert.match(bundle, /type: MIND_MAP_EDGE_TYPE/, 'edges must use the custom renderer')
 assert.match(bundle, /edgeTypes=\{?\s*edgeTypes|edgeTypes:/, 'edgeTypes must be registered on ReactFlow')
 
 // 2. a dashed grey line, hidden entirely once synced

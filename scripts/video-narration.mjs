@@ -10,12 +10,12 @@ const OUT = path.resolve('video/promo/public/audio')
 fs.mkdirSync(OUT, { recursive: true })
 
 const LINES = [
-  ['n1', '把每一次对话，铺在一张看得见的地图上。这是 DeepSeek Harness 的对话地图插件。'],
+  ['n1', '把每一次对话，铺在一张看得见的地图上。这是 DeepSeek Harness 的思维图插件。'],
   ['n2', '工作区是框架，对话是卡片。拖动即布局，位置永远记得。'],
   ['n3', '一个工作区折进一格。点开抽屉，所有对话一目了然。'],
   ['n4', '搜索直达卡片正文，关键词高亮，回车即达。'],
   ['n5', '谁在运行，谁已完成，谁被搁置。卡片灯牌，一眼可辨。'],
-  ['n6', '开源可用。对话地图，为注意力而生。'],
+  ['n6', '开源可用。思维图，为注意力而生。'],
 ]
 
 const voice = process.env.TTS_VOICE ?? 'zh-CN-YunxiNeural'

@@ -20,7 +20,7 @@ const EDGE = [
 ].find(candidate => fs.existsSync(candidate))
 const PORT = 8796
 const CDP = 9346
-const profileDir = path.join(os.tmpdir(), 'talkmap-yield-profile')
+const profileDir = path.join(os.tmpdir(), 'mindmap-yield-profile')
 
 const server = http.createServer((request, response) => {
   const url = new URL(request.url ?? '/', `http://127.0.0.1:${PORT}`)

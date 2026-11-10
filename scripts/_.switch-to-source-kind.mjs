@@ -10,7 +10,7 @@ import fs from 'node:fs'
 const ROUTE_JS = (indent) => {
   const T = indent
   return [
-    'if (route === "POST /talk-map/last-user") {',
+    'if (route === "POST /mind-map/last-user") {',
     `${T}const body = await readJsonBody(request);`,
     `${T}const ids = Array.isArray(body?.sessionIds) ? body.sessionIds.filter((id) => typeof id === "string").slice(0, 200) : [];`,
     `${T}const texts = {};`,
@@ -43,7 +43,7 @@ const ROUTE_JS = (indent) => {
 // ---- built host bundle -----------------------------------------------------
 const file = new URL('../lib/index.js', import.meta.url)
 let text = fs.readFileSync(file, 'utf8')
-const marker = 'if (route === "POST /talk-map/last-user") {'
+const marker = 'if (route === "POST /mind-map/last-user") {'
 const start = text.indexOf(marker)
 if (start < 0) {
   console.error('built: route not found')
@@ -83,7 +83,7 @@ console.log('built host bundle: last-user uses source.kind')
 // ---- src host --------------------------------------------------------------
 const srcFile = 'src/host/routes.ts'
 let src = fs.readFileSync(srcFile, 'utf8')
-const srcRouteStart = src.indexOf("        if (route === 'POST /talk-map/last-user') {")
+const srcRouteStart = src.indexOf("        if (route === 'POST /mind-map/last-user') {")
 if (srcRouteStart < 0) {
   console.error('src: route not found')
   process.exit(1)
@@ -98,7 +98,7 @@ for (let i = src.indexOf('{', srcRouteStart); i < src.length; i += 1) {
   }
 }
 const srcRoute = [
-  "        if (route === 'POST /talk-map/last-user') {",
+  "        if (route === 'POST /mind-map/last-user') {",
   '          const body = await readJsonBody(request)',
   '          const ids = Array.isArray((body as { sessionIds?: unknown }).sessionIds)',
   "            ? ((body as { sessionIds: unknown[] }).sessionIds.filter(id => typeof id === 'string') as string[]).slice(0, 200)",

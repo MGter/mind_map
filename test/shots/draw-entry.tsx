@@ -1,7 +1,7 @@
 
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { TalkMapEdge } from '../../src/client/TalkMapEdge.tsx'
+import { MindMapEdge } from '../../src/client/MindMapEdge.tsx'
 
 const SCENE = {"cards":[{"id":"top","x":0,"y":0,"w":224,"h":120},{"id":"mid","x":4,"y":176,"w":250,"h":129},{"id":"bottom","x":0,"y":361,"w":224,"h":120}]}
 const top = SCENE.cards[0]
@@ -29,17 +29,17 @@ const edgeProps = {
   animated: false,
   interactionWidth: 20,
   data: { sync: 'idle', obstacles, fromRect, toRect },
-  type: 'talkMap',
+  type: 'mindMap',
   markerEnd: undefined,
 }
 
 createRoot(document.getElementById('root')).render(
   <>
     <svg width={1200} height={900} style={{ position: 'absolute', inset: 0 }}>
-      <TalkMapEdge {...edgeProps} />
+      <MindMapEdge {...edgeProps} />
     </svg>
     {SCENE.cards.map(card => (
-      <div key={card.id} data-talkmap-session={card.id}
+      <div key={card.id} data-mindmap-session={card.id}
         style={{ position: 'absolute', left: card.x, top: card.y,
           width: card.w, height: card.h, boxSizing: 'border-box',
           background: '#23262d', border: '1px solid #333a45', borderRadius: 10, color: '#cfd6e3' }}>

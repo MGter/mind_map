@@ -1,7 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import { ReactFlow, ReactFlowProvider, Background, Handle, Position, ConnectionMode } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { edgeTypes } from '../src/client/TalkMapEdge.tsx'
+import { edgeTypes } from '../src/client/MindMapEdge.tsx'
 import { pickFaces } from '../src/client/edge-routing.ts'
 import { routeBetween } from '../src/client/edge-route.ts'
 
@@ -65,9 +65,9 @@ const dataFor = (fromId, toId, sync) => ({
 })
 
 const edges = [
-  { id: 'sync', source: 'a', target: 'b', type: 'talkMap', data: dataFor('a', 'b', 'synced'), ...faceFor('a', 'b') },
-  { id: 'idle', source: 'a', target: 'b', type: 'talkMap', data: dataFor('a', 'b', 'idle'), ...faceFor('a', 'b') },
-  { id: 'adjacent', source: 'c', target: 'd', type: 'talkMap', data: dataFor('c', 'd', 'synced'), ...faceFor('c', 'd') },
+  { id: 'sync', source: 'a', target: 'b', type: 'mindMap', data: dataFor('a', 'b', 'synced'), ...faceFor('a', 'b') },
+  { id: 'idle', source: 'a', target: 'b', type: 'mindMap', data: dataFor('a', 'b', 'idle'), ...faceFor('a', 'b') },
+  { id: 'adjacent', source: 'c', target: 'd', type: 'mindMap', data: dataFor('c', 'd', 'synced'), ...faceFor('c', 'd') },
 ]
 
 createRoot(document.getElementById('root')!).render(

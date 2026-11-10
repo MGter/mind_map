@@ -8,7 +8,7 @@ import { useEffect, useSyncExternalStore } from 'react'
 import type { SidebarFooterActionOwnerProps } from './dsh.ts'
 import { activeLocale, subscribeLocale, t } from './i18n.ts'
 import { closeMapPanel, currentSessionId, mapUi, openSessionInUi, reportSidebarWide } from './map-state.ts'
-import styles from './talk-map.module.css'
+import styles from './mind-map.module.css'
 
 function MapIcon(): React.JSX.Element {
   return (
@@ -65,7 +65,7 @@ export function MapToggleButton(props: SidebarFooterActionOwnerProps): React.JSX
         lang={locale}
         title={backTitle}
         aria-label={backTitle}
-        data-talkmap-back="1"
+        data-mindmap-back="1"
         onClick={() => {
           const sessionId = currentSessionId()
           if (sessionId === undefined) return

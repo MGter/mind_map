@@ -10,7 +10,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { connectionService, mapUi } from './map-state.ts'
 import { t } from './i18n.ts'
-import styles from './talk-map.module.css'
+import styles from './mind-map.module.css'
 
 export interface RenameTarget {
   sessionId: string
@@ -74,14 +74,14 @@ export function RenameDialog(props: RenameDialogProps): React.JSX.Element {
         : { sessionId: props.target.id, title }
       const result = await rpc.call('/api', endpoint, { args: { request } })
       if (result.ok !== true) {
-        console.error('[dsh-talk-map] rename rejected:', result.error)
+        console.error('[mind_map] rename rejected:', result.error)
         setError(result.error?.message ?? t('rename.failed'))
         setBusy(false)
         return
       }
       props.onDone(title)
     } catch (cause) {
-      console.error('[dsh-talk-map] rename failed:', cause)
+      console.error('[mind_map] rename failed:', cause)
       setError(t('rename.failed'))
       setBusy(false)
     }

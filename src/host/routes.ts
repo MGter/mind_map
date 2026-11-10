@@ -1,6 +1,6 @@
 /**
  * HTTP surface bridging the browser map to the host. Everything lives under
- * the /talk-map/ prefix — deliberately NOT /api (that prefix carries dsh's
+ * the /mind-map/ prefix — deliberately NOT /api (that prefix carries dsh's
  * browser-trust fence). Mutations accept same-origin browser requests and
  * origin-less local tools (curl); a cross-origin browser POST is refused.
  */
@@ -9,10 +9,10 @@ import { mkdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { resolve as resolvePath, sep } from 'node:path'
 import { z } from 'zod'
-import type { DomainChanged, TalkMapHostServices } from './dsh-host.ts'
+import type { DomainChanged, MindMapHostServices } from './dsh-host.ts'
 import type { DigestPipeline } from './digest/pipeline.ts'
 import { SessionNotLiveError, type Spawner } from './spawn.ts'
-import { cardSchema, edgeSchema, globalSchema, DOMAIN_NAME, type TalkMapStore } from './store.ts'
+import { cardSchema, edgeSchema, globalSchema, DOMAIN_NAME, type MindMapStore } from './store.ts'
 
 /**
  * Capabilities filled in by independently-injected layers: the digest layer
@@ -20,7 +20,7 @@ import { cardSchema, edgeSchema, globalSchema, DOMAIN_NAME, type TalkMapStore } 
  * missing in an unusual composition — routes answer 503 rather than the
  * whole plugin refusing to mount.
  */
-export interface TalkMapRuntime {
+export interface MindMapRuntime {
   digest?: DigestPipeline
   spawner?: Spawner
   /** Read a session's surface — powers the card body (user's last message). */
@@ -144,15 +144,15 @@ const ensureDirBody = z.object({
 })
 
 /**
- * Register the /talk-map/ routes.
+ * Register the /mind-map/ routes.
  * @param services - host services (webServer + event bus).
  * @param storeReady - resolves when the storage domain is open; handlers await it.
  * @returns disposer removing the route registration and closing SSE clients.
  */
-export function mountTalkMapRoutes(
-  services: TalkMapHostServices,
-  storeReady: Promise<TalkMapStore>,
-  runtime: TalkMapRuntime,
+export function mountMindMapRoutes(
+  services: MindMapHostServices,
+  storeReady: Promise<MindMapStore>,
+  runtime: MindMapRuntime,
 ): () => void {
   const sseClients = new Set<ServerResponse>()
 
@@ -171,12 +171,12 @@ export function mountTalkMapRoutes(
   const unregister = services.webServer.register({
     kind: 'prefix',
     // NOTE: webserver prefix p matches `p` and `p/<anything>` — no trailing slash.
-    path: '/talk-map',
+    path: '/mind-map',
     handler: async (request, response) => {
       const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`)
       const route = `${request.method ?? 'GET'} ${url.pathname}`
       try {
-        if (route === 'GET /talk-map/state') {
+        if (route === 'GET /mind-map/state') {
           const store = await storeReady
           sendJson(response, 200, {
             boards: tableToRecord(store.boards),
@@ -188,7 +188,7 @@ export function mountTalkMapRoutes(
           return
         }
 
-        if (route === 'GET /talk-map/defaults') {
+        if (route === 'GET /mind-map/defaults') {
           let model: unknown = null
           let preset: unknown = null
           try {
@@ -201,7 +201,7 @@ export function mountTalkMapRoutes(
           return
         }
 
-        if (route === 'GET /talk-map/events') {
+        if (route === 'GET /mind-map/events') {
           response.writeHead(200, {
             'content-type': 'text/event-stream',
             'cache-control': 'no-store',
@@ -218,7 +218,7 @@ export function mountTalkMapRoutes(
           return
         }
 
-        if (route === 'POST /talk-map/cards/upsert') {
+        if (route === 'POST /mind-map/cards/upsert') {
           const store = await storeReady
           const body = upsertCardsBody.parse(await readJsonBody(request))
           for (const [id, card] of Object.entries(body.cards)) {
@@ -233,7 +233,7 @@ export function mountTalkMapRoutes(
           return
         }
 
-        if (route === 'POST /talk-map/edges/upsert') {
+        if (route === 'POST /mind-map/edges/upsert') {
           const store = await storeReady
           const body = upsertEdgesBody.parse(await readJsonBody(request))
           for (const [id, edge] of Object.entries(body.edges)) {
@@ -243,7 +243,7 @@ export function mountTalkMapRoutes(
           return
         }
 
-        if (route === 'POST /talk-map/cards/delete') {
+        if (route === 'POST /mind-map/cards/delete') {
           const store = await storeReady
           const body = deleteCardsBody.parse(await readJsonBody(request))
           let removed = 0
@@ -260,7 +260,7 @@ export function mountTalkMapRoutes(
           return
         }
 
-        if (route === 'POST /talk-map/edges/delete') {
+        if (route === 'POST /mind-map/edges/delete') {
           const store = await storeReady
           const body = deleteCardsBody.parse(await readJsonBody(request))
           let removed = 0
@@ -271,7 +271,7 @@ export function mountTalkMapRoutes(
           return
         }
 
-        if (route === 'POST /talk-map/global') {
+        if (route === 'POST /mind-map/global') {
           const store = await storeReady
           const body = setGlobalBody.parse(await readJsonBody(request))
           await store.setGlobal(body.global)
@@ -279,7 +279,7 @@ export function mountTalkMapRoutes(
           return
         }
 
-        if (route === 'POST /talk-map/inject') {
+        if (route === 'POST /mind-map/inject') {
           if (runtime.spawner === undefined) {
             sendJson(response, 503, { error: 'spawn layer unavailable (agents service missing)' })
             return
@@ -300,7 +300,7 @@ export function mountTalkMapRoutes(
           return
         }
 
-        if (route === 'POST /talk-map/spawn') {
+        if (route === 'POST /mind-map/spawn') {
           if (runtime.spawner === undefined) {
             sendJson(response, 503, { error: 'spawn layer unavailable (agents service missing)' })
             return
@@ -311,7 +311,7 @@ export function mountTalkMapRoutes(
           return
         }
 
-        if (route === 'POST /talk-map/fs/ensure-dir') {
+        if (route === 'POST /mind-map/fs/ensure-dir') {
           // dsh's workspace.create only REGISTERS an existing directory
           // (realpath fails on a missing one) — the draft composer's
           // "new workspace" flow creates the folder here first.
@@ -334,7 +334,7 @@ export function mountTalkMapRoutes(
          * The drawer prefers the shared connection's session/search, but falls
          * back here so the feature cannot degrade to title-only matching.
          */
-        if (route === 'POST /talk-map/search') {
+        if (route === 'POST /mind-map/search') {
           const body = await readJsonBody(request) as { query?: unknown } | undefined
           const query = typeof body?.query === 'string' ? body.query.trim() : ''
           const search = (runtime as { search?: (q: string) => Promise<{ items?: unknown[]; hasMore?: boolean }> }).search
@@ -351,7 +351,7 @@ export function mountTalkMapRoutes(
           return
         }
         /** The passage around one hit — read on demand (hover), never with search. */
-        if (route === 'POST /talk-map/search-context') {
+        if (route === 'POST /mind-map/search-context') {
           const body = await readJsonBody(request) as { sessionId?: unknown; seq?: unknown; query?: unknown } | undefined
           const sessionId = typeof body?.sessionId === 'string' ? body.sessionId : ''
           const seq = typeof body?.seq === 'number' ? body.seq : null
@@ -370,7 +370,7 @@ export function mountTalkMapRoutes(
           }
           return
         }
-        if (route === 'POST /talk-map/last-user') {
+        if (route === 'POST /mind-map/last-user') {
           const body = await readJsonBody(request)
           const ids = Array.isArray((body as { sessionIds?: unknown }).sessionIds)
             ? ((body as { sessionIds: unknown[] }).sessionIds.filter(id => typeof id === 'string') as string[]).slice(0, 200)
@@ -403,7 +403,7 @@ export function mountTalkMapRoutes(
           return
         }
 
-        if (route === 'POST /talk-map/digest/refresh') {
+        if (route === 'POST /mind-map/digest/refresh') {
           if (runtime.digest === undefined) {
             sendJson(response, 503, { error: 'digest layer unavailable (llm service missing)' })
             return
@@ -416,7 +416,7 @@ export function mountTalkMapRoutes(
 
         sendJson(response, 404, { error: `no such route: ${route}` })
       } catch (error) {
-        services.logger?.warn(`[dsh-talk-map] ${route} failed: ${String(error)}`)
+        services.logger?.warn(`[mind_map] ${route} failed: ${String(error)}`)
         if (!response.headersSent) {
           sendJson(response, 400, { error: String(error) })
         } else {

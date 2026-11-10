@@ -108,7 +108,7 @@ const tail = J([
   `    // 自动保存: mirror the served payload into localStorage on every write,`,
   `    // and re-read it on the next open — the visitor's layout survives reload.`,
   `    sessionsState = { ids: Object.keys(sessionRows), byId: sessionRows }`,
-  `    globalThis.__demoStateKey = 'dsh-talk-map.demo-state.v1'`,
+  `    globalThis.__demoStateKey = 'mind_map.demo-state.v1'`,
   `    try {`,
   `      const raw = window.localStorage.getItem(globalThis.__demoStateKey)`,
   `      if (raw !== null) globalThis.__demoSaved = JSON.parse(raw)`,
@@ -145,7 +145,7 @@ source = source.replace(payloadAnchor, payloadAnchor + D + J([
 
 // ---- 3. POST 变更后写回 ----
 const postAnchor = J([
-  '      if (path.includes(\'/talk-map/global\') && body !== null && body.global !== undefined) {',
+  '      if (path.includes(\'/mind-map/global\') && body !== null && body.global !== undefined) {',
   '        payload.global = body.global',
   '      }',
 ])
@@ -156,7 +156,7 @@ if (!source.includes(postAnchor)) {
 source = source.replace(postAnchor, postAnchor + D + J([
   '      if (demoMode === true) {',
   '        try {',
-  '          window.localStorage.setItem(globalThis.__demoStateKey ?? \'dsh-talk-map.demo-state.v1\',',
+  '          window.localStorage.setItem(globalThis.__demoStateKey ?? \'mind_map.demo-state.v1\',',
   '            JSON.stringify(payload))',
   '        } catch { /* quota: the board still works this session */ }',
   '      }',

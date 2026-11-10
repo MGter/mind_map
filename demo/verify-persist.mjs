@@ -13,7 +13,7 @@ const EDGE = [
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
   'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
 ].find(f => fs.existsSync(f))
-const profile = path.join(os.tmpdir(), 'talkmap-demo-persist')
+const profile = path.join(os.tmpdir(), 'mindmap-demo-persist')
 if (fs.existsSync(profile)) fs.rmSync(profile, { recursive: true, force: true })
 const edge = spawn(EDGE, [
   '--remote-debugging-port=9375', `--user-data-dir=${profile}`, '--no-first-run',
@@ -37,10 +37,10 @@ const edge = spawn(EDGE, [
   await page.waitForSelector('.react-flow__node', { timeout: 15000 })
   await page.waitForTimeout(2600)
 
-  const drafts = await page.evaluate(() => document.querySelectorAll('[data-talkmap-draft="1"]').length)
+  const drafts = await page.evaluate(() => document.querySelectorAll('[data-mindmap-draft="1"]').length)
 
   // 拖一张自由卡到空白处
-  const handle = await page.$('[data-talkmap-session="s23"]')
+  const handle = await page.$('[data-mindmap-session="s23"]')
   const box = await handle.boundingBox()
   await page.mouse.move(box.x + 60, box.y + 20)
   await page.mouse.down()
@@ -48,7 +48,7 @@ const edge = spawn(EDGE, [
   await page.mouse.up()
   await page.waitForTimeout(1200) // flush timer is 500ms
   const moved = await page.evaluate(() => {
-    const node = document.querySelector('[data-talkmap-session="s23"]')
+    const node = document.querySelector('[data-mindmap-session="s23"]')
     const r = node.getBoundingClientRect()
     return { x: Math.round(r.x), y: Math.round(r.y) }
   })
@@ -58,15 +58,15 @@ const edge = spawn(EDGE, [
   await page.waitForSelector('.react-flow__node', { timeout: 15000 })
   await page.waitForTimeout(2200)
   const after = await page.evaluate(() => {
-    const node = document.querySelector('[data-talkmap-session="s23"]')
+    const node = document.querySelector('[data-mindmap-session="s23"]')
     const r = node.getBoundingClientRect()
     return { x: Math.round(r.x), y: Math.round(r.y) }
   })
   const saved = await page.evaluate(() => {
-    const raw = window.localStorage.getItem('dsh-talk-map.demo-state.v1')
+    const raw = window.localStorage.getItem('mind_map.demo-state.v1')
     return raw !== null ? JSON.parse(raw).cards !== undefined : false
   })
-  const draftsAfter = await page.evaluate(() => document.querySelectorAll('[data-talkmap-draft="1"]').length)
+  const draftsAfter = await page.evaluate(() => document.querySelectorAll('[data-mindmap-draft="1"]').length)
 
   console.log(JSON.stringify({ drafts, draftsAfter, moved, after, saved, held: Math.abs(moved.x - after.x) < 4 && Math.abs(moved.y - after.y) < 4 }))
   console.log('errors:', errs.length ? errs.slice(0, 2).join(' | ').slice(0, 240) : 'none')

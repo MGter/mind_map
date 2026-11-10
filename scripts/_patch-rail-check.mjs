@@ -17,11 +17,11 @@ text = text.replace(
 )
 
 text = text.replace(
-  `  const litCards = [...document.querySelectorAll('[data-talkmap-session]')].filter(element => {
+  `  const litCards = [...document.querySelectorAll('[data-mindmap-session]')].filter(element => {
     const text = element.textContent ?? ''
     return /运行中|等你回复|待查看|异常终止/.test(text)
   }).length`,
-  `  const litCards = [...document.querySelectorAll('[data-talkmap-session]')].filter(element =>
+  `  const litCards = [...document.querySelectorAll('[data-mindmap-session]')].filter(element =>
     element.querySelector('[class*="cardLamp"]') !== null).length`,
 )
 
@@ -35,7 +35,7 @@ if (rowHandles.length >= 2) {
   await rowHandles[1].dragTo(rowHandles[0])
   await page.waitForTimeout(400)
   const after = (await read()).rows.map(row => row.title)
-  const stored = await page.evaluate(() => window.localStorage.getItem('dsh.talk-map.status-rail.order.v1'))
+  const stored = await page.evaluate(() => window.localStorage.getItem('dsh.mind-map.status-rail.order.v1'))
   dragResult = { before: before.slice(0, 3), after: after.slice(0, 3), movedToTop: after[0] === before[1], stored: stored !== null }
 }
 

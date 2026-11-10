@@ -10,7 +10,7 @@ const EDGE = [
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
   'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
 ].find(f => fs.existsSync(f))
-const profile = path.join(os.tmpdir(), 'talkmap-demo-drafts')
+const profile = path.join(os.tmpdir(), 'mindmap-demo-drafts')
 if (fs.existsSync(profile)) fs.rmSync(profile, { recursive: true, force: true })
 const edge = spawn(EDGE, [
   '--remote-debugging-port=9377', `--user-data-dir=${profile}`, '--no-first-run',
@@ -30,13 +30,13 @@ const edge = spawn(EDGE, [
   await page.goto('file:///' + path.join(ROOT, 'demo', 'index.html').replace(/\\/g, '/'))
   await page.waitForSelector('.react-flow__node', { timeout: 15000 })
   await page.waitForTimeout(2600)
-  const boardDrafts = await page.evaluate(() => document.querySelectorAll('[data-talkmap-draft="1"]').length)
+  const boardDrafts = await page.evaluate(() => document.querySelectorAll('[data-mindmap-draft="1"]').length)
   await page.evaluate(() => {
     const badge = document.querySelector('[class*="stackBadge"]')
     if (badge !== null) badge.click()
   })
   await page.waitForTimeout(1000)
-  const drawerDrafts = await page.evaluate(() => document.querySelectorAll('[data-stack-card] [data-talkmap-draft="1"]').length)
+  const drawerDrafts = await page.evaluate(() => document.querySelectorAll('[data-stack-card] [data-mindmap-draft="1"]').length)
   await page.screenshot({ path: path.join(ROOT, 'demo', 'shots', 'real-drawer.png') })
   console.log(JSON.stringify({ boardDrafts, drawerDrafts }))
   await b.close(); edge.kill(); process.exit(0)

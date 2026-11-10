@@ -41,7 +41,7 @@ const heads = await page.evaluate(() => {
   const dump = [...(svg === null ? [] : svg.querySelectorAll('g'))].slice(0, 3).map(g => (g.getAttribute('transform') ?? '') + ' | ' + [...g.children].map(c => c.tagName + '(' + (c.getAttribute('transform') ?? c.getAttribute('d') ?? '').slice(0, 20) + ')').join(' '))
   if (svg === null) return []
   const matrix = svg.getScreenCTM()
-  const cards = [...document.querySelectorAll('[data-talkmap-session]')].map(element => {
+  const cards = [...document.querySelectorAll('[data-mindmap-session]')].map(element => {
     const rect = element.getBoundingClientRect()
     return { x: rect.left, y: rect.top, w: rect.width, h: rect.height }
   })

@@ -14,7 +14,7 @@ source = source.replace(
 
 // ---- 2. push stamps the edge ------------------------------------------
 const pushAnchor = J([
-  '      await talkMapApi.injectContext(toCard.sessionId, [',
+  '      await mindMapApi.injectContext(toCard.sessionId, [',
   '        { sessionId: fromCard.sessionId, text: buildPushText(fromTitle, digest) },',
   '      ])',
   '      showToast(t(\'toast.pushed\', { to: toTitle }))',
@@ -26,7 +26,7 @@ if (!source.includes(pushAnchor)) {
 source = source.replace(
   pushAnchor,
   J([
-  '      await talkMapApi.injectContext(toCard.sessionId, [',
+  '      await mindMapApi.injectContext(toCard.sessionId, [',
   '        { sessionId: fromCard.sessionId, text: buildPushText(fromTitle, digest) },',
   '      ])',
   '      // Remember when this line last delivered: "synced" is decided from it.',

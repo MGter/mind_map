@@ -3,7 +3,7 @@
  * re-imports a module while the previous graph is still alive.
  *
  * Cold boot evaluates it once and works; the crash log says a *reload* fails to
- * import it ("dsh-talk-map: import failed"). So the interesting question is
+ * import it ("mind_map: import failed"). So the interesting question is
  * whether the second evaluation throws — that is exactly what a module-scope
  * side effect (a store, a style tag, a listener, a cache) would do.
  *

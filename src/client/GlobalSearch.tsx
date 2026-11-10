@@ -5,7 +5,7 @@ import { SearchResults, type SearchHitView } from './SearchResults.tsx'
 import { t } from './i18n.ts'
 import { allCards, mapUi, sessionTitle } from './map-state.ts'
 import { clearSearch, loadSearch, saveSearch } from './search-store.ts'
-import styles from './talk-map.module.css'
+import styles from './mind-map.module.css'
 
 /** Storage scope of the header search. */
 const GLOBAL_SCOPE = 'global'
@@ -82,7 +82,7 @@ export function GlobalSearch(props: { onOpenSession: (sessionId: string, q?: str
         value={query}
         placeholder={t('global.searchPlaceholder')}
         aria-label={t('global.searchPlaceholder')}
-        data-talkmap-global-search=""
+        data-mindmap-global-search=""
         onChange={(event) => { setQuery(event.target.value) }}
         onKeyDown={(event) => {
           if (event.key !== 'Enter') return
@@ -95,7 +95,7 @@ export function GlobalSearch(props: { onOpenSession: (sessionId: string, q?: str
         className={styles['globalSearchButton']}
         title={t('global.searchRun')}
         aria-label={t('global.searchRun')}
-        data-talkmap-global-search-run=""
+        data-mindmap-global-search-run=""
         onClick={() => { run(query) }}
       >
         {t('global.searchRun')}

@@ -10,7 +10,7 @@
  */
 import fs from 'node:fs'
 
-const file = 'src/client/talk-map.module.css'
+const file = 'src/client/mind-map.module.css'
 const source = fs.readFileSync(file, 'utf8')
 let count = 0
 const next = source.replace(/font-size:\s*(\d+(?:\.\d+)?)px;/g, (match, size) => {

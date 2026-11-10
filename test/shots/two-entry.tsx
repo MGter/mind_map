@@ -1,7 +1,7 @@
 
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { TalkMapEdge } from '../../src/client/TalkMapEdge.tsx'
+import { MindMapEdge } from '../../src/client/MindMapEdge.tsx'
 
 const CARD = { w: 224, h: 120 }
 const GAP = 56
@@ -38,7 +38,7 @@ function scene(spec, offsetX, offsetY) {
     sourcePosition: clock(spec.fromHandle), targetPosition: clock(spec.toHandle),
     sourceHandleId: spec.fromHandle, targetHandleId: spec.toHandle,
     selected: false, animated: false, interactionWidth: 18,
-    type: 'talkMap', markerEnd: undefined,
+    type: 'mindMap', markerEnd: undefined,
     data: {
       sync: 'idle',
       obstacles: [],                       // only the two endpoints exist in this scene
@@ -54,11 +54,11 @@ const b = scene(B, 40, 260)
 createRoot(document.getElementById('root')).render(
   <>
     <svg width={1200} height={900} style={{ position: 'absolute', inset: 0 }}>
-      <TalkMapEdge {...a.props} />
-      <TalkMapEdge {...b.props} />
+      <MindMapEdge {...a.props} />
+      <MindMapEdge {...b.props} />
     </svg>
     {[...a.cards, ...b.cards].map(card => (
-      <div key={card.id} data-talkmap-session={card.id}
+      <div key={card.id} data-mindmap-session={card.id}
         style={{ position: 'absolute', left: card.x, top: card.y, width: CARD.w, height: CARD.h,
           boxSizing: 'border-box', background: '#23262d', border: '1px solid #333a45',
           borderRadius: 10, color: '#cfd6e3', fontSize: 11 }}>{card.id}</div>

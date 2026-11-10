@@ -13,7 +13,7 @@ source = source.replace(
 source = source.replace(
   `    // Lazy passage for one hit (hover).`,
   `    // Extra hits inside one conversation (asked for with the ＋ button).
-    if (path.indexOf('/talk-map/search-session') >= 0) {
+    if (path.indexOf('/mind-map/search-session') >= 0) {
       searchSessionCalls.push({ sessionId: body?.sessionId, query: body?.query })
       return json({
         blocks: [['…按 SI 单位换算 Matter.js 的物理参数…'], ['…物理量单位统一走 PX_PER_M…']],

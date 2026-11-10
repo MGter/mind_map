@@ -3,7 +3,7 @@
  *
  * Three stacked cards at their real coordinates (middle one is a painted 250×129),
  * and the connection the user drew — top card's bottom face → bottom card's top
- * face — fed to the real TalkMapEdge component with exactly the props the canvas
+ * face — fed to the real MindMapEdge component with exactly the props the canvas
  * would hand it. Rendered at scale 1, so the screenshot can be measured directly.
  *
  *   node scripts/_draw-connect.mjs [--shot name.png]
@@ -26,7 +26,7 @@ const SCENE = {
 const entry = `
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { TalkMapEdge } from '../../src/client/TalkMapEdge.tsx'
+import { MindMapEdge } from '../../src/client/MindMapEdge.tsx'
 
 const SCENE = ${JSON.stringify(SCENE)}
 const top = SCENE.cards[0]
@@ -54,17 +54,17 @@ const edgeProps = {
   animated: false,
   interactionWidth: 20,
   data: { sync: 'idle', obstacles, fromRect, toRect },
-  type: 'talkMap',
+  type: 'mindMap',
   markerEnd: undefined,
 }
 
 createRoot(document.getElementById('root')).render(
   <>
     <svg width={1200} height={900} style={{ position: 'absolute', inset: 0 }}>
-      <TalkMapEdge {...edgeProps} />
+      <MindMapEdge {...edgeProps} />
     </svg>
     {SCENE.cards.map(card => (
-      <div key={card.id} data-talkmap-session={card.id}
+      <div key={card.id} data-mindmap-session={card.id}
         style={{ position: 'absolute', left: card.x, top: card.y,
           width: card.w, height: card.h, boxSizing: 'border-box',
           background: '#23262d', border: '1px solid #333a45', borderRadius: 10, color: '#cfd6e3' }}>
@@ -112,9 +112,9 @@ await page.goto('file:///' + path.resolve('test/shots/draw.html').replace(/\\/g,
 await page.waitForTimeout(700)
 
 const report = await page.evaluate(() => {
-  const cards = [...document.querySelectorAll('[data-talkmap-session]')].map(element => {
+  const cards = [...document.querySelectorAll('[data-mindmap-session]')].map(element => {
     const rect = element.getBoundingClientRect()
-    return { id: element.getAttribute('data-talkmap-session'), x: rect.left, y: rect.top, w: rect.width, h: rect.height }
+    return { id: element.getAttribute('data-mindmap-session'), x: rect.left, y: rect.top, w: rect.width, h: rect.height }
   })
   const pathElement = document.querySelector('svg path')
   if (pathElement === null) return { cards, path: null }

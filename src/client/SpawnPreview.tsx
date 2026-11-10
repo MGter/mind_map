@@ -8,14 +8,14 @@
  * All modes drop the new card at the release point and jump into the chat.
  */
 import { useEffect, useState } from 'react'
-import { talkMapApi } from './api.ts'
+import { mindMapApi } from './api.ts'
 import { canvas, INBOX_BOARD_ID, newCardId } from './canvas-store.ts'
 import { buildInjectionText } from './digest-text.ts'
 import { closeMapPanel, forkSessionInUi, getServices, mapUi, openSessionInUi } from './map-state.ts'
 import { callRpc } from './rpc.ts'
 import { t } from './i18n.ts'
 import type { Card, EdgeInjection } from '../shared/model.ts'
-import styles from './talk-map.module.css'
+import styles from './mind-map.module.css'
 
 export interface PendingSpawn {
   parent: { cardId: string; sessionId: string; title: string }
@@ -105,12 +105,12 @@ export function SpawnPreview(props: {
         // Refresh the digest on demand: unchanged conversation → no LLM call.
         let injected = text
         try {
-          const fresh = await talkMapApi.ensureDigest(pending.parent.sessionId)
+          const fresh = await mindMapApi.ensureDigest(pending.parent.sessionId)
           if (fresh.digest !== undefined && !digestIsEmpty(fresh.digest)) {
             injected = buildInjectionText(pending.parent.title, fresh.digest)
           }
         } catch { /* fall back to the text we already had */ }
-        await talkMapApi.injectContext(created.sessionId, [
+        await mindMapApi.injectContext(created.sessionId, [
           { sessionId: pending.parent.sessionId, text: injected },
         ])
         addCardAndEdge(created.sessionId, 'digest', text)

@@ -10,7 +10,7 @@ source = source.replace(
   `try {
 							agent.inject(message);
 						} catch (error) {
-							throw new Error("talk-map: 注入被拒（" + String(error?.message ?? error) + "）");
+							throw new Error("mind-map: 注入被拒（" + String(error?.message ?? error) + "）");
 						}`,
 )
 source = source.replace(
@@ -18,7 +18,7 @@ source = source.replace(
   `try {
 							handle.agent.inject(message);
 						} catch (error) {
-							throw new Error("talk-map: 注入被拒（" + String(error?.message ?? error) + "）");
+							throw new Error("mind-map: 注入被拒（" + String(error?.message ?? error) + "）");
 						}`,
 )
 

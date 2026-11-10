@@ -1,5 +1,5 @@
 import fs from 'node:fs'
-const css = 'src/client/talk-map.module.css'
+const css = 'src/client/mind-map.module.css'
 let sheet = fs.readFileSync(css, 'utf8')
 if (!sheet.includes('.backButton')) {
   sheet += String.raw`

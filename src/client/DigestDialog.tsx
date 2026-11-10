@@ -10,7 +10,7 @@ import type { Digest } from '../shared/model.ts'
 import { buildInjectionText, buildPushText, digestIsEmpty } from './digest-text.ts'
 import { mapUi } from './map-state.ts'
 import { t } from './i18n.ts'
-import styles from './talk-map.module.css'
+import styles from './mind-map.module.css'
 
 export interface DigestDialogProps {
   title: string
@@ -42,7 +42,7 @@ export function DigestDialog(props: DigestDialogProps): React.JSX.Element {
   return (
     <div
       className={styles['dialogBackdrop']}
-      data-talkmap-digest-dialog=""
+      data-mindmap-digest-dialog=""
       onMouseDown={(event) => { if (event.target === event.currentTarget) props.onClose() }}
     >
       <div className={styles['digestDialog']} onMouseDown={(event) => { event.stopPropagation() }}>

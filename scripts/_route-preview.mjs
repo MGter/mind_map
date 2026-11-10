@@ -14,7 +14,7 @@ import { routeEdge, roundedPath } from '../src/client/edge-route.ts'
 
 const CARD_W = 224
 const CARD_H = 120
-const raw = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.dsh', 'storages', 'talk_map.json'), 'utf8'))
+const raw = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.dsh', 'storages', 'mind_map.json'), 'utf8'))
 
 // `--synthetic` renders a board shaped like the reported case: a parent card, a
 // child two rows below in the same column, a neighbouring column, and a far-off
@@ -97,7 +97,7 @@ for (const edge of boardEdges) {
 }
 
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${parts.join('')}</svg>`
-const htmlPath = path.join(os.tmpdir(), 'talkmap-route-preview.html')
+const htmlPath = path.join(os.tmpdir(), 'mindmap-route-preview.html')
 fs.writeFileSync(htmlPath, `<!doctype html><meta charset="utf-8"><body style="margin:0;background:#16181d">${svg}</body>`, 'utf8')
 
 // screenshot it
@@ -105,7 +105,7 @@ const EDGE_BIN = [
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
   'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
 ].find(candidate => fs.existsSync(candidate))
-const profileDir = path.join(os.tmpdir(), 'talkmap-route-preview-profile')
+const profileDir = path.join(os.tmpdir(), 'mindmap-route-preview-profile')
 fs.rmSync(profileDir, { recursive: true, force: true })
 const CDP = 9371
 const browserProcess = spawn(EDGE_BIN, [

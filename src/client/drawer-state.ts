@@ -6,8 +6,8 @@
  *
  * Explicitly closing the drawer (Esc / X / backdrop) clears it.
  */
-const GROUP_KEY = 'dsh.talk-map.drawer.v1'
-const SCROLL_KEY = 'dsh.talk-map.drawer-scroll.v1'
+const GROUP_KEY = 'dsh.mind-map.drawer.v1'
+const SCROLL_KEY = 'dsh.mind-map.drawer-scroll.v1'
 
 function safeRead(key: string): string | null {
   try {

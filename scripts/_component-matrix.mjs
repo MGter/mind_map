@@ -1,5 +1,5 @@
 /**
- * Component-level matrix: every connection layout, rendered by the real TalkMapEdge.
+ * Component-level matrix: every connection layout, rendered by the real MindMapEdge.
  *
  * 16 face pairs × 5 arrangements (side by side, stacked, diagonal, one card between
  * horizontally, one card between vertically) = 80 scenes, all on one page at scale 1.
@@ -95,7 +95,7 @@ for (const arrangement of ARRANGEMENTS) {
 const entry = `
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { TalkMapEdge } from '../../src/client/TalkMapEdge.tsx'
+import { MindMapEdge } from '../../src/client/MindMapEdge.tsx'
 
 const SCENES = ${JSON.stringify(scenes)}
 const COLS = 6
@@ -113,7 +113,7 @@ createRoot(document.getElementById('root')).render(
           width: CELL_W - PAD, height: CELL_H - PAD, outline: '1px solid #1b1f26' }}>
           <div style={{ position: 'absolute', left: 0, top: -18, fontSize: 11, color: '#6b7280' }}>{scene.key}</div>
           <svg width={CELL_W} height={CELL_H} style={{ position: 'absolute', left: 0, top: 0 }}>
-            <TalkMapEdge
+            <MindMapEdge
               id={'e' + index}
               source="from"
               target="to"
@@ -122,7 +122,7 @@ createRoot(document.getElementById('root')).render(
               selected={false}
               animated={false}
               interactionWidth={18}
-              type="talkMap"
+              type="mindMap"
               markerEnd={undefined}
               {...scene.props}
               data={{ sync: 'idle', obstacles: scene.props.obstacles,

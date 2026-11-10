@@ -6,11 +6,11 @@
  * host-side. A target that is not live is skipped (the edge stays armed;
  * the next digest change tries again).
  */
-import type { Digest, TalkMapStore } from './store.ts'
+import type { Digest, MindMapStore } from './store.ts'
 import type { Spawner } from './spawn.ts'
 
 export function pushAutoSyncUpdates(
-  store: TalkMapStore,
+  store: MindMapStore,
   spawner: Spawner,
   logger: { info?(message: string): void; warn(message: string): void } | undefined,
   sessionId: string,
@@ -32,9 +32,9 @@ export function pushAutoSyncUpdates(
     const text = formatUpdate(edge.fromTitle, digest)
     try {
       spawner.injectInto(target.sessionId, [{ sessionId, text }])
-      logger?.info?.(`[dsh-talk-map] auto-sync: ${sessionId} → ${target.sessionId}`)
+      logger?.info?.(`[mind_map] auto-sync: ${sessionId} → ${target.sessionId}`)
     } catch {
-      logger?.info?.(`[dsh-talk-map] auto-sync: target ${target.sessionId} not live, skipped`)
+      logger?.info?.(`[mind_map] auto-sync: target ${target.sessionId} not live, skipped`)
     }
   }
 }

@@ -38,7 +38,7 @@ const block = [
   '      stopCalls: window.__harness.log.filter(entry => entry.kind === \"ui.archiveSession\" && entry.detail?.options?.stopActivity === true).length,',
   '      recycleCalls: window.__harness.recycleCalls().length,',
   "      toast: document.querySelector('[class*=\"toast\"]')?.textContent ?? null,",
-  '      sessionLeft: [...document.querySelectorAll(\'[data-talkmap-session]\')].some(node => node.getAttribute(\'data-talkmap-session\') === ' + "'" + 'busySessionId' + "'" + '),',
+  '      sessionLeft: [...document.querySelectorAll(\'[data-mindmap-session]\')].some(node => node.getAttribute(\'data-mindmap-session\') === ' + "'" + 'busySessionId' + "'" + '),',
   '    }))',
   "    check('会话还在跑时删除：先停止再删除',",
   '      busyResult.stopCalls >= 1 && busyResult.recycleCalls >= 2,',

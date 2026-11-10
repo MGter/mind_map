@@ -11,7 +11,7 @@ import { CARD_W, CARD_H, FRAME_PAD, FRAME_LABEL_H, GAP_X, GAP_Y, colsForWidth, l
 import { pickFaces } from '../src/client/edge-routing.ts'
 import { routeEdge } from '../src/client/edge-route.ts'
 
-const raw = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.dsh', 'storages', 'talk_map.json'), 'utf8'))
+const raw = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.dsh', 'storages', 'mind_map.json'), 'utf8'))
 const cards = Object.entries(raw.tables.cards).map(([id, c]) => ({
   id, boardId: c.boardId ?? 'inbox', x: c.x, y: c.y,
 }))

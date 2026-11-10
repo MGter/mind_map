@@ -6,7 +6,7 @@
  */
 import type { NodeProps, Node } from '@xyflow/react'
 import { t } from './i18n.ts'
-import styles from './talk-map.module.css'
+import styles from './mind-map.module.css'
 
 export interface StackNodeData extends Record<string, unknown> {
   workspaceId: string

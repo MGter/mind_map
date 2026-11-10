@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 // CSS for the confirm dialog
-const css = 'src/client/talk-map.module.css'
+const css = 'src/client/mind-map.module.css'
 let sheet = fs.readFileSync(css, 'utf8')
 sheet += String.raw`
 

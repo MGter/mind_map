@@ -1,5 +1,5 @@
 /**
- * dsh-talk-map, browser half: one sidebar footer action (toggle) plus one
+ * mind_map, browser half: one sidebar footer action (toggle) plus one
  * shell.overlay entry (the map itself). Both ride ctx.slots.inject, so the
  * registrations wait for their slots to exist and unwind on plugin unload.
  *
@@ -7,7 +7,7 @@
  * boot when a plugin apply throws, and an external plugin must not take the
  * GUI down (policy proven by dsh-plugin-market).
  */
-import type { AlertSource, LayoutService, TalkMapClientContext, UiWorkspaceService } from './dsh.ts'
+import type { AlertSource, LayoutService, MindMapClientContext, UiWorkspaceService } from './dsh.ts'
 import { canvas } from './canvas-store.ts'
 import { DEFAULT_HOTKEY, hotkeyMatches } from './hotkey.ts'
 import { attachServices, mapUi, MAP_PANEL_ID } from './map-state.ts'
@@ -21,7 +21,7 @@ import { t } from './i18n.ts'
  * leaner runtime cannot keep the whole map from mounting; reach it directly when
  * cordis exposes the service, otherwise through ctx.get().
  */
-function resolveUiWorkspace(ctx: TalkMapClientContext): UiWorkspaceService | undefined {
+function resolveUiWorkspace(ctx: MindMapClientContext): UiWorkspaceService | undefined {
   try {
     const direct = ctx.uiWorkspace
     if (direct !== undefined) return direct
@@ -37,7 +37,7 @@ function resolveUiWorkspace(ctx: TalkMapClientContext): UiWorkspaceService | und
 }
 
 /** ctx.layout — panel navigation; reached the same way as uiWorkspace. */
-function resolveLayout(ctx: TalkMapClientContext): LayoutService | undefined {
+function resolveLayout(ctx: MindMapClientContext): LayoutService | undefined {
   try {
     const direct = ctx.layout
     if (direct !== undefined) return direct
@@ -53,7 +53,7 @@ function resolveLayout(ctx: TalkMapClientContext): LayoutService | undefined {
 }
 
 /** ctx.remote carries the Host event stream; reached the same way as uiWorkspace. */
-function resolveRemote(ctx: TalkMapClientContext): AlertSource | undefined {
+function resolveRemote(ctx: MindMapClientContext): AlertSource | undefined {
   try {
     const direct = ctx.remote
     if (direct !== undefined) return direct
@@ -68,7 +68,7 @@ function resolveRemote(ctx: TalkMapClientContext): AlertSource | undefined {
   }
 }
 
-export const name = 'dsh-talk-map'
+export const name = 'mind_map'
 export const inject = ['slots', 'sessions', 'workspaces', 'connection']
 
 /**
@@ -80,14 +80,14 @@ export const inject = ['slots', 'sessions', 'workspaces', 'connection']
  * observed on 2026-10-26). Registrations are wrapped so a duplicated id can never
  * throw either.
  */
-export function apply(ctx: TalkMapClientContext): void {
+export function apply(ctx: MindMapClientContext): void {
   try {
     /** Register, but never let a duplicate registration escape. */
     const registerSafely = (slot: string, factory: () => unknown, label: string): void => {
       try {
         ctx.slots.inject(slot, factory as never)
       } catch (error) {
-        console.error(`[dsh-talk-map] ${label} registration skipped:`, error)
+        console.error(`[mind_map] ${label} registration skipped:`, error)
       }
     }
 
@@ -97,7 +97,7 @@ export function apply(ctx: TalkMapClientContext): void {
     // exactly the crash loop observed on 2026-10-26.
     registerSafely('sidebar.footer.action', () => ctx.slots.register({
       name: 'sidebar.footer.action',
-      id: 'talk-map',
+      id: 'mind-map',
       order: 10,
       label: () => t('map.toggle'),
     }, MapToggleButton), 'sidebar.footer.action')
@@ -116,7 +116,7 @@ export function apply(ctx: TalkMapClientContext): void {
       // registers, so the click resolves the service through ctx instead.
       ctx: { get: typeof ctx.get === 'function' ? (name: string) => ctx.get?.(name) : undefined },
     })
-    ctx.effect(() => () => { attachServices(undefined) }, 'dsh-talk-map: services')
+    ctx.effect(() => () => { attachServices(undefined) }, 'mind_map: services')
 
     // Cold boot: this plugin activates before `connection` has its api and
     // before ui-workspace provides uiWorkspace. cordis re-runs an inject
@@ -135,7 +135,7 @@ export function apply(ctx: TalkMapClientContext): void {
           })
         })
       } catch (error) {
-        console.error('[dsh-talk-map] late service binding failed:', error)
+        console.error('[mind_map] late service binding failed:', error)
       }
     }
 
@@ -148,10 +148,10 @@ export function apply(ctx: TalkMapClientContext): void {
       try {
         return attachAlertSource(resolveRemote(ctx), ctx.sessions.list)
       } catch (error) {
-        console.error('[dsh-talk-map] session alerts unavailable:', error)
+        console.error('[mind_map] session alerts unavailable:', error)
         return () => {}
       }
-    }, 'dsh-talk-map: session alerts')
+    }, 'mind_map: session alerts')
 
 
 
@@ -180,8 +180,8 @@ export function apply(ctx: TalkMapClientContext): void {
       }
       window.addEventListener('keydown', onKeyDown, { capture: true })
       return () => { window.removeEventListener('keydown', onKeyDown, { capture: true }) }
-    }, 'dsh-talk-map: toggle hotkey')
+    }, 'mind_map: toggle hotkey')
   } catch (error) {
-    console.error('[dsh-talk-map] client apply failed:', error)
+    console.error('[mind_map] client apply failed:', error)
   }
 }

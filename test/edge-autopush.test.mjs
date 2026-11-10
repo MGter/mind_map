@@ -16,7 +16,7 @@ assert.match(source, /关闭自动推送/, 'missing 关闭自动推送 label')
 assert.match(source, /autoPush: !auto/, 'toggle must invert the stored flag')
 
 // 3. push and spawn go through the on-demand digest route
-assert.match(source, /\/talk-map\/digest\/ensure/, 'client must call /talk-map/digest/ensure')
+assert.match(source, /\/mind-map\/digest\/ensure/, 'client must call /mind-map/digest/ensure')
 assert.match(source, /ensureDigest/, 'client must expose ensureDigest')
 
 // 4. the push text keeps the reminder

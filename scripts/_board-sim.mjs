@@ -14,7 +14,7 @@ import { build } from 'esbuild'
 import { chromium } from 'playwright-core'
 import { CARD_W, CARD_H, layoutFor } from '../src/client/grid-layout.ts'
 
-const raw = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.dsh', 'storages', 'talk_map.json'), 'utf8'))
+const raw = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.dsh', 'storages', 'mind_map.json'), 'utf8'))
 const cards = Object.entries(raw.tables.cards).map(([id, c]) => ({ id, x: c.x, y: c.y }))
 const frames = raw.global?.wsFrames ?? {}
 
@@ -72,7 +72,7 @@ const entry = `
 import { createRoot } from 'react-dom/client'
 import { ReactFlow, ReactFlowProvider, Background, Handle, Position, ConnectionMode } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { edgeTypes } from '../../src/client/TalkMapEdge.tsx'
+import { edgeTypes } from '../../src/client/MindMapEdge.tsx'
 import { pickFaces } from '../../src/client/edge-routing.ts'
 
 const CARD_W = 224
@@ -81,7 +81,7 @@ const scene = ${JSON.stringify(scene)}
 
 const nodeTypes = {
   card: ({ data }) => (
-    <div data-card-id={data.id} data-talkmap-session={data.id} style={{ width: CARD_W, height: CARD_H, background: '#23262d', color: '#cfd6e3',
+    <div data-card-id={data.id} data-mindmap-session={data.id} style={{ width: CARD_W, height: CARD_H, background: '#23262d', color: '#cfd6e3',
       border: '1px solid #333a45', borderRadius: 10 }}>
       <Handle id="t" type="source" position={Position.Top} />
       <Handle id="r" type="source" position={Position.Right} />
@@ -105,7 +105,7 @@ const edges = scene.pairs.map(([from, to], index) => {
     { id: to, x: rectOf(to).x, y: rectOf(to).y },
     placed.map(n => ({ id: n.id, x: n.x, y: n.y })), { cardWidth: CARD_W, cardHeight: CARD_H })
   return {
-    id: 'e' + index, source: from, target: to, type: 'talkMap',
+    id: 'e' + index, source: from, target: to, type: 'mindMap',
     sourceHandle: faces.fromHandle, targetHandle: faces.toHandle,
     data: {
       sync: 'idle',
@@ -193,7 +193,7 @@ const report = await page.evaluate(() => {
     }
     out.push({ id: group.getAttribute('data-id'), pair: pairs[index], d: el.getAttribute('d').slice(0, 80), inside, closest: Math.round(worst * 10) / 10 })
   }
-  return { debug: (window.__edgeDebug ?? []).slice(0, 1).map(d => ({ id: d.id, merged: d.merged, measured: d.measured, first: d.measuredFirst, from: d.fromRect, to: d.toRect })), cards: cards.length, sessionEls: document.querySelectorAll('[data-talkmap-session]').length, viewport: !!document.querySelector('.react-flow__viewport'), transform: getComputedStyle(document.querySelector('.react-flow__viewport')).transform, paths: out }
+  return { debug: (window.__edgeDebug ?? []).slice(0, 1).map(d => ({ id: d.id, merged: d.merged, measured: d.measured, first: d.measuredFirst, from: d.fromRect, to: d.toRect })), cards: cards.length, sessionEls: document.querySelectorAll('[data-mindmap-session]').length, viewport: !!document.querySelector('.react-flow__viewport'), transform: getComputedStyle(document.querySelector('.react-flow__viewport')).transform, paths: out }
 })
 await page.screenshot({ path: FOCUS ? 'test/shots/board-sim-focus.png' : 'test/shots/board-sim.png', fullPage: true })
 await browser.close()

@@ -8,7 +8,7 @@
  * formatting the text already had.
  */
 import { cleanSnippet } from './snippet-text.ts'
-import styles from './talk-map.module.css'
+import styles from './mind-map.module.css'
 
 /** Block markers that should not show up as literal text in a snippet. */
 function stripBlockMarkers(text: string): string {

@@ -1,5 +1,5 @@
 import fs from 'node:fs'
-const file = 'src/client/talk-map.module.css'
+const file = 'src/client/mind-map.module.css'
 let text = fs.readFileSync(file, 'utf8')
 text = text.replace(
   '  --rail-w: calc(var(--rail-card-outer) + var(--rail-pad) * 2);',

@@ -8,7 +8,7 @@
  */
 import { createHash } from 'node:crypto'
 import type { DigestHostServices } from '../dsh-host.ts'
-import type { Digest, TalkMapStore } from '../store.ts'
+import type { Digest, MindMapStore } from '../store.ts'
 import { extractFromSurface } from './extract.ts'
 import { DIGEST_SYSTEM_PROMPT, digestUserPrompt, parseDigestOutput } from './prompt.ts'
 
@@ -30,7 +30,7 @@ export class DigestPipeline {
 
   constructor(
     private readonly services: DigestHostServices,
-    private readonly storeReady: Promise<TalkMapStore>,
+    private readonly storeReady: Promise<MindMapStore>,
     private readonly config: DigestConfig = DIGEST_DEFAULTS,
     /** Fired when a digest was regenerated from CHANGED input (new
      * inputHash) — the auto-sync fan-out hangs off this. Never fired for
@@ -96,7 +96,7 @@ export class DigestPipeline {
         try {
           await this.run(sessionId, { force: false })
         } catch (error) {
-          this.services.logger?.warn(`[dsh-talk-map] digest for ${sessionId} failed: ${String(error)}`)
+          this.services.logger?.warn(`[mind_map] digest for ${sessionId} failed: ${String(error)}`)
         }
       }
     } finally {
@@ -150,7 +150,7 @@ export class DigestPipeline {
         try {
           this.onFresh?.(sessionId, digest)
         } catch (hookError) {
-          this.services.logger?.warn(`[dsh-talk-map] onFresh hook failed: ${String(hookError)}`)
+          this.services.logger?.warn(`[mind_map] onFresh hook failed: ${String(hookError)}`)
         }
       }
       return digest
@@ -178,7 +178,7 @@ export class DigestPipeline {
       id: crypto.randomUUID(),
       role: 'user' as const,
       content: [{ type: 'text' as const, text: digestUserPrompt(transcript) }],
-      source: { kind: 'plugin' as const, plugin: 'dsh-talk-map' },
+      source: { kind: 'plugin' as const, plugin: 'mind_map' },
     }
     let text = ''
     let failure: string | undefined

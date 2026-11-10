@@ -72,7 +72,7 @@ if (source === before) {
 fs.writeFileSync(file, source, 'utf8')
 
 // CSS: the layer must not affect layout at all
-const cssFile = 'src/client/talk-map.module.css'
+const cssFile = 'src/client/mind-map.module.css'
 let css = fs.readFileSync(cssFile, 'utf8')
 css = css.replace(
   `.drawerWires {

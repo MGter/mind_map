@@ -1,10 +1,10 @@
-# dsh-talk-map · Talk Map
+# mind_map · Talk Map
 
 English | [中文](README.zh.md)
 
 A visual conversation map plugin for DeepSeek Harness (dsh): every session becomes a card on an infinite whiteboard.
 
-> Derived from [Tasihi89/dsh-talk-map](https://github.com/Tasihi89/dsh-talk-map) (MIT). This repository is a heavily reworked fork: slot layout, resizable workspaces, the overflow drawer and the routed links are additions or rewrites here.
+> Derived from [Tasihi89/mind_map](https://github.com/Tasihi89/mind_map) (MIT). This repository is a heavily reworked fork: slot layout, resizable workspaces, the overflow drawer and the routed links are additions or rewrites here.
 
 ![Workspaces, pinned cards and live status](https://raw.githubusercontent.com/Da0Mine/dsh-talk-map/main/docs/screenshots/workspaces-and-pins.png)
 
@@ -25,7 +25,7 @@ A visual conversation map plugin for DeepSeek Harness (dsh): every session becom
 
 ```sh
 # npm (recommended)
-dsh plugin add dsh-talk-map
+dsh plugin add mind_map
 
 # or straight from GitHub — built artifacts are committed, so there is no build step
 dsh plugin add github:Da0Mine/dsh-talk-map
@@ -49,7 +49,7 @@ Restart `dsh web`; a map button appears at the sidebar foot.
 
 ## Where data lives
 
-- Canvas data (positions, edges, digests): `$DSH_HOME/storages/talk_map.json` via dsh's official storage-domain, atomically persisted.
+- Canvas data (positions, edges, digests): `$DSH_HOME/storages/mind_map.json` via dsh's official storage-domain, atomically persisted.
 - Sessions themselves stay fully owned by dsh — this plugin reads them, and creates new ones only through official APIs when forking.
 - Digests use your configured default model through dsh's local LLM channel; there are no other external requests.
 
@@ -67,7 +67,7 @@ Multi-board shelf (project = board, WIP limit) · whole-board archive/shelve · 
 pnpm install
 pnpm run build        # host → lib/, client → client/client.js
 pnpm run probe        # headless end-to-end probe (150 checks)
-dsh plugin --profile dev add /abs/path/dsh-talk-map
+dsh plugin --profile dev add /abs/path/mind_map
 ```
 
 MIT License.

@@ -1,6 +1,6 @@
 # 本地改造记录（非上游内容）
 
-上游：`github.com/Tasihi89/dsh-talk-map`（npm `dsh-talk-map`）。
+上游：`github.com/Tasihi89/mind_map`（npm `mind_map`）。
 本目录是 link 进 desktop profile 的本地副本，以下改动都在上游 0.1.0 基础上手工完成。
 
 ## 先读这条
@@ -28,7 +28,7 @@ npm run harness             # http://127.0.0.1:8791/test/index.html 离线测试
 - 产物里不允许出现绝对构建路径（脚本自带断言）。
 
 宿主侧 `lib/index.js` 原本没碰过；**2026-10-26 起动过一次**（上游这个包不附带
-`tsdown.config.ts`，宿主半没法重新构建，只能手改打包产物）：新增 `POST /talk-map/last-user`
+`tsdown.config.ts`，宿主半没法重新构建，只能手改打包产物）：新增 `POST /mind-map/last-user`
 路由（卡片正文用），以及给 `runtime` 注入 `sessionQuery` 的那个 `ctx.inject` 块
 （`scripts/_.host-sessionquery.mjs` 是当时插 inject 的一次性脚本，带幂等判断）。
 `src/host/routes.ts`、`src/index.ts` 已按同一份逻辑同步，将来能重建宿主时以 src 为准。
@@ -38,9 +38,9 @@ npm run harness             # http://127.0.0.1:8791/test/index.html 离线测试
 2026-10-26 三次崩溃全部同一个出口，最后一次拿到了实证：
 
 `
-dsh-app://app/plugins/??dsh-talk-map/client.js&rev=...:10
-[dsh-talk-map] client bundle evaluated 2026-10-26T15:20:25.257Z   ← 求值成功
-→ 23:22 重载: dsh-talk-map: import failed → web boot 判定失败 → 退出
+dsh-app://app/plugins/??mind_map/client.js&rev=...:10
+[mind_map] client bundle evaluated 2026-10-26T15:20:25.257Z   ← 求值成功
+→ 23:22 重载: mind_map: import failed → web boot 判定失败 → 退出
 `
 
 - **bundle 本身没问题**（求值成功，语法校验也通过）；
@@ -56,7 +56,7 @@ dsh-app://app/plugins/??dsh-talk-map/client.js&rev=...:10
 ### 崩溃兜底：一个插件不许拖死整个 boot
 
 宿主对"有插件没激活"的判定是**致命**的：装完插件会触发一次整页重载，重载里
-`dsh-talk-map: import failed` 会让它直接退出（`~/.dsh` 外层的
+`mind_map: import failed` 会让它直接退出（`~/.dsh` 外层的
 `logs/crash-*-web-boot.log` 里只有一句汇总，拿不到具体异常）。
 
 冷启动能过、重载过不了——所以 bundle 的**求值阶段**必须绝对安全：
@@ -72,7 +72,7 @@ dsh-app://app/plugins/??dsh-talk-map/client.js&rev=...:10
 ## 离线测试台（`test/`）
 
 `test/index.html` + `test/harness.js` 用真浏览器加载**构建产物**，喂假 cordis context
-（sessions / workspaces / connection / uiWorkspace）和假 `/talk-map/*` 接口，不重启、
+（sessions / workspaces / connection / uiWorkspace）和假 `/mind-map/*` 接口，不重启、
 不动真实数据就能验证交互：
 
 - `window.__harness.nodeBoxes()` — 卡片 / 工作区的屏幕坐标（布局断言用）
@@ -85,7 +85,7 @@ dsh-app://app/plugins/??dsh-talk-map/client.js&rev=...:10
 
 ### 1. 顶部：返回 / 语言 / 关闭
 
-`MapOverlay.tsx`：删掉标题（`对话地图 ·v2`）和会话计数徽标。左上「‹ 返回」（38px 高），
+`MapOverlay.tsx`：删掉标题（`思维图 ·v2`）和会话计数徽标。左上「‹ 返回」（38px 高），
 右上 语言 + ✕（34~38px）。返回与 ✕ 同动作。
 
 表头**不再沿用遮罩层的 top inset**（`--dsh-frame-overlay-top`）——那是给浮在标题栏
@@ -157,7 +157,7 @@ dsh-app://app/plugins/??dsh-talk-map/client.js&rev=...:10
 ### 2b3. 跨重启保留灯的状态
 
 草稿本来就在 localStorage（上面那条），另外三类**只存在于客户端订阅里的灯**也落到了本地，
-放在 `dsh.talk-map.lamp-state.v1`（`src/client/state-persist.ts`；不改宿主 schema，
+放在 `dsh.mind-map.lamp-state.v1`（`src/client/state-persist.ts`；不改宿主 schema，
 `MapGlobal` 是 zod 校验的、未知字段会被丢掉）：
 
 | 状态 | 怎么来 | 重启后 |
@@ -177,7 +177,7 @@ dsh-app://app/plugins/??dsh-talk-map/client.js&rev=...:10
 原来的正文是宿主用 LLM 生成的摘要。现在**不再显示摘要**，改成**你最后一次发进去的那句话**
 （最多 240 字），「重新生成摘要」的按钮和右键菜单项也一起去掉了。
 
-- 数据来源：宿主侧的 `POST /talk-map/last-user`（`{sessionIds}` → `{texts}`），直接读会话
+- 数据来源：宿主侧的 `POST /mind-map/last-user`（`{sessionIds}` → `{texts}`），直接读会话
   表面里的 `user/message`（跳过 `source.kind === 'tool'` 的工具结果，最后一条胜出），
   不花钱、不等模型；
 - **判据只有一条：`source.kind === 'user'`。真实日志里宿主给每条用户消息都标了来源：
@@ -194,7 +194,7 @@ dsh-app://app/plugins/??dsh-talk-map/client.js&rev=...:10
   测试台补了"列表高频刷新"的判别用例，旧代码返回 `null`、新代码通过）；
 - 宿主：每个会话读一次 surface 约 250ms，**改成并发**（`Promise.all`），21 张卡从 ~5s 降到
   几百毫秒；
-- **本地缓存（关键）**：正文落在 `localStorage["dsh.talk-map.previews.v1"]`，
+- **本地缓存（关键）**：正文落在 `localStorage["dsh.mind-map.previews.v1"]`，
   `sessionId → { text, stamp }`（stamp 就是会话的 `updatedAt`，最多 300 条，超出按 stamp 淘汰）。
   打开地图时**先用缓存画**（`useState(readPreviewTexts)`，同步、零等待），
   再只对 stamp 变了的会话去宿主补一次并写回缓存——"打开就有 + 后台同步"，不是每次全量重拉；
@@ -212,12 +212,12 @@ dsh-app://app/plugins/??dsh-talk-map/client.js&rev=...:10
 
 ### 2c. 灯：运行中"流光"，其余"呼吸"
 
-`talk-map.module.css`：
+`mind-map.module.css`：
 
 - **running**：卡片本体是**恒定白光**（内描边 + 光晕，**没有呼吸动画**）；真正的信号是卡片
   外沿一圈 **2px 光环**，用 `conic-gradient` +
   `mask-composite: exclude` 抠成环，然后**只让渐变的起始角转动**
-  （`@property --tm-ring-angle` + `@keyframes talkmap-ring-sweep`）——所以是"光在环上跑"，
+  （`@property --tm-ring-angle` + `@keyframes mindmap-ring-sweep`）——所以是"光在环上跑"，
   不是"框在自转"。这个坑踩过一次：最初给 `::after` 加 `transform: rotate()`，转的是圆角矩形本身。
 - **waiting / error / done**：都是**呼吸灯**（琥珀 3.4s / 红 1.9s / 绿 2.8s）。
 
@@ -270,7 +270,7 @@ dsh-app://app/plugins/??dsh-talk-map/client.js&rev=...:10
 ### 3f2. 置顶的卡片：原样显示 + 置顶图标
 
 - **不压暗**：`quiet` 的判定里加了 `pinned !== true`——置顶是你主动做的选择，不该被淡掉；
-- **图标**：标题前 11px 的图钉（内联 SVG，`data-talkmap-pin`），抽屉里的同一张也用（📌），标题 `card.pinned`。
+- **图标**：标题前 11px 的图钉（内联 SVG，`data-mindmap-pin`），抽屉里的同一张也用（📌），标题 `card.pinned`。
 ### 3f. 当前对话的卡片：四角瞄镜
 
 打开地图时，**你原来所在的那个对话**的卡片四角各画一个 **13px 的白色 L 形角标**
@@ -298,9 +298,9 @@ dsh-app://app/plugins/??dsh-talk-map/client.js&rev=...:10
 原来注册在 `shell.overlay`（覆盖全屏），对话一直挂在下面 = 一直被当成"你在看"，
 所以开着地图时完成的会话永远不会变成待读，卡片也就不发光。
 
-现在注册进 `main` 槽位（`key: 'talk-map'`），和插件市场、回收站、Plugins 页同一个座位：
+现在注册进 `main` 槽位（`key: 'mind-map'`），和插件市场、回收站、Plugins 页同一个座位：
 
-- 打开 = `ctx.layout.selectPanel('talk-map')`，关闭 = `selectPanel(null)`（回对话）；
+- 打开 = `ctx.layout.selectPanel('mind-map')`，关闭 = `selectPanel(null)`（回对话）；
 - 侧栏按钮 / 快捷键 / 左返回 / 右上 ✕ / Esc 全部走这一条通道；
 - 地图在时**没有会话被选中**，宿主自己的 unread 逻辑因此正常工作，卡片能亮；
 - 点在卡片上打开对话：先 `openSession`，再 `selectPanel(null)`；
@@ -325,6 +325,21 @@ dsh-app://app/plugins/??dsh-talk-map/client.js&rev=...:10
 按钮回报 `wide`（它本来就从 owner props 拿到）：地图打开时若侧栏是展开的，就收起一次性；
 面板卸载（返回 / ✕ / Esc / 点卡片进对话 / 发消息离开）时再展开回来。用户本来就把侧栏
 收成轨道的话，不动它。
+
+### 4d. 左栏插件入口（`sidebar.panellist`）
+
+左侧那排「插件 / 自动化任务 / 上下文洞察 / 任务看板 / 记忆系统 / SSH」是壳的
+`sidebar.panellist` 插槽，**不会自动收录插件**——每个插件自己注册一行。地图原来只注册了
+底部切换按钮（`sidebar.footer.action`）和 better-sidebar 的右栏 tab，所以那一排里一直
+看不到它。
+
+- 新增一行：`selectPanel` 用的同一个 key —— `registerSafely("sidebar.panellist", () =>
+  ctx.slots.register({ name, id: MAP_PANEL_ID, order: 35, label: () => t("map.title") },
+  MindMapPanelIcon))`。
+- 行的 `id` 必须等于 `main` 面板的 `key`（都是 `MAP_PANEL_ID`）：壳按 id 把行绑到同 key 的
+  面板，点行就是切过去；行框、标签、tooltip、active 高亮、折叠 rail 全由壳负责，插件只画
+  16px 的 glyph（带 `data-dsh-panel-entry` 供皮肤按行反查，和 dsh-ssh 的写法一致）。
+- 排序落在「记忆系统」(30) 与「SSH」(40) 之间。
 
 ### 5. 对角把手真正双向
 

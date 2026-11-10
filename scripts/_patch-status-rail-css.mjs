@@ -1,7 +1,7 @@
 /** Append the status-rail styles to the plugin stylesheet. */
 import fs from 'node:fs'
 
-const file = 'src/client/talk-map.module.css'
+const file = 'src/client/mind-map.module.css'
 const css = String.raw`
 
 /* ── status rail (left edge) ─────────────────────────────────────────────── */

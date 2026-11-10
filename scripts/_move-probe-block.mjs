@@ -22,8 +22,8 @@ const withDebug = block.flatMap((line) => {
   if (line.includes("check('回到地图时抽屉还开着")) {
     return [
       '  const storedDrawer = await page.evaluate(() => ({',
-      "    stored: localStorage.getItem('dsh.talk-map.drawer.v1'),",
-      "    scroll: localStorage.getItem('dsh.talk-map.drawer-scroll.v1'),",
+      "    stored: localStorage.getItem('dsh.mind-map.drawer.v1'),",
+      "    scroll: localStorage.getItem('dsh.mind-map.drawer-scroll.v1'),",
       '  }))',
       '  console.log(\'   drawer storage:\', JSON.stringify(storedDrawer))',
       line,

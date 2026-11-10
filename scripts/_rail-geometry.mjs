@@ -17,7 +17,7 @@ const geo = await page.evaluate(() => {
   const list = document.querySelector('[class*="statusRailList"]')
   const card = document.querySelector('[class*="statusRailCard"]')
   const tab = document.querySelector('[class*="statusRailTab"]')
-  const board = document.querySelector('[data-talkmap-session]')
+  const board = document.querySelector('[data-mindmap-session]')
   const cs = element => element === null ? null : getComputedStyle(element)
   const r = element => { if (element === null) return null; const b = element.getBoundingClientRect(); return { left: Math.round(b.left), right: Math.round(b.right), width: Math.round(b.width), height: Math.round(b.height) } }
   return {

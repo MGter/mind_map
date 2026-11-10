@@ -1,5 +1,5 @@
 import fs from 'node:fs'
-const file = 'src/client/talk-map.module.css'
+const file = 'src/client/mind-map.module.css'
 let text = fs.readFileSync(file, 'utf8')
 
 // 1) list: no horizontal padding → the 250px card fits exactly inside the 270px panel

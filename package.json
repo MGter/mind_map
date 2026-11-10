@@ -1,19 +1,19 @@
 {
-  "name": "dsh-talk-map",
-  "version": "0.1.67",
-  "description": "Visual conversation map for DeepSeek Harness: an infinite whiteboard where every session is a card — drag to arrange, double-click to start a chat in place, draw an edge to fork a new session with injected context. Built for ADHD-friendly spatial memory. · DSH 可视化对话地图：会话即卡片，双击即聊，连线分叉带上下文的新对话。",
+  "name": "mind_map",
+  "version": "0.1.66",
+  "description": "Mind map for DeepSeek Harness: an infinite whiteboard where every session is a card — drag to arrange, double-click to start a chat in place, draw an edge to fork a new session with injected context. Built for ADHD-friendly spatial memory. · DSH 可视化思维图：会话即卡片，双击即聊，连线分叉带上下文的新对话。",
   "type": "module",
   "main": "lib/index.js",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Da0Mine/dsh-talk-map.git"
+    "url": "git+https://github.com/MGter/mind_map.git"
   },
   "keywords": [
     "dsh",
     "dsh-plugin",
     "deepseek-harness",
-    "talk-map",
+    "mind-map",
     "conversation-map",
     "whiteboard",
     "session-manager"
@@ -80,8 +80,8 @@
     "registry": "https://registry.npmjs.org/",
     "access": "public"
   },
-  "homepage": "https://github.com/Da0Mine/dsh-talk-map#readme",
+  "homepage": "https://github.com/MGter/mind_map#readme",
   "bugs": {
-    "url": "https://github.com/Da0Mine/dsh-talk-map/issues"
+    "url": "https://github.com/MGter/mind_map/issues"
   }
 }

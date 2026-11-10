@@ -19,7 +19,7 @@ const EDGE = [
 ].find(candidate => fs.existsSync(candidate))
 const PORT = 8795
 const CDP = 9345
-const profileDir = path.join(os.tmpdir(), 'talkmap-drag-profile')
+const profileDir = path.join(os.tmpdir(), 'mindmap-drag-profile')
 
 const server = http.createServer((request, response) => {
   const url = new URL(request.url ?? '/', `http://127.0.0.1:${PORT}`)
@@ -66,7 +66,7 @@ page.on('pageerror', error => console.log('PAGEERROR', String(error)))
 
 await page.goto(`http://127.0.0.1:${PORT}/test/index.html?run=${Date.now()}`)
 await page.waitForTimeout(900)
-await page.click('[class*="tm_sideButton"], [data-talkmap-toggle]').catch(() => {})
+await page.click('[class*="tm_sideButton"], [data-mindmap-toggle]').catch(() => {})
 await page.evaluate(() => {
   const button = document.querySelector('[class*="tm_sideButton"]')
   if (button !== null) button.click()

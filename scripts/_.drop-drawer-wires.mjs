@@ -95,7 +95,7 @@ canvas = cLines.join(D)
 fs.writeFileSync(canvasFile, canvas, 'utf8')
 
 // --------------------------------------------------------------------- css ---
-const cssFile = 'src/client/talk-map.module.css'
+const cssFile = 'src/client/mind-map.module.css'
 let css = fs.readFileSync(cssFile, 'utf8')
 const marker = '/* ---------------------------------------------------------------- drawer wires'
 const at = css.indexOf(marker)

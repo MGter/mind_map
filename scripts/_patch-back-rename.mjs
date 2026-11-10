@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 // 1) CSS: my classes must not collide with the panel header's .backButton
-const css = 'src/client/talk-map.module.css'
+const css = 'src/client/mind-map.module.css'
 let sheet = fs.readFileSync(css, 'utf8')
 const start = sheet.indexOf('/* ── sidebar entry: map toggle + "back to this conversation" ─────────────── */')
 if (start < 0) { console.log('css block not found'); process.exit(1) }

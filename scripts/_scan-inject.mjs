@@ -4,7 +4,7 @@ import path from 'node:path'
 import zlib from 'node:zlib'
 
 const ROOT = path.join(process.env.USERPROFILE ?? '', '.dsh', 'sessions')
-const PATTERNS = ['"plugin"', 'dsh-talk-map', 'Context injected', '上下文注入', 'plugin:']
+const PATTERNS = ['"plugin"', 'mind_map', 'Context injected', '上下文注入', 'plugin:']
 
 function decompress(file) {
   const buffer = fs.readFileSync(file)

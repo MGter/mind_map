@@ -36,7 +36,7 @@ const report = await page.evaluate(() => {
   const matrix = svg === null ? null : svg.getScreenCTM()
   const toScreen = point => (matrix === null ? point : new DOMPoint(point.x, point.y).matrixTransform(matrix))
 
-  const cards = [...document.querySelectorAll('[data-talkmap-session]')].map(element => {
+  const cards = [...document.querySelectorAll('[data-mindmap-session]')].map(element => {
     const rect = element.getBoundingClientRect()
     return { x: rect.left, y: rect.top, w: rect.width, h: rect.height }
   })

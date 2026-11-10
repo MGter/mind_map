@@ -139,7 +139,7 @@ drawer = drawer.replace(
     '                      <div className={styles[\'drawerHitHead\']}>',
     '                        <span',
     '                          className={`${styles[\'drawerAgentChip\']} ${hit.agent === \'subagent\' ? styles[\'drawerAgentChipSub\'] : \'\'}`}',
-    '                          data-talkmap-agent={hit.agent ?? \'main\'}',
+    '                          data-mindmap-agent={hit.agent ?? \'main\'}',
     '                          title={hit.agent === \'subagent\' ? t(\'stack.agentSubHint\') : t(\'stack.agentMainHint\')}',
     '                        >',
     '                          {hit.agent === \'subagent\'',

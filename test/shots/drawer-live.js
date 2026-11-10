@@ -24537,7 +24537,7 @@
       return escGuards.size > 0;
     }
   };
-  var MAP_PANEL_ID = "talk-map";
+  var MAP_PANEL_ID = "mind-map";
   var services;
   function getServices() {
     return services;
@@ -24582,7 +24582,7 @@
     try {
       layout.selectPanel(MAP_PANEL_ID);
     } catch (error) {
-      console.error("[dsh-talk-map] selectPanel failed:", error);
+      console.error("[mind_map] selectPanel failed:", error);
       mapUi.setOpen(true);
     }
   }
@@ -24596,7 +24596,7 @@
     try {
       layout.selectPanel(null);
     } catch (error) {
-      console.error("[dsh-talk-map] selectPanel(null) failed:", error);
+      console.error("[mind_map] selectPanel(null) failed:", error);
       mapUi.setOpen(false);
     }
   }
@@ -24926,8 +24926,8 @@
     return template.replace(/\{(\w+)\}/g, (match, name) => params[name] ?? match);
   }
 
-  // cssstub:./talk-map.module.css
-  var talk_map_default = new Proxy({}, { get: (_target, key) => "tm_" + String(key) });
+  // cssstub:./mind-map.module.css
+  var mind_map_default = new Proxy({}, { get: (_target, key) => "tm_" + String(key) });
 
   // src/client/SessionCard.tsx
   var import_jsx_runtime = __toESM(require_jsx_runtime(), 1);
@@ -24950,8 +24950,8 @@
   }
 
   // src/client/drawer-state.ts
-  var GROUP_KEY = "dsh.talk-map.drawer.v1";
-  var SCROLL_KEY = "dsh.talk-map.drawer-scroll.v1";
+  var GROUP_KEY = "dsh.mind-map.drawer.v1";
+  var SCROLL_KEY = "dsh.mind-map.drawer-scroll.v1";
   function safeRead(key) {
     try {
       return typeof localStorage === "undefined" ? null : localStorage.getItem(key);
@@ -24994,7 +24994,7 @@
   // src/client/search-store.ts
   var TTL_MS = 12 * 60 * 60 * 1e3;
   function keyFor(scope) {
-    return `dsh.talk-map.search.${scope}.v1`;
+    return `dsh.mind-map.search.${scope}.v1`;
   }
   function saveSearch(scope, value) {
     try {
@@ -25089,7 +25089,7 @@
       }
       if (at > cursor) parts.push(text.slice(cursor, at));
       parts.push(
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("mark", { className: talk_map_default["hitMark"], children: text.slice(at, at + needle.length) }, `${keyPrefix}-m${index++}`)
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("mark", { className: mind_map_default["hitMark"], children: text.slice(at, at + needle.length) }, `${keyPrefix}-m${index++}`)
       );
       cursor = at + needle.length;
     }
@@ -25115,7 +25115,7 @@
       const [whole] = match;
       if (whole.startsWith("`")) {
         const body = whole.slice(1, -1);
-        push(/* @__PURE__ */ (0, import_jsx_runtime2.jsx)("code", { className: talk_map_default["snippetCode"], children: highlight(body, query, `c${token}`) }, `c${token++}`), body);
+        push(/* @__PURE__ */ (0, import_jsx_runtime2.jsx)("code", { className: mind_map_default["snippetCode"], children: highlight(body, query, `c${token}`) }, `c${token++}`), body);
       } else if (whole.startsWith("**") || whole.startsWith("__")) {
         const body = whole.slice(2, -2);
         push(/* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: highlight(body, query, `s${token}`) }, `s${token++}`), body);
@@ -25124,7 +25124,7 @@
         push(/* @__PURE__ */ (0, import_jsx_runtime2.jsx)("s", { children: highlight(body, query, `d${token}`) }, `d${token++}`), body);
       } else if (whole.startsWith("[")) {
         const label = whole.replace(/^\[([^\]]+)\].*$/, "$1");
-        push(/* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: talk_map_default["snippetLink"], children: highlight(label, query, `l${token}`) }, `l${token++}`), label);
+        push(/* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: mind_map_default["snippetLink"], children: highlight(label, query, `l${token}`) }, `l${token++}`), label);
       } else {
         const body = whole.slice(1, -1);
         push(/* @__PURE__ */ (0, import_jsx_runtime2.jsx)("em", { children: highlight(body, query, `e${token}`) }, `e${token++}`), body);
@@ -25141,14 +25141,14 @@
   // src/client/SearchResults.tsx
   var import_jsx_runtime3 = __toESM(require_jsx_runtime(), 1);
   function SearchResults(props) {
-    return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: talk_map_default["drawerHits"], "data-talkmap-local-results": "", children: [
-      props.hits.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: talk_map_default["drawerEmpty"], children: props.empty }) : null,
-      props.hits.map((hit) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: talk_map_default["drawerHit"], "data-talkmap-search-hit": hit.sessionId, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: talk_map_default["drawerHitHead"], children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+    return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: mind_map_default["drawerHits"], "data-mindmap-local-results": "", children: [
+      props.hits.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: mind_map_default["drawerEmpty"], children: props.empty }) : null,
+      props.hits.map((hit) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: mind_map_default["drawerHit"], "data-mindmap-search-hit": hit.sessionId, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: mind_map_default["drawerHitHead"], children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
           "button",
           {
             type: "button",
-            className: talk_map_default["drawerHitTitle"],
+            className: mind_map_default["drawerHitTitle"],
             onClick: () => {
               props.onOpenSession(hit.sessionId);
             },
@@ -25162,8 +25162,8 @@
             "button",
             {
               type: "button",
-              className: talk_map_default["drawerHitLine"],
-              "data-talkmap-search-line": hit.sessionId,
+              className: mind_map_default["drawerHitLine"],
+              "data-mindmap-search-line": hit.sessionId,
               onClick: () => {
                 props.onOpenSession(hit.sessionId);
               },
@@ -25289,7 +25289,7 @@
         saveSearch("drawer:" + props.groupId, { query: trimmed, hits: found });
         setSearchError(null);
       } catch (cause) {
-        console.warn("[dsh-talk-map] content search failed:", cause);
+        console.warn("[mind_map] content search failed:", cause);
         setHits([]);
         setSearchError(String(cause?.message ?? cause));
       } finally {
@@ -25636,7 +25636,7 @@
     return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
       "div",
       {
-        className: `${talk_map_default["drawerBackdrop"]}${leaving ? ` ${talk_map_default["drawerBackdropOut"]}` : ""}`,
+        className: `${mind_map_default["drawerBackdrop"]}${leaving ? ` ${mind_map_default["drawerBackdropOut"]}` : ""}`,
         onMouseDown: (event) => {
           if (event.target === event.currentTarget) requestClose();
         },
@@ -25646,20 +25646,20 @@
         children: /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)(
           "div",
           {
-            className: `${talk_map_default["drawer"]}${leaving ? ` ${talk_map_default["drawerOut"]}` : ""}`,
+            className: `${mind_map_default["drawer"]}${leaving ? ` ${mind_map_default["drawerOut"]}` : ""}`,
             role: "dialog",
             "aria-label": props.workspaceTitle,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: talk_map_default["drawerHead"], children: [
-                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: talk_map_default["drawerTitle"], children: props.workspaceTitle }),
-                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: talk_map_default["drawerCount"], children: t("stack.total", { n: String(props.items.length) }) }),
-                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: talk_map_default["drawerSpace"] }),
-                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: talk_map_default["drawerHint"], children: t("stack.hint") }),
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: mind_map_default["drawerHead"], children: [
+                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: mind_map_default["drawerTitle"], children: props.workspaceTitle }),
+                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: mind_map_default["drawerCount"], children: t("stack.total", { n: String(props.items.length) }) }),
+                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: mind_map_default["drawerSpace"] }),
+                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: mind_map_default["drawerHint"], children: t("stack.hint") }),
                 /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
                   "button",
                   {
                     type: "button",
-                    className: talk_map_default["drawerClose"],
+                    className: mind_map_default["drawerClose"],
                     title: t("stack.close"),
                     "aria-label": t("stack.close"),
                     onClick: requestClose,
@@ -25667,15 +25667,15 @@
                   }
                 )
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: talk_map_default["drawerSearchRow"], children: [
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: mind_map_default["drawerSearchRow"], children: [
                 /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
                   "input",
                   {
-                    className: talk_map_default["drawerSearch"],
+                    className: mind_map_default["drawerSearch"],
                     value: query,
                     placeholder: t("stack.searchPlaceholder"),
                     "aria-label": t("stack.searchPlaceholder"),
-                    "data-talkmap-drawer-search": "",
+                    "data-mindmap-drawer-search": "",
                     onChange: (event) => {
                       setQuery(event.target.value);
                       if (event.target.value.trim() === "") {
@@ -25698,21 +25698,21 @@
                   "button",
                   {
                     type: "button",
-                    className: talk_map_default["drawerSearchGo"],
-                    "data-talkmap-drawer-search-run": "",
+                    className: mind_map_default["drawerSearchGo"],
+                    "data-mindmap-drawer-search-run": "",
                     onClick: () => {
                       void runSearch();
                     },
                     children: t("global.searchRun")
                   }
                 ),
-                searching ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: talk_map_default["drawerSearchState"], children: t("stack.searching") }) : null,
-                searchError !== null ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: talk_map_default["drawerSearchError"], title: searchError, children: isIndexDisabled(searchError) ? t("stack.searchDisabled") : t("stack.searchFailed") + "\uFF1A" + (searchError.length > 70 ? searchError.slice(0, 70) + "\u2026" : searchError) }) : null
+                searching ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: mind_map_default["drawerSearchState"], children: t("stack.searching") }) : null,
+                searchError !== null ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: mind_map_default["drawerSearchError"], title: searchError, children: isIndexDisabled(searchError) ? t("stack.searchDisabled") : t("stack.searchFailed") + "\uFF1A" + (searchError.length > 70 ? searchError.slice(0, 70) + "\u2026" : searchError) }) : null
               ] }),
               /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)(
                 "div",
                 {
-                  className: talk_map_default["drawerScroll"],
+                  className: mind_map_default["drawerScroll"],
                   ref: scrollerRef,
                   onScroll: (event) => {
                     lastScrollAt.current = Date.now();
@@ -25727,7 +25727,7 @@
                     wires.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
                       "svg",
                       {
-                        className: talk_map_default["drawerWires"],
+                        className: mind_map_default["drawerWires"],
                         width: Math.max(1, wireSize.width),
                         height: Math.max(1, wireSize.height),
                         "aria-hidden": "true",
@@ -25757,21 +25757,21 @@
                       }
                     ) : null,
                     visibleItems.map((item) => {
-                      const classNames = [talk_map_default["card"], talk_map_default["drawerCard"]];
-                      if (item.glow !== void 0) classNames.push(talk_map_default[LAMP_CLASS[item.glow]] ?? "");
+                      const classNames = [mind_map_default["card"], mind_map_default["drawerCard"]];
+                      if (item.glow !== void 0) classNames.push(mind_map_default[LAMP_CLASS[item.glow]] ?? "");
                       const quiet = item.glow === void 0 && item.pendingDraft !== true && item.interrupted !== true && item.pinned !== true;
-                      if (quiet) classNames.push(talk_map_default["cardQuiet"] ?? "");
-                      if (item.selected === true) classNames.push(talk_map_default["cardSelected"] ?? "");
+                      if (quiet) classNames.push(mind_map_default["cardQuiet"] ?? "");
+                      if (item.selected === true) classNames.push(mind_map_default["cardSelected"] ?? "");
                       return /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)(
                         "button",
                         {
                           type: "button",
                           "data-stack-card": "",
                           "data-card-id": item.cardId,
-                          "data-talkmap-session": item.sessionId,
+                          "data-mindmap-session": item.sessionId,
                           className: classNames.filter(Boolean).join(" "),
                           draggable: true,
-                          "data-talkmap-drag": dragId === item.cardId ? "1" : void 0,
+                          "data-mindmap-drag": dragId === item.cardId ? "1" : void 0,
                           onDragStart: (event) => {
                             setDragId(item.cardId);
                             event.dataTransfer.effectAllowed = "move";
@@ -25802,22 +25802,22 @@
                             props.onCardMenu?.(item.cardId, event);
                           },
                           children: [
-                            item.current === true ? /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("span", { className: talk_map_default["cardReticle"], children: [
+                            item.current === true ? /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("span", { className: mind_map_default["cardReticle"], children: [
                               /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("i", {}),
                               /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("i", {}),
                               /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("i", {}),
                               /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("i", {})
                             ] }) : null,
-                            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: talk_map_default["cardTop"], children: [
-                              item.pinned === true ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: talk_map_default["cardPin"], title: t("card.pinned"), "data-talkmap-pin": "1", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("svg", { viewBox: "0 0 24 24", width: "13", height: "13", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("path", { fill: "currentColor", d: "M16 8.6V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v4.6c0 1.66-1.34 3-3 3v2h5.1v7.9l.9 1 .9-1V13.6H19v-2c-1.66 0-3-1.34-3-3z" }) }) }) : null,
-                              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: talk_map_default["cardTitle"], children: item.title })
+                            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: mind_map_default["cardTop"], children: [
+                              item.pinned === true ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: mind_map_default["cardPin"], title: t("card.pinned"), "data-mindmap-pin": "1", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("svg", { viewBox: "0 0 24 24", width: "13", height: "13", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("path", { fill: "currentColor", d: "M16 8.6V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v4.6c0 1.66-1.34 3-3 3v2h5.1v7.9l.9 1 .9-1V13.6H19v-2c-1.66 0-3-1.34-3-3z" }) }) }) : null,
+                              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: mind_map_default["cardTitle"], children: item.title })
                             ] }),
-                            item.preview !== void 0 && item.preview !== "" ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: talk_map_default["cardSummary"], children: item.preview }) : null,
-                            item.links !== void 0 && item.links.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: talk_map_default["cardLinks"], "data-talkmap-card-links": item.links.length, children: item.links.slice(0, 3).map((link) => /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)(
+                            item.preview !== void 0 && item.preview !== "" ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: mind_map_default["cardSummary"], children: item.preview }) : null,
+                            item.links !== void 0 && item.links.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: mind_map_default["cardLinks"], "data-mindmap-card-links": item.links.length, children: item.links.slice(0, 3).map((link) => /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)(
                               "span",
                               {
-                                className: talk_map_default["cardLinkChip"],
-                                "data-talkmap-link": link.outgoing ? "out" : "in",
+                                className: mind_map_default["cardLinkChip"],
+                                "data-mindmap-link": link.outgoing ? "out" : "in",
                                 title: link.kind,
                                 children: [
                                   link.outgoing ? "\u2192 " : "\u2190 ",
@@ -25826,33 +25826,33 @@
                               },
                               (link.outgoing ? "out-" : "in-") + link.toCardId
                             )) }) : null,
-                            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: talk_map_default["cardFooter"], children: [
-                              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: talk_map_default["cardTime"], children: relativeTime(item.updatedAt) }),
+                            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: mind_map_default["cardFooter"], children: [
+                              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: mind_map_default["cardTime"], children: relativeTime(item.updatedAt) }),
                               item.pendingDraft === true ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
                                 "span",
                                 {
-                                  className: `${talk_map_default["cardChip"]} ${talk_map_default["cardChipDraft"]}`,
+                                  className: `${mind_map_default["cardChip"]} ${mind_map_default["cardChipDraft"]}`,
                                   title: t("card.draftHint"),
-                                  "data-talkmap-draft": "1",
+                                  "data-mindmap-draft": "1",
                                   children: t("card.draft")
                                 }
                               ) : null,
                               item.interrupted === true ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
                                 "span",
                                 {
-                                  className: `${talk_map_default["cardChip"]} ${talk_map_default["cardChipInterrupted"]}`,
+                                  className: `${mind_map_default["cardChip"]} ${mind_map_default["cardChipInterrupted"]}`,
                                   title: t("card.interruptedHint"),
-                                  "data-talkmap-interrupted": "1",
+                                  "data-mindmap-interrupted": "1",
                                   children: t("card.interrupted")
                                 }
                               ) : null,
                               item.glow === void 0 ? null : /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)(
                                 "span",
                                 {
-                                  className: `${talk_map_default["cardChip"]} ${talk_map_default[LAMP_CHIP[item.glow].className]}`,
-                                  "data-talkmap-chip": item.glow,
+                                  className: `${mind_map_default["cardChip"]} ${mind_map_default[LAMP_CHIP[item.glow].className]}`,
+                                  "data-mindmap-chip": item.glow,
                                   children: [
-                                    item.glow === "running" ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: talk_map_default["runningDot"] }) : null,
+                                    item.glow === "running" ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: mind_map_default["runningDot"] }) : null,
                                     t(LAMP_CHIP[item.glow].key)
                                   ]
                                 }
@@ -25874,7 +25874,7 @@
                         }
                       }
                     ) : null,
-                    needle !== "" && visibleItems.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: talk_map_default["drawerEmpty"], children: t("stack.noTitleMatch") }) : null
+                    needle !== "" && visibleItems.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: mind_map_default["drawerEmpty"], children: t("stack.noTitleMatch") }) : null
                   ]
                 }
               )

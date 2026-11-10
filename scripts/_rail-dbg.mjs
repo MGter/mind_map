@@ -41,6 +41,6 @@ if (rows.length >= 2) {
   console.log('4 移动后顺序:', JSON.stringify((await state()).order))
   await page.mouse.up()
   await page.waitForTimeout(300)
-  console.log('5 松手后顺序:', JSON.stringify((await state()).order), 'stored:', await page.evaluate(() => window.localStorage.getItem('dsh.talk-map.status-rail.order.v1')))
+  console.log('5 松手后顺序:', JSON.stringify((await state()).order), 'stored:', await page.evaluate(() => window.localStorage.getItem('dsh.mind-map.status-rail.order.v1')))
 }
 await browser.close(); child.kill()

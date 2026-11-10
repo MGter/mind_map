@@ -7,7 +7,7 @@ import { pickFaces } from '../src/client/edge-routing.ts'
 
 const CARD_W = 224
 const CARD_H = 120
-const raw = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.dsh', 'storages', 'talk_map.json'), 'utf8'))
+const raw = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.dsh', 'storages', 'mind_map.json'), 'utf8'))
 const cards = Object.entries(raw.tables.cards).map(([id, card]) => ({
   id, boardId: card.boardId, x: card.x, y: card.y, w: CARD_W, h: CARD_H,
 }))

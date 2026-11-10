@@ -34183,7 +34183,7 @@
     }).filter((subpath) => subpath.length >= 2);
   }
 
-  // src/client/TalkMapEdge.tsx
+  // src/client/MindMapEdge.tsx
   var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
   var boardCache = { at: 0, boxes: [] };
   function boardBoxes() {
@@ -34193,7 +34193,7 @@
     const viewport = document.querySelector(".react-flow__viewport");
     if (viewport === null) return boardCache.boxes;
     const boxes = [];
-    for (const element of document.querySelectorAll("[data-talkmap-session]")) {
+    for (const element of document.querySelectorAll("[data-mindmap-session]")) {
       const node = element;
       let x = 0;
       let y = 0;
@@ -34217,7 +34217,7 @@
     const pad = 40;
     return x >= box.x - pad && x <= box.x + box.w + pad && y >= box.y - pad && y <= box.y + box.h + pad;
   }
-  function TalkMapEdge(props) {
+  function MindMapEdge(props) {
     const data = props.data ?? {};
     const synced = data.sync === "synced";
     const hidden = synced && data.structural !== true;
@@ -34343,13 +34343,13 @@
       )
     ] });
   }
-  var edgeTypes = { talkMap: TalkMapEdge };
+  var edgeTypes = { mindMap: MindMapEdge };
 
   // test/shots/drag-entry.tsx
   var import_jsx_runtime3 = __toESM(require_jsx_runtime(), 1);
   var SCENE = { "cards": [{ "id": "top", "x": 0, "y": 0, "w": 224, "h": 120 }, { "id": "mid", "x": 4, "y": 176, "w": 250, "h": 129 }, { "id": "bottom", "x": 0, "y": 361, "w": 224, "h": 120 }] };
   var nodeTypes = {
-    card: ({ data }) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { "data-talkmap-session": data.id, style: {
+    card: ({ data }) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { "data-mindmap-session": data.id, style: {
       width: data.w,
       height: data.h,
       background: "#23262d",
@@ -34384,7 +34384,7 @@
         target: connection.target,
         sourceHandle: connection.sourceHandle,
         targetHandle: connection.targetHandle,
-        type: "talkMap",
+        type: "mindMap",
         data: {
           sync: "idle",
           obstacles: others.map((card) => ({ x: card.x, y: card.y, w: card.w, h: card.h })),

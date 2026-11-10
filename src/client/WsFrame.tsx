@@ -14,7 +14,7 @@
 import type { NodeProps, Node } from '@xyflow/react'
 import type { FrameGeometry } from '../shared/model.ts'
 import { colorOf } from './colors.ts'
-import styles from './talk-map.module.css'
+import styles from './mind-map.module.css'
 
 /** Which sides a drag moves: `n` grows upward, `w` grows leftward, … */
 export type ResizeAxis = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
@@ -80,8 +80,8 @@ export function WsFrameNode(props: NodeProps<WsFrameNodeType>): React.JSX.Elemen
         // so the colour never washes over the cards.
         ...(color !== undefined ? { borderColor: color.border } : {}),
       }}
-      data-talkmap-frame=""
-      data-talkmap-workspace={data.workspaceId}
+      data-mindmap-frame=""
+      data-mindmap-workspace={data.workspaceId}
     >
       <div
         className={styles['wsFrameLabel']}
@@ -105,7 +105,7 @@ export function WsFrameNode(props: NodeProps<WsFrameNodeType>): React.JSX.Elemen
           style={handle.style}
           onPointerDown={start(handle.axis)}
           title={handle.title}
-          data-talkmap-resize={handle.axis}
+          data-mindmap-resize={handle.axis}
         />
       ))}
     </div>

@@ -14,7 +14,7 @@ import { loadSearch, saveSearch } from './search-store.ts'
 import { SearchResults } from './SearchResults.tsx'
 import { routeEdge, roundedPath } from './edge-route.ts'
 import { pickFaces } from './edge-routing.ts'
-import styles from './talk-map.module.css'
+import styles from './mind-map.module.css'
 const LAMP_CLASS: Record<CardGlow, string> = {
   running: 'cardLampRunning',
   done: 'cardLampDone',
@@ -172,7 +172,7 @@ export function StackDrawer(props: StackDrawerProps): React.JSX.Element {
       saveSearch('drawer:' + props.groupId, { query: trimmed, hits: found })
       setSearchError(null)
     } catch (cause) {
-      console.warn('[dsh-talk-map] content search failed:', cause)
+      console.warn('[mind_map] content search failed:', cause)
       setHits([])
       setSearchError(String((cause as Error)?.message ?? cause))
     } finally {
@@ -644,7 +644,7 @@ export function StackDrawer(props: StackDrawerProps): React.JSX.Element {
             value={query}
             placeholder={t('stack.searchPlaceholder')}
             aria-label={t('stack.searchPlaceholder')}
-            data-talkmap-drawer-search=""
+            data-mindmap-drawer-search=""
             onChange={(event) => {
               setQuery(event.target.value)
               // Clearing the box forgets the previous search, so the list goes
@@ -661,7 +661,7 @@ export function StackDrawer(props: StackDrawerProps): React.JSX.Element {
           <button
             type="button"
             className={styles['drawerSearchGo']}
-            data-talkmap-drawer-search-run=""
+            data-mindmap-drawer-search-run=""
             onClick={() => { void runSearch() }}
           >
             {t('global.searchRun')}
@@ -739,10 +739,10 @@ export function StackDrawer(props: StackDrawerProps): React.JSX.Element {
                 type="button"
                 data-stack-card=""
                 data-card-id={item.cardId}
-                data-talkmap-session={item.sessionId}
+                data-mindmap-session={item.sessionId}
                 className={classNames.filter(Boolean).join(' ')}
                 draggable
-                data-talkmap-drag={dragId === item.cardId ? "1" : undefined}
+                data-mindmap-drag={dragId === item.cardId ? "1" : undefined}
                 onDragStart={(event) => {
                   setDragId(item.cardId)
                   event.dataTransfer.effectAllowed = 'move'
@@ -775,7 +775,7 @@ export function StackDrawer(props: StackDrawerProps): React.JSX.Element {
                 {item.current === true ? <span className={styles['cardReticle']}><i /><i /><i /><i /></span> : null}
                 <div className={styles['cardTop']}>
                   {item.pinned === true
-                    ? <span className={styles['cardPin']} title={t('card.pinned')} data-talkmap-pin="1"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M16 8.6V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v4.6c0 1.66-1.34 3-3 3v2h5.1v7.9l.9 1 .9-1V13.6H19v-2c-1.66 0-3-1.34-3-3z"/></svg></span>
+                    ? <span className={styles['cardPin']} title={t('card.pinned')} data-mindmap-pin="1"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M16 8.6V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v4.6c0 1.66-1.34 3-3 3v2h5.1v7.9l.9 1 .9-1V13.6H19v-2c-1.66 0-3-1.34-3-3z"/></svg></span>
                     : null}
                   <span className={styles['cardTitle']}>{item.title}</span>
                 </div>
@@ -784,12 +784,12 @@ export function StackDrawer(props: StackDrawerProps): React.JSX.Element {
                   : null}
                 {item.links !== undefined && item.links.length > 0
                   ? (
-                      <div className={styles['cardLinks']} data-talkmap-card-links={item.links.length}>
+                      <div className={styles['cardLinks']} data-mindmap-card-links={item.links.length}>
                         {item.links.slice(0, 3).map(link => (
                           <span
                             key={(link.outgoing ? 'out-' : 'in-') + link.toCardId}
                             className={styles['cardLinkChip']}
-                            data-talkmap-link={link.outgoing ? 'out' : 'in'}
+                            data-mindmap-link={link.outgoing ? 'out' : 'in'}
                             title={link.kind}
                           >
                             {link.outgoing ? '→ ' : '← '}{link.title}
@@ -805,7 +805,7 @@ export function StackDrawer(props: StackDrawerProps): React.JSX.Element {
                         <span
                           className={`${styles['cardChip']} ${styles['cardChipDraft']}`}
                           title={t('card.draftHint')}
-                          data-talkmap-draft="1"
+                          data-mindmap-draft="1"
                         >
                           {t('card.draft')}
                         </span>
@@ -816,7 +816,7 @@ export function StackDrawer(props: StackDrawerProps): React.JSX.Element {
                         <span
                           className={`${styles['cardChip']} ${styles['cardChipInterrupted']}`}
                           title={t('card.interruptedHint')}
-                          data-talkmap-interrupted="1"
+                          data-mindmap-interrupted="1"
                         >
                           {t('card.interrupted')}
                         </span>
@@ -827,7 +827,7 @@ export function StackDrawer(props: StackDrawerProps): React.JSX.Element {
                     : (
                         <span
                           className={`${styles['cardChip']} ${styles[LAMP_CHIP[item.glow].className]}`}
-                          data-talkmap-chip={item.glow}
+                          data-mindmap-chip={item.glow}
                         >
                           {item.glow === 'running' ? <span className={styles['runningDot']} /> : null}
                           {t(LAMP_CHIP[item.glow].key)}

@@ -21,7 +21,7 @@ const info = await page.evaluate(() => {
     scrollerClass: scroller.className,
     kids: kids.slice(0, 6),
     cards: scroller.querySelectorAll('[data-card-id]').length,
-    sessions: scroller.querySelectorAll('[data-talkmap-session]').length,
+    sessions: scroller.querySelectorAll('[data-mindmap-session]').length,
     paths: scroller.querySelectorAll('svg path').length,
     svgCount: scroller.querySelectorAll('svg').length,
     firstCardTag: [...scroller.querySelectorAll('[class*="card"]')].slice(0,2).map(el => el.className),

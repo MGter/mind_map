@@ -92,7 +92,7 @@ shared = shared.replace(
   J([
     '                  <span',
     "                    className={styles['drawerRoleChip']}",
-    '                    data-talkmap-role={roles[index] ?? \'agent\'}',
+    '                    data-mindmap-role={roles[index] ?? \'agent\'}',
     '                  >',
     "                    {roles[index] === 'user' ? t('stack.roleUser') : t('stack.roleAgent')}",
     '                  </span>',

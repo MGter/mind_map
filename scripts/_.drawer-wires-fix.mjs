@@ -109,7 +109,7 @@ if (source === before) {
 fs.writeFileSync(file, source, 'utf8')
 
 // CSS: absolute, content-sized, no 100%
-const cssFile = 'src/client/talk-map.module.css'
+const cssFile = 'src/client/mind-map.module.css'
 let css = fs.readFileSync(cssFile, 'utf8')
 css = css.replace(
   `.drawerWires {

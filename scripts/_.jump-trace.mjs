@@ -27,7 +27,7 @@ jump = jump.replace(
     '',
     'function report(): void {',
     '  try {',
-    '    void fetch(\'/talk-map/client-boot\', {',
+    '    void fetch(\'/mind-map/client-boot\', {',
     '      method: \'POST\',',
     "      headers: { 'content-type': 'application/json' },",
     "      body: JSON.stringify({ phase: 'jump-debug', ...trace }),",
@@ -115,7 +115,7 @@ shared = shared.replace(
   J([
     '              {hit.byTitle === true',
     '                ? (',
-    "                    <span className={styles['drawerAgentChip']} data-talkmap-title-hit=\"1\">{t('stack.titleHit')}</span>",
+    "                    <span className={styles['drawerAgentChip']} data-mindmap-title-hit=\"1\">{t('stack.titleHit')}</span>",
     '                  )',
     '                : null}',
     '              {hit.agent === \'subagent\'',

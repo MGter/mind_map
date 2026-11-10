@@ -78,7 +78,7 @@ export function attachAlertSource(remote: AlertSource | undefined, list: Session
       disposers.push(remote.$on('api-session/error', onError))
       disposers.push(remote.$on('api-session/status', onStatus))
     } catch (error) {
-      console.error('[dsh-talk-map] session alert source unavailable:', error)
+      console.error('[mind_map] session alert source unavailable:', error)
     }
   }
 
@@ -101,7 +101,7 @@ export function attachAlertSource(remote: AlertSource | undefined, list: Session
     disposers.push(list.subscribe(reconcile))
     reconcile()
   } catch (error) {
-    console.error('[dsh-talk-map] session alert list subscription failed:', error)
+    console.error('[mind_map] session alert list subscription failed:', error)
   }
 
   return () => {

@@ -23,7 +23,7 @@ assert.match(source, /async ensure\(sessionId\) \{\s*\n\s*return await this\.run
 assert.match(source, /async refresh\(sessionId\) \{\s*\n\s*return await this\.run\(sessionId, \{ force: true \}\)/, 'refresh() must stay forced')
 
 // 5. the route the client calls
-assert.match(source, /route === "POST \/talk-map\/digest\/ensure"/, 'missing /talk-map/digest/ensure route')
+assert.match(source, /route === "POST \/mind-map\/digest\/ensure"/, 'missing /mind-map/digest/ensure route')
 
 // 6. auto push is per edge and rides injectInto
 assert.match(source, /injection\?\.autoPush !== true/, 'auto push must check injection.autoPush')

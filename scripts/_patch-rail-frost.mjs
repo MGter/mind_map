@@ -1,7 +1,7 @@
 /** Frosted-glass handle, longer bars (in the TSX), floating drag styling, grab cursor. */
 import fs from 'node:fs'
 
-const file = 'src/client/talk-map.module.css'
+const file = 'src/client/mind-map.module.css'
 let text = fs.readFileSync(file, 'utf8')
 
 // 1) handle → frosted glass, brighter icon

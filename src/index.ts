@@ -1,22 +1,22 @@
 /**
- * dsh-talk-map host entry. Three independently-injected layers over one
+ * mind_map host entry. Three independently-injected layers over one
  * shared store promise, so a composition missing llm or agents still serves
  * the board (spawn/digest routes answer 503 instead):
  *
- *   1. storageDomain + webServer  → talk_map domain + /talk-map/* routes
+ *   1. storageDomain + webServer  → mind_map domain + /mind-map/* routes
  *   2. sessionQuery + llm + agentDefaultModel + sessions → digest pipeline
  *   3. agents + sessionQuery      → injection-spawn
  *
  * Failure policy: a broken external plugin must not take the host down —
  * open/mount failures are logged and the affected layer stays inert.
  */
-import type { DigestHostServices, SessionQueryService, SpawnHostServices, TalkMapHostServices } from './host/dsh-host.ts'
+import type { DigestHostServices, SessionQueryService, SpawnHostServices, MindMapHostServices } from './host/dsh-host.ts'
 import { DigestPipeline } from './host/digest/pipeline.ts'
-import { mountTalkMapRoutes, type TalkMapRuntime } from './host/routes.ts'
+import { mountMindMapRoutes, type MindMapRuntime } from './host/routes.ts'
 import { Spawner } from './host/spawn.ts'
-import { openTalkMapStore, type TalkMapStore } from './host/store.ts'
+import { openMindMapStore, type MindMapStore } from './host/store.ts'
 
-export const name = 'dsh-talk-map'
+export const name = 'mind_map'
 
 /** Structural cordis surface at the outer (uninjected) layer. */
 interface OuterContext {
@@ -25,10 +25,10 @@ interface OuterContext {
 }
 
 export function apply(ctx: OuterContext): void {
-  const runtime: TalkMapRuntime = {}
-  let resolveStore: (store: TalkMapStore) => void
+  const runtime: MindMapRuntime = {}
+  let resolveStore: (store: MindMapStore) => void
   let rejectStore: (error: unknown) => void
-  const storeReady = new Promise<TalkMapStore>((resolve, reject) => {
+  const storeReady = new Promise<MindMapStore>((resolve, reject) => {
     resolveStore = resolve
     rejectStore = reject
   })
@@ -36,29 +36,29 @@ export function apply(ctx: OuterContext): void {
 
   // Layer 1: storage domain + HTTP routes.
   ctx.inject(['storageDomain', 'webServer'], (injected: unknown) => {
-    const services = injected as TalkMapHostServices
+    const services = injected as MindMapHostServices
     services.effect(() => {
       let disposed = false
-      let store: TalkMapStore | undefined
-      openTalkMapStore(services.storageDomain).then((opened) => {
+      let store: MindMapStore | undefined
+      openMindMapStore(services.storageDomain).then((opened) => {
         if (disposed) {
           void opened.domain.close()
           return
         }
         store = opened
         resolveStore(opened)
-        services.logger?.info?.('[dsh-talk-map] storage domain open, routes live at /talk-map/')
+        services.logger?.info?.('[mind_map] storage domain open, routes live at /mind-map/')
       }).catch((error) => {
-        services.logger?.warn(`[dsh-talk-map] storage domain failed to open: ${String(error)}`)
+        services.logger?.warn(`[mind_map] storage domain failed to open: ${String(error)}`)
         rejectStore(error)
       })
-      const unmountRoutes = mountTalkMapRoutes(services, storeReady, runtime)
+      const unmountRoutes = mountMindMapRoutes(services, storeReady, runtime)
       return () => {
         disposed = true
         unmountRoutes()
         void store?.domain.close()
       }
-    }, 'dsh-talk-map: domain + routes')
+    }, 'mind_map: domain + routes')
   })
 
   // Layer 2: digest pipeline (needs the llm route and session surfaces).
@@ -72,7 +72,7 @@ export function apply(ctx: OuterContext): void {
       runtime.digest = pipeline
     /**
      * Full-text search across every conversation, exposed to the drawer through
-     * POST /talk-map/search (see routes.ts).
+     * POST /mind-map/search (see routes.ts).
      *
      * Uses the corpus query service, not sessionController.search: the latter
      * is the API-domain wrapper and needs an owning Agent (it answers
@@ -102,7 +102,7 @@ export function apply(ctx: OuterContext): void {
         stop()
         if (runtime.digest === pipeline) delete runtime.digest
       }
-    }, 'dsh-talk-map: digest pipeline')
+    }, 'mind_map: digest pipeline')
   })
 
   // Defaults for the draft composer (each optional — missing service just
@@ -112,7 +112,7 @@ export function apply(ctx: OuterContext): void {
     services.effect(() => {
       runtime.modelDefault = () => services.agentDefaultModel.currentSelection()
       return () => { delete runtime.modelDefault }
-    }, 'dsh-talk-map: model default')
+    }, 'mind_map: model default')
   })
   // Card bodies read the user's last message straight off the session surface —
   // no LLM involved, so it is a separate injection from the digest pipeline.
@@ -123,14 +123,14 @@ export function apply(ctx: OuterContext): void {
       return () => {
         if (runtime.sessionQuery === services.sessionQuery) delete runtime.sessionQuery
       }
-    }, 'dsh-talk-map: session query')
+    }, 'mind_map: session query')
   })
   ctx.inject(['agentPresets'], (injected: unknown) => {
     const services = injected as { agentPresets: { defaultId: string }; effect(cb: () => () => void, label?: string): void }
     services.effect(() => {
       runtime.presetDefault = () => services.agentPresets.defaultId
       return () => { delete runtime.presetDefault }
-    }, 'dsh-talk-map: preset default')
+    }, 'mind_map: preset default')
   })
 
   // Layer 3: injection-spawn (needs the agent registry).
@@ -142,6 +142,6 @@ export function apply(ctx: OuterContext): void {
       return () => {
         if (runtime.spawner === spawner) delete runtime.spawner
       }
-    }, 'dsh-talk-map: spawner')
+    }, 'mind_map: spawner')
   })
 }

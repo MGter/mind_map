@@ -12,10 +12,10 @@ export type { LocalePref }
 export type Locale = 'zh' | 'en'
 
 const zh: Record<string, string> = {
-  'map.title': '对话地图 ·v2',
+  'map.title': '思维图 ·v2',
   'map.close': '关闭地图（Esc）',
   'map.back': '返回',
-  'map.toggle': '对话地图',
+  'map.toggle': '思维图',
   'map.backToCurrent': '回到当前对话',
   'map.empty': '地图是空的 —— 右键导入工作区或对话；双击空白直接开新对话',
   'statusRail.title': '队列中的任务',
@@ -187,10 +187,10 @@ const zh: Record<string, string> = {
   'menu.removeGroup': '删除分组（连同会话）',
 }
 const en: Record<string, string> = {
-  'map.title': 'Talk Map ·v2',
+  'map.title': 'Mind Map ·v2',
   'map.close': 'Close map (Esc)',
   'map.back': 'Back',
-  'map.toggle': 'Talk Map',
+  'map.toggle': 'Mind Map',
   'map.backToCurrent': 'Back to this conversation',
   'map.empty': 'The map is empty — right-click to import a workspace or conversation; double-click to start a chat',
   'statusRail.title': 'Tasks in the queue',

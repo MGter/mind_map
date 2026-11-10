@@ -16,7 +16,7 @@
  * shape that never existed; the optional chain swallowed it and features simply
  * did nothing.)
  */
-import { talkMapApi } from './api.ts'
+import { mindMapApi } from './api.ts'
 import { connectionService } from './map-state.ts'
 import { t } from './i18n.ts'
 
@@ -51,7 +51,7 @@ export async function callRpc<T>(endpoint: string, request: Record<string, unkno
 /** Report a client-side failure to the Host log, so it is diagnosable later. */
 export function reportToHost(payload: Record<string, unknown>): void {
   try {
-    void fetch('/talk-map/client-boot', {
+    void fetch('/mind-map/client-boot', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ at: new Date().toISOString(), ...payload }),
@@ -77,7 +77,7 @@ export interface ContentHit {
  * Full-text search across every conversation.
  *
  * Two paths, in order: the Host's generated endpoint over the shared connection
- * (session/search), then our own Host route (/talk-map/search). The second
+ * (session/search), then our own Host route (/mind-map/search). The second
  * exists because the drawer's search must not degrade to title-only matching if
  * the RPC surface is missing — and the failure of the first one is logged so it
  * can be diagnosed instead of guessed at.
@@ -144,7 +144,7 @@ async function searchSessionsUncached(query: string, cwd?: string): Promise<Cont
   // SessionQueryError when the plugin asks, so it is only the fallback.
   let routeError: Error | undefined
   try {
-    const page = await talkMapApi.searchSessions(query, cwd)
+    const page = await mindMapApi.searchSessions(query, cwd)
     return normalize(page.items)
   } catch (error) {
     routeError = error as Error
@@ -164,7 +164,7 @@ async function searchSessionsUncached(query: string, cwd?: string): Promise<Cont
 /** The passage around one hit, loaded when the pointer rests on it. */
 export async function fetchSearchContext(sessionId: string, seq: number, query: string): Promise<string[]> {
   try {
-    const page = await talkMapApi.searchContext(sessionId, seq, query)
+    const page = await mindMapApi.searchContext(sessionId, seq, query)
     return Array.isArray(page.lines) ? page.lines.filter(line => typeof line === 'string' && line !== '') : []
   } catch (error) {
     reportToHost({ phase: 'search-context-failed', sessionId, seq, message: String((error as Error)?.message ?? error) })
@@ -179,7 +179,7 @@ export async function fetchSessionHits(
   query: string,
 ): Promise<{ blocks: string[][]; seqs: (number | null)[] }> {
   try {
-    const page = await talkMapApi.searchSessionHits(sessionId, query)
+    const page = await mindMapApi.searchSessionHits(sessionId, query)
     const blocks = (page.blocks ?? []).filter(block => Array.isArray(block) && block.length > 0)
     return { blocks, seqs: blocks.map((_, index) => (typeof page.seqs?.[index] === 'number' ? page.seqs[index] : null)) }
   } catch (error) {

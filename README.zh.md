@@ -1,10 +1,10 @@
-# dsh-talk-map · 对话地图
+# mind_map · 思维图
 
 [English](README.md) | 中文
 
-DeepSeek Harness（dsh）的可视化对话地图插件：把你的每一个会话变成白板上的一张卡片。
+DeepSeek Harness（dsh）的可视化思维图插件：把你的每一个会话变成白板上的一张卡片。
 
-> 源自 [Tasihi89/dsh-talk-map](https://github.com/Tasihi89/dsh-talk-map)（MIT）。本仓库是在其基础上大幅改造的分支：槽位布局、可缩放工作区、溢出抽屉、避让连线的路由都是在这里新增或重写的。
+> 源自 [Tasihi89/mind_map](https://github.com/Tasihi89/mind_map)（MIT）。本仓库是在其基础上大幅改造的分支：槽位布局、可缩放工作区、溢出抽屉、避让连线的路由都是在这里新增或重写的。
 
 ![工作区分组、置顶卡片与状态灯](https://raw.githubusercontent.com/Da0Mine/dsh-talk-map/main/docs/screenshots/workspaces-and-pins.png)
 
@@ -25,7 +25,7 @@ DeepSeek Harness（dsh）的可视化对话地图插件：把你的每一个会�
 
 ```sh
 # npm（推荐）
-dsh plugin add dsh-talk-map
+dsh plugin add mind_map
 
 # 或直接从 GitHub 装——构建产物已随仓库提交，免构建
 dsh plugin add github:Da0Mine/dsh-talk-map
@@ -49,7 +49,7 @@ dsh plugin add github:Da0Mine/dsh-talk-map
 
 ## 数据放在哪
 
-- 画布数据（位置、连线、摘要）：`$DSH_HOME/storages/talk_map.json`，走 dsh 官方 storage-domain，原子写入。
+- 画布数据（位置、连线、摘要）：`$DSH_HOME/storages/mind_map.json`，走 dsh 官方 storage-domain，原子写入。
 - 会话本身完全归 dsh 所有——本插件只读它们，只有分叉时才通过官方 API 新建。
 - 摘要走 dsh 本地 LLM 通道使用你配置的默认模型，没有其他外部请求。
 
@@ -63,7 +63,7 @@ dsh plugin add github:Da0Mine/dsh-talk-map
 pnpm install
 pnpm run build        # 宿主 → lib/，客户端 → client/client.js
 pnpm run probe        # 无头端到端探针（150 项）
-dsh plugin --profile dev add /abs/path/dsh-talk-map
+dsh plugin --profile dev add /abs/path/mind_map
 ```
 
 MIT License.

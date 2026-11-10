@@ -2,7 +2,7 @@ import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path'
 import { CARD_W, CARD_H, layoutFor } from '../src/client/grid-layout.ts'
 import { pickFaces } from '../src/client/edge-routing.ts'
 import { routeBetween } from '../src/client/edge-route.ts'
-const raw = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.dsh', 'storages', 'talk_map.json'), 'utf8'))
+const raw = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.dsh', 'storages', 'mind_map.json'), 'utf8'))
 const cards = Object.entries(raw.tables.cards).map(([id, c]) => ({ id, x: c.x, y: c.y }))
 const frames = raw.global?.wsFrames ?? {}
 const placed = {}, frameOf = {}

@@ -4,7 +4,7 @@
  * localStorage and applied as `--tm-font-step` on the panel root, so nothing
  * outside the map is affected.
  */
-const STORAGE_KEY = 'dsh.talk-map.font-step'
+const STORAGE_KEY = 'dsh.mind-map.font-step'
 const MIN = -3
 const MAX = 9
 

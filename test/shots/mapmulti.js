@@ -34259,7 +34259,7 @@
     return { fromHandle: freeFrom, toHandle: freeTo };
   }
 
-  // src/client/TalkMapEdge.tsx
+  // src/client/MindMapEdge.tsx
   var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
   var boardCache = { at: 0, boxes: [] };
   function boardBoxes() {
@@ -34269,7 +34269,7 @@
     const viewport = document.querySelector(".react-flow__viewport");
     if (viewport === null) return boardCache.boxes;
     const boxes = [];
-    for (const element of document.querySelectorAll("[data-talkmap-session]")) {
+    for (const element of document.querySelectorAll("[data-mindmap-session]")) {
       const node = element;
       let x = 0;
       let y = 0;
@@ -34289,7 +34289,7 @@
     }
     return boxes;
   }
-  function TalkMapEdge(props) {
+  function MindMapEdge(props) {
     const data = props.data ?? {};
     const synced = data.sync === "synced";
     const hidden = synced && data.structural !== true || data.ready === false;
@@ -34448,7 +34448,7 @@
       )
     ] });
   }
-  var edgeTypes = { talkMap: TalkMapEdge };
+  var edgeTypes = { mindMap: MindMapEdge };
 
   // test/shots/mapmulti-entry.tsx
   var W = 224;
@@ -34484,7 +34484,7 @@
       id: "e" + index2,
       source: from,
       target: to,
-      type: "talkMap",
+      type: "mindMap",
       sourcePosition: position(fromFace),
       targetPosition: position(toFace),
       data: {

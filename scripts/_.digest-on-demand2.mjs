@@ -38,9 +38,9 @@ source = source.replace(
 
 // 4. route
 source = source.replace(
-  /([ \t]*)if \(route === "POST \/talk-map\/digest\/refresh"\) \{/,
+  /([ \t]*)if \(route === "POST \/mind-map\/digest\/refresh"\) \{/,
   (match, indent) => J([
-    `${indent}if (route === "POST /talk-map/digest/ensure") {`,
+    `${indent}if (route === "POST /mind-map/digest/ensure") {`,
     `${indent}\tif (runtime.digest === void 0) {`,
     `${indent}\t\tsendJson(response, 503, { error: "digest layer unavailable (llm service missing)" });`,
     `${indent}\t\treturn;`,
@@ -110,9 +110,9 @@ const hook = J([
   '\t\t\t\t\tfor (const target of targets) {',
   '\t\t\t\t\t\ttry {',
   '\t\t\t\t\t\t\tawait runtime.spawner.injectInto(target, [{ sessionId, text }]);',
-  '\t\t\t\t\t\t\tservices.logger?.info?.(`[dsh-talk-map] auto-pushed digest → ${target}`);',
+  '\t\t\t\t\t\t\tservices.logger?.info?.(`[mind_map] auto-pushed digest → ${target}`);',
   '\t\t\t\t\t\t} catch (error) {',
-  '\t\t\t\t\t\t\tservices.logger?.warn(`[dsh-talk-map] auto push failed: ${String(error)}`);',
+  '\t\t\t\t\t\t\tservices.logger?.warn(`[mind_map] auto push failed: ${String(error)}`);',
   '\t\t\t\t\t\t}',
   '\t\t\t\t\t}',
   '\t\t\t\t},',

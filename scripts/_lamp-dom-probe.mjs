@@ -11,7 +11,7 @@ await page.setViewportSize({width:1700,height:1050})
 await page.goto('file:///'+path.resolve('demo/index.html').replace(/\\/g,'/')+'?demo=1')
 await page.waitForTimeout(2500)
 const info = await page.evaluate(() => {
-  const cards = [...document.querySelectorAll('[data-talkmap-session]')]
+  const cards = [...document.querySelectorAll('[data-mindmap-session]')]
   const sample = cards.slice(0, 3).map(card => ({
     text: (card.textContent ?? '').slice(0, 40),
     lampLike: [...card.querySelectorAll('[class*="lamp"], [class*="Lamp"], [data-lamp]')].map(el => el.className || el.getAttribute('data-lamp')),

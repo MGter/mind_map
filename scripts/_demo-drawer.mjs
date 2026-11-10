@@ -33,12 +33,12 @@ await page.waitForTimeout(2500)
 
 // A stack cell is a card that shows "+N" — open it.
 const opened = await page.evaluate(() => {
-  const cells = [...document.querySelectorAll('[data-talkmap-session]')]
+  const cells = [...document.querySelectorAll('[data-mindmap-session]')]
   for (const cell of cells) {
     const text = cell.textContent ?? ''
     if (!/^\s*\+\d+/.test(text) && !/\+\d+/.test(text)) continue
     cell.click()
-    return { clicked: cell.getAttribute('data-talkmap-session'), text: text.slice(0, 12) }
+    return { clicked: cell.getAttribute('data-mindmap-session'), text: text.slice(0, 12) }
   }
   return null
 })

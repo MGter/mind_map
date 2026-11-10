@@ -7,7 +7,7 @@
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react'
 import { canvas } from './canvas-store.ts'
 import { t } from './i18n.ts'
-import styles from './talk-map.module.css'
+import styles from './mind-map.module.css'
 
 /** Which lamp the card wears; see the priority order in MapCanvas. */
 export type CardGlow = 'running' | 'done' | 'error' | 'waiting'
@@ -39,7 +39,7 @@ function statusChip(glow: CardGlow | undefined, running: boolean): React.JSX.Ele
   return (
     <span
       className={`${styles['cardChip']} ${styles[spec.className]}`}
-      data-talkmap-chip={glow ?? 'running'}
+      data-mindmap-chip={glow ?? 'running'}
     >
       {spec.dot ? <span className={styles['runningDot']} /> : null}
       {t(spec.key)}
@@ -116,7 +116,7 @@ export function SessionCardNode(props: NodeProps<SessionCardNodeType>): React.JS
         data.onPick()
       }}
       style={data.onPick !== undefined ? { cursor: 'pointer' } : undefined}
-      data-talkmap-session={data.sessionId}
+      data-mindmap-session={data.sessionId}
     >
       {/* The conversation the map was opened from, marked like a reticle: four
         * corner brackets instead of a full frame. */}
@@ -140,7 +140,7 @@ export function SessionCardNode(props: NodeProps<SessionCardNodeType>): React.JS
               className={`${styles['pickBox']}${selected === true ? ` ${styles['pickBoxChecked']}` : ''}`}
               role="checkbox"
               aria-checked={selected === true}
-              data-talkmap-pick=""
+              data-mindmap-pick=""
             >
               {selected === true ? '✓' : ''}
             </span>
@@ -149,7 +149,7 @@ export function SessionCardNode(props: NodeProps<SessionCardNodeType>): React.JS
       <div className={styles['cardTop']}>
         {data.pinned === true
           ? (
-              <span className={styles['cardPin']} title={t('card.pinned')} aria-label={t('card.pinned')} data-talkmap-pin="1">
+              <span className={styles['cardPin']} title={t('card.pinned')} aria-label={t('card.pinned')} data-mindmap-pin="1">
                 {/* Icon-library pushpin (Material push_pin, wider head and a
                   * longer needle so it still reads at 13px). */}
                 <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M16 8.6V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v4.6c0 1.66-1.34 3-3 3v2h5.1v7.9l.9 1 .9-1V13.6H19v-2c-1.66 0-3-1.34-3-3z"/></svg>
@@ -185,7 +185,7 @@ export function SessionCardNode(props: NodeProps<SessionCardNodeType>): React.JS
               <span
                 className={`${styles['cardChip']} ${styles['cardChipDraft']}`}
                 title={t('card.draftHint')}
-                data-talkmap-draft="1"
+                data-mindmap-draft="1"
               >
                 {t('card.draft')}
               </span>
@@ -196,7 +196,7 @@ export function SessionCardNode(props: NodeProps<SessionCardNodeType>): React.JS
               <span
                 className={`${styles['cardChip']} ${styles['cardChipInterrupted']}`}
                 title={t('card.interruptedHint')}
-                data-talkmap-interrupted="1"
+                data-mindmap-interrupted="1"
               >
                 {t('card.interrupted')}
               </span>

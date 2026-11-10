@@ -30,7 +30,7 @@ const block = [
   '      .filter(edge => inside.has(edge.source) && inside.has(edge.target))',
   '      .map(edge => {',
   '        const data = (edge.data ?? {}) as { sync?: string; structural?: boolean }',
-  '        // Identical rule to TalkMapEdge: transfers vanish once in sync, fork',
+  '        // Identical rule to MindMapEdge: transfers vanish once in sync, fork',
   '        // lines never do.',
   '        const visible = !(data.sync === \'synced\' && data.structural !== true)',
   '        return { from: edge.source, to: edge.target, visible }',

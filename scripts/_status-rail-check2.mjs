@@ -34,7 +34,7 @@ const read = () => page.evaluate(() => {
   const panel = document.querySelector('[class*="statusRailPanel"]')
   const tab = document.querySelector('[class*="statusRailTab"]')
   const slots = [...document.querySelectorAll('[class*="statusRailSlot"]')]
-  const boardCard = document.querySelector('[data-talkmap-session]')
+  const boardCard = document.querySelector('[data-mindmap-session]')
   const rows = slots.map(element => {
     const card = element.querySelector('[class*="statusRailCard"]')
     const rect = card === null ? null : card.getBoundingClientRect()
@@ -85,7 +85,7 @@ const dragged = await page.evaluate(() => {
 })
 await page.waitForTimeout(500)
 const afterDrag = await read()
-const storedOrder = await page.evaluate(() => window.localStorage.getItem('dsh.talk-map.status-rail.order.v1'))
+const storedOrder = await page.evaluate(() => window.localStorage.getItem('dsh.mind-map.status-rail.order.v1'))
 
 await page.reload()
 await page.waitForTimeout(2600)
@@ -93,7 +93,7 @@ const afterReload = await read()
 
 const layoutWidth = await page.evaluate(() => {
   const rail = document.querySelector('[class*="statusRailCard"]')
-  const board = document.querySelector('[data-talkmap-session]')
+  const board = document.querySelector('[data-mindmap-session]')
   return { rail: rail === null ? 0 : rail.offsetWidth, board: board === null ? 0 : board.offsetWidth }
 })
 

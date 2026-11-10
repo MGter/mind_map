@@ -44,9 +44,9 @@ const BANNER = `window.__ModuleLoader__.load({ id: ${JSON.stringify(PLUGIN_ID)},
 \t// Evidence trail. The console line lands in the shell's crash report (its
 \t// console section survives); the POST retries because a fetch issued during
 \t// module evaluation can outrun the shell's request routing.
-\tconsole.error('[dsh-talk-map] client bundle evaluated', new Date().toISOString());
+\tconsole.error('[mind_map] client bundle evaluated', new Date().toISOString());
 \ttry {
-\t\tconst ping = (phase) => { try { fetch('/talk-map/client-boot', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ phase }) }).catch(() => {}) } catch {} };
+\t\tconst ping = (phase) => { try { fetch('/mind-map/client-boot', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ phase }) }).catch(() => {}) } catch {} };
 \t\tping('evaluate');
 \t\tsetTimeout(() => { ping('alive-1s') }, 1000);
 \t\tsetTimeout(() => { ping('alive-5s') }, 5000);
@@ -57,7 +57,7 @@ const BANNER = `window.__ModuleLoader__.load({ id: ${JSON.stringify(PLUGIN_ID)},
 \t// degrade to an inert module and leave a trace instead of throwing.
 \ttry {`
 const FOOTER = `\t} catch (error) {
-\t\tconsole.error('[dsh-talk-map] client bundle failed to evaluate (inert this boot):', error);
+\t\tconsole.error('[mind_map] client bundle failed to evaluate (inert this boot):', error);
 \t\treturn { name: ${JSON.stringify(PLUGIN_ID)}, apply() {} };
 \t}
 \treturn module.exports;

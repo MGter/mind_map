@@ -1,5 +1,5 @@
 /**
- * Mount the real TalkMapEdge inside a real React Flow, bundle it, and screenshot
+ * Mount the real MindMapEdge inside a real React Flow, bundle it, and screenshot
  * it — the only way to prove the component paints (the probe's fixture edge sits
  * on folded cards, so it is filtered out before render).
  */
@@ -12,7 +12,7 @@ import { chromium } from 'playwright-core'
 const entry = `import { createRoot } from 'react-dom/client'
 import { ReactFlow, ReactFlowProvider, Background, Handle, Position, ConnectionMode } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { edgeTypes } from '../src/client/TalkMapEdge.tsx'
+import { edgeTypes } from '../src/client/MindMapEdge.tsx'
 import { pickFaces } from '../src/client/edge-routing.ts'
 import { routeBetween } from '../src/client/edge-route.ts'
 
@@ -76,9 +76,9 @@ const dataFor = (fromId, toId, sync) => ({
 })
 
 const edges = [
-  { id: 'sync', source: 'a', target: 'b', type: 'talkMap', data: dataFor('a', 'b', 'synced'), ...faceFor('a', 'b') },
-  { id: 'idle', source: 'a', target: 'b', type: 'talkMap', data: dataFor('a', 'b', 'idle'), ...faceFor('a', 'b') },
-  { id: 'adjacent', source: 'c', target: 'd', type: 'talkMap', data: dataFor('c', 'd', 'synced'), ...faceFor('c', 'd') },
+  { id: 'sync', source: 'a', target: 'b', type: 'mindMap', data: dataFor('a', 'b', 'synced'), ...faceFor('a', 'b') },
+  { id: 'idle', source: 'a', target: 'b', type: 'mindMap', data: dataFor('a', 'b', 'idle'), ...faceFor('a', 'b') },
+  { id: 'adjacent', source: 'c', target: 'd', type: 'mindMap', data: dataFor('c', 'd', 'synced'), ...faceFor('c', 'd') },
 ]
 
 createRoot(document.getElementById('root')!).render(
@@ -131,7 +131,7 @@ const EDGE = [
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
   'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
 ].find(candidate => fs.existsSync(candidate))
-const profileDir = path.join(os.tmpdir(), 'talkmap-edge-live')
+const profileDir = path.join(os.tmpdir(), 'mindmap-edge-live')
 fs.rmSync(profileDir, { recursive: true, force: true })
 const CDP = 9361
 const edge = spawn(EDGE, [

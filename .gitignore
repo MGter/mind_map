@@ -1,4 +1,4 @@
-﻿node_modules/
+node_modules/
 *.bak-*
 *.panmode-*
 package-lock.json
@@ -6,3 +6,7 @@ client/.client.check.js
 dist/
 client/client.dev.js
 client/.client.check.js
+
+backups/
+.tmp-diff/
+*.tgz

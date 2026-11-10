@@ -23,7 +23,7 @@ const block = [
   '    const found = await page.evaluate(() => {',
   '      const rows = [...document.querySelectorAll(\'[data-stack-card]\')]',
   '      const picked = rows.filter(node => node.className.includes(\'cardSelected\'))',
-  '      return { total: rows.length, selected: picked.length, sessions: picked.map(node => node.getAttribute(\'data-talkmap-session\')) }',
+  '      return { total: rows.length, selected: picked.length, sessions: picked.map(node => node.getAttribute(\'data-mindmap-session\')) }',
   '    })',
   '    drawerSelection.opened += 1',
   '    drawerSelection.selected += found.selected',

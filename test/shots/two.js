@@ -34138,7 +34138,7 @@
     return Math.round(value * 100) / 100;
   }
 
-  // src/client/TalkMapEdge.tsx
+  // src/client/MindMapEdge.tsx
   var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
   var boardCache = { at: 0, boxes: [] };
   function boardBoxes() {
@@ -34148,7 +34148,7 @@
     const viewport = document.querySelector(".react-flow__viewport");
     if (viewport === null) return boardCache.boxes;
     const boxes = [];
-    for (const element of document.querySelectorAll("[data-talkmap-session]")) {
+    for (const element of document.querySelectorAll("[data-mindmap-session]")) {
       const node = element;
       let x = 0;
       let y = 0;
@@ -34168,7 +34168,7 @@
     }
     return boxes;
   }
-  function TalkMapEdge(props) {
+  function MindMapEdge(props) {
     const data = props.data ?? {};
     const synced = data.sync === "synced";
     const hidden = synced && data.structural !== true;
@@ -34326,7 +34326,7 @@
       selected: false,
       animated: false,
       interactionWidth: 18,
-      type: "talkMap",
+      type: "mindMap",
       markerEnd: void 0,
       data: {
         sync: "idle",
@@ -34343,13 +34343,13 @@
   (0, import_client.createRoot)(document.getElementById("root")).render(
     /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
       /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("svg", { width: 1200, height: 900, style: { position: "absolute", inset: 0 }, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(TalkMapEdge, { ...a.props }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(TalkMapEdge, { ...b.props })
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(MindMapEdge, { ...a.props }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(MindMapEdge, { ...b.props })
       ] }),
       [...a.cards, ...b.cards].map((card) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
         "div",
         {
-          "data-talkmap-session": card.id,
+          "data-mindmap-session": card.id,
           style: {
             position: "absolute",
             left: card.x,

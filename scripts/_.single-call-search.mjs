@@ -23,7 +23,7 @@ const block = `\t\t\t/**
 \t\t\t * One corpus query, nothing else. Measured on the real corpus: a search that
 \t\t\t * also ran searchEvents per session took 12-15 s; this form just returns the
 \t\t\t * best match the index already computed. Extra hits inside one conversation
-\t\t\t * are fetched by /talk-map/search-session when the user asks for them.
+\t\t\t * are fetched by /mind-map/search-session when the user asks for them.
 \t\t\t */
 \t\t\truntime.search = async (query) => {
 \t\t\t\tconst corpus = runtime.sessionQuery;

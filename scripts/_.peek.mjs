@@ -45,7 +45,7 @@ source = source.replace(
     '          ? (',
     '              <div',
     "                className={styles['peek']}",
-    '                data-talkmap-search-peek=""',
+    '                data-mindmap-search-peek=""',
     '                style={{',
     '                  left: Math.min(Math.max(12, peek.x), Math.max(12, window.innerWidth - 520)),',
     '                  top: Math.min(peek.y, Math.max(12, window.innerHeight - 220)),',

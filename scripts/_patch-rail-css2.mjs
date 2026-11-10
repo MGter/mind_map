@@ -1,7 +1,7 @@
 /** Replace the status-rail CSS with the left-edge card column. */
 import fs from 'node:fs'
 
-const file = 'src/client/talk-map.module.css'
+const file = 'src/client/mind-map.module.css'
 const raw = fs.readFileSync(file, 'utf8')
 const marker = '/* ── status rail (left edge) '
 const at = raw.indexOf(marker)

@@ -19,7 +19,7 @@ while (end < lines.length && !lines[end].trim().startsWith('};')) end += 1
 const searchBlock = `\t\t\t/**
 \t\t\t * Full-text search, FAST: one index query per conversation, no log reads.
 \t\t\t * Each hit keeps its \`seq\` so the drawer can pull the surrounding passage
-\t\t\t * only when the pointer rests on that line (see /talk-map/search-context).
+\t\t\t * only when the pointer rests on that line (see /mind-map/search-context).
 \t\t\t */
 \t\t\truntime.search = async (query) => {
 \t\t\t\tconst corpus = runtime.sessionQuery;

@@ -45,7 +45,7 @@ const block = [
   '  })',
   '  await page.waitForTimeout(900)',
   '  const afterOrder = await page.evaluate(() =>',
-  "    [...document.querySelectorAll('[data-stack-card]')].map(n => n.getAttribute('data-talkmap-session')))",
+  "    [...document.querySelectorAll('[data-stack-card]')].map(n => n.getAttribute('data-mindmap-session')))",
   "  check('抽屉里拖动卡片可以改变排序并保留',",
   '    beforeOrder.length >= 2 && beforeOrder.join() !== afterOrder.join(),',
   '    JSON.stringify({ before: beforeOrder, after: afterOrder }))',

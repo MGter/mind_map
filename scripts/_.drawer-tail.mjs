@@ -20,7 +20,7 @@ const tail = [
   '                      key={hit.sessionId}',
   '                      type="button"',
   "                      className={styles['drawerHit']}",
-  '                      data-talkmap-search-hit={hit.sessionId}',
+  '                      data-mindmap-search-hit={hit.sessionId}',
   '                      onClick={() => { props.onOpenSession?.(hit.sessionId) }}',
   '                    >',
   "                      <span className={styles['drawerHitTitle']}>{hit.title}</span>",

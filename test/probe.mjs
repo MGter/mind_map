@@ -1,5 +1,5 @@
 /**
- * Headless-Edge probe for the talk-map client bundle.
+ * Headless-Edge probe for the mind-map client bundle.
  *
  * Runs the real built artifact in a throwaway headless Edge (own --user-data-dir,
  * own debugging port) and asserts the behaviours this project cares about.
@@ -26,7 +26,7 @@ const EDGE = [
 const PORT = 8791
 const CDP = 9333
 const headed = process.argv.includes('--headed')
-const profileDir = path.join(os.tmpdir(), 'talkmap-edge-profile')
+const profileDir = path.join(os.tmpdir(), 'mindmap-edge-profile')
 const shots = path.join(ROOT, 'test/shots')
 
 const results = []
@@ -133,7 +133,7 @@ try {
     if (sessionStorage.getItem('probe-run') === run) return
     sessionStorage.setItem('probe-run', run)
     for (const key of Object.keys(localStorage)) {
-      if (key.startsWith('dsh.talk-map.')) localStorage.removeItem(key)
+      if (key.startsWith('dsh.mind-map.')) localStorage.removeItem(key)
     }
   })
   await page.goto(`http://127.0.0.1:${PORT}/test/index.html?run=${Date.now()}`)
@@ -186,7 +186,7 @@ try {
     controlsState.toggle === false && controlsState.buttons === 4, JSON.stringify(controlsState))
 
   const sampleFont = () => page.evaluate(() => {
-    const node = document.querySelector('.react-flow__node [data-talkmap-session] [class*="cardTitle"]')
+    const node = document.querySelector('.react-flow__node [data-mindmap-session] [class*="cardTitle"]')
       ?? document.querySelector('[class*="cardTitle"]')
     return node === null ? null : parseFloat(getComputedStyle(node).fontSize)
   })
@@ -206,26 +206,26 @@ try {
   check('点「默认」→ 回到原始字号', resetFont === baseFont, String(baseFont) + ' → ' + String(resetFont))
 
   // ---- 0c. global search lives in the header ---------------------------
-  const globalBox = await box('[data-talkmap-global-search]')
+  const globalBox = await box('[data-mindmap-global-search]')
   check('右上角有全局搜索框（在字体按钮左边）', globalBox !== null, JSON.stringify(globalBox))
   const callsBeforeTyping = await page.evaluate(() => window.__harness.searchRouteCalls().length)
-  await page.fill('[data-talkmap-global-search]', '物理')
+  await page.fill('[data-mindmap-global-search]', '物理')
   await page.waitForTimeout(500)
   const callsAfterTyping = await page.evaluate(() => window.__harness.searchRouteCalls().length)
   await page.keyboard.press('Enter')
   await page.waitForTimeout(900)
   const globalPanel = await page.evaluate(() => ({
     open: document.querySelector('[class*="globalSearchPanel"]') !== null,
-    hits: document.querySelectorAll('[data-talkmap-search-hit]').length,
+    hits: document.querySelectorAll('[data-mindmap-search-hit]').length,
   }))
   const globalScope = await page.evaluate(() => window.__harness.searchRouteScopes().at(-1))
   // Titles are searched too (client-side, the board knows every title).
-  await page.fill('[data-talkmap-global-search]', '标注工具离线化')
+  await page.fill('[data-mindmap-global-search]', '标注工具离线化')
   await page.keyboard.press('Enter')
   await page.waitForTimeout(900)
   const titleHits = await page.evaluate(() => ({
-    chips: document.querySelectorAll('[data-talkmap-title-hit]').length,
-    sessions: [...document.querySelectorAll('[data-talkmap-search-hit]')].map(node => node.getAttribute('data-talkmap-search-hit')),
+    chips: document.querySelectorAll('[data-mindmap-title-hit]').length,
+    sessions: [...document.querySelectorAll('[data-mindmap-search-hit]')].map(node => node.getAttribute('data-mindmap-search-hit')),
   }))
   await page.screenshot({ path: path.join(shots, 'probe-global-search.png') })
   await page.keyboard.press('Escape')
@@ -276,7 +276,7 @@ try {
   // 卡片真实渲染尺寸：布局常量是 224×120，但高度由内容决定——连线避障要用真实值
   const nodeSizes = await page.evaluate(() => {
     const sizes = [...document.querySelectorAll('.react-flow__node')]
-      .filter(node => node.querySelector('[data-talkmap-session]') !== null)
+      .filter(node => node.querySelector('[data-mindmap-session]') !== null)
       .map(node => {
         const box = node.getBoundingClientRect()
         return { w: Math.round(box.width), h: Math.round(box.height) }
@@ -324,13 +324,13 @@ try {
   await openMap()
   await page.waitForTimeout(900)
   const importedFrame = await page.evaluate(() => {
-    const frame = document.querySelector('[data-talkmap-workspace="ws-imported"]')
+    const frame = document.querySelector('[data-mindmap-workspace="ws-imported"]')
     if (frame === null) return null
-    const card = document.querySelector('[data-talkmap-session="s30"]')
+    const card = document.querySelector('[data-mindmap-session="s30"]')
     const box = frame.getBoundingClientRect()
     // Overlap against every other folder: a new folder must not be dropped on top.
-    const others = [...document.querySelectorAll('[data-talkmap-frame]')]
-      .filter(node => node.getAttribute('data-talkmap-workspace') !== 'ws-imported')
+    const others = [...document.querySelectorAll('[data-mindmap-frame]')]
+      .filter(node => node.getAttribute('data-mindmap-workspace') !== 'ws-imported')
       .map(node => node.getBoundingClientRect())
     const overlaps = others.some(other => !(box.right <= other.left + 1 || box.left >= other.right - 1
       || box.bottom <= other.top + 1 || box.top >= other.bottom - 1))
@@ -345,13 +345,13 @@ try {
     const out = {}
     // Grid cards and drawer cards both carry the session id, so one scan covers
     // whichever surface is on screen.
-    for (const root of document.querySelectorAll('[data-talkmap-session]')) {
-      const sessionId = root.getAttribute('data-talkmap-session')
-      const chip = root.querySelector('[data-talkmap-chip]')
+    for (const root of document.querySelectorAll('[data-mindmap-session]')) {
+      const sessionId = root.getAttribute('data-mindmap-session')
+      const chip = root.querySelector('[data-mindmap-chip]')
       out[sessionId] = chip === null
         ? null
         : {
-            kind: chip.getAttribute('data-talkmap-chip'),
+            kind: chip.getAttribute('data-mindmap-chip'),
             text: chip.textContent.trim(),
             color: getComputedStyle(chip).color,
           }
@@ -385,7 +385,7 @@ try {
   }, draftSession)
   await page.waitForTimeout(2200)
   const draftBadge = await page.evaluate((id) => {
-    const badge = document.querySelector('[data-talkmap-session="' + id + '"] [data-talkmap-draft]')
+    const badge = document.querySelector('[data-mindmap-session="' + id + '"] [data-mindmap-draft]')
     return badge === null ? null : { text: badge.textContent.trim(), color: getComputedStyle(badge).color }
   }, draftSession)
   check('输入框有未发送文字 → 卡片带黄标「待发送」',
@@ -394,11 +394,11 @@ try {
   await page.evaluate((id) => { localStorage.removeItem('dsh.conversation.' + id) }, draftSession)
   await page.waitForTimeout(2200)
   check('发出去/清空后黄标消失',
-    await page.evaluate(() => document.querySelector('[data-talkmap-draft]') === null))
+    await page.evaluate(() => document.querySelector('[data-mindmap-draft]') === null))
 
   // ---- 3e. quiet cards / particles / card body -------------------------
   const quietCard = await page.evaluate(() => {
-    const nodes = [...document.querySelectorAll('.react-flow__node [data-talkmap-session]')]
+    const nodes = [...document.querySelectorAll('.react-flow__node [data-mindmap-session]')]
     const quiet = nodes.find(node => node.className.includes('tm_cardQuiet'))
     if (quiet === undefined) return null
     const r = quiet.getBoundingClientRect()
@@ -428,7 +428,7 @@ try {
     await page.mouse.move(quietCard.point.x, quietCard.point.y)
     await page.waitForTimeout(300)
     const hovered = await page.evaluate(() => {
-      const node = [...document.querySelectorAll('.react-flow__node [data-talkmap-session]')]
+      const node = [...document.querySelectorAll('.react-flow__node [data-mindmap-session]')]
         .find(item => item.className.includes('tm_cardQuiet'))
       return node === undefined ? null : Number(getComputedStyle(node).opacity)
     })
@@ -438,7 +438,7 @@ try {
   }
 
   const runningFx = await page.evaluate(() => {
-    const card = document.querySelector('[data-talkmap-session="s1"]')
+    const card = document.querySelector('[data-mindmap-session="s1"]')
     if (card === null) return null
     const particles = card.querySelectorAll('[class*="cardParticles"] i')
     const layer = card.querySelector('[class*="cardParticles"]')
@@ -464,7 +464,7 @@ try {
   let waited = 0
   for (let attempt = 0; attempt < 25; attempt += 1) {
     bodyUnderChurn = await page.evaluate(() => {
-      const card = document.querySelector('[data-talkmap-session="s1"]')
+      const card = document.querySelector('[data-mindmap-session="s1"]')
       return card === null ? null : (card.querySelector('[class*="cardSummary"]')?.textContent ?? null)
     })
     if (bodyUnderChurn !== null) break
@@ -488,14 +488,14 @@ try {
   await page.waitForTimeout(500)
   const cachedStart = Date.now()
   const cachedBody = await page.evaluate(() => {
-    const card = document.querySelector('[data-talkmap-session="s1"]')
+    const card = document.querySelector('[data-mindmap-session="s1"]')
     return card === null ? null : (card.querySelector('[class*="cardSummary"]')?.textContent ?? null)
   })
   const cachedLatency = Date.now() - cachedStart
   // …and the background refresh still lands, for when the cache is cold.
   await page.waitForTimeout(2200)
   const refreshedBody = await page.evaluate(() => {
-    const card = document.querySelector('[data-talkmap-session="s1"]')
+    const card = document.querySelector('[data-mindmap-session="s1"]')
     return card === null ? null : (card.querySelector('[class*="cardSummary"]')?.textContent ?? null)
   })
   check('正文来自本地缓存：接口慢到 2s 也立刻显示',
@@ -586,7 +586,7 @@ try {
       runningRing: withRing !== null,
       runningCard: withRing,
       doneBreath: cards.some(card => getComputedStyle(card).animationName.includes('lamp-green')),
-      chipCount: el.querySelectorAll('[data-talkmap-chip]').length,
+      chipCount: el.querySelectorAll('[data-mindmap-chip]').length,
     }
   })
   check('点堆叠格子打开抽屉，列出全部对话', drawer?.count === 6, `${drawer?.count} 张`)
@@ -756,9 +756,9 @@ try {
   await openMap()
   await page.waitForTimeout(700)
   const closedFinish = await page.evaluate((id) => {
-    const card = document.querySelector('[data-talkmap-session="' + id + '"]')
-    const chip = card === null ? null : card.querySelector('[data-talkmap-chip]')
-    return chip === null ? null : chip.getAttribute('data-talkmap-chip')
+    const card = document.querySelector('[data-mindmap-session="' + id + '"]')
+    const chip = card === null ? null : card.querySelector('[data-mindmap-chip]')
+    return chip === null ? null : chip.getAttribute('data-mindmap-chip')
   }, quietSession)
   check('关着地图时跑完 → 不亮「待查看」', closedFinish !== 'done',
     String(quietSession) + ' → ' + String(closedFinish))
@@ -781,9 +781,9 @@ try {
     await page.evaluate((id) => window.__harness.setRunning(id, false), notifySession)
     await page.waitForTimeout(450)
     const beforeRead = await page.evaluate((id) => {
-      const card = document.querySelector('[data-talkmap-session="' + id + '"]')
-      const chip = card === null ? null : card.querySelector('[data-talkmap-chip]')
-      return chip === null ? null : chip.getAttribute('data-talkmap-chip')
+      const card = document.querySelector('[data-mindmap-session="' + id + '"]')
+      const chip = card === null ? null : card.querySelector('[data-mindmap-chip]')
+      return chip === null ? null : chip.getAttribute('data-mindmap-chip')
     }, notifySession)
     check('地图开着时跑完 → 亮起待查看', beforeRead === 'done', String(beforeRead))
     // The shell may report "not unread" simply because it never flagged it (the
@@ -791,9 +791,9 @@ try {
     await page.evaluate((id) => window.__harness.hostNotUnread(id), notifySession)
     await page.waitForTimeout(450)
     const afterNotUnread = await page.evaluate((id) => {
-      const card = document.querySelector('[data-talkmap-session="' + id + '"]')
-      const chip = card === null ? null : card.querySelector('[data-talkmap-chip]')
-      return chip === null ? null : chip.getAttribute('data-talkmap-chip')
+      const card = document.querySelector('[data-mindmap-session="' + id + '"]')
+      const chip = card === null ? null : card.querySelector('[data-mindmap-chip]')
+      return chip === null ? null : chip.getAttribute('data-mindmap-chip')
     }, notifySession)
     check('宿主说“未标记未读”时，被地图挡住的完成仍然亮着',
       afterNotUnread === 'done', String(afterNotUnread))
@@ -804,9 +804,9 @@ try {
     await page.evaluate((id) => window.__harness.notificationJump(id), notifySession)
     await page.waitForTimeout(600)
     const afterRead = await page.evaluate((id) => {
-      const card = document.querySelector('[data-talkmap-session="' + id + '"]')
-      const chip = card === null ? null : card.querySelector('[data-talkmap-chip]')
-      return chip === null ? null : chip.getAttribute('data-talkmap-chip')
+      const card = document.querySelector('[data-mindmap-session="' + id + '"]')
+      const chip = card === null ? null : card.querySelector('[data-mindmap-chip]')
+      return chip === null ? null : chip.getAttribute('data-mindmap-chip')
     }, notifySession)
     check('从通知进去看过之后 → 待查看消失', afterRead !== 'done',
       String(notifySession) + ' → ' + String(afterRead))
@@ -837,7 +837,7 @@ try {
   await page.waitForTimeout(250)
 
   // ---- 5. panel model --------------------------------------------------
-  check('地图是 main 面板（不是遮罩）', (await page.evaluate(() => window.__harness.panelState())).selectedPanel === 'talk-map')
+  check('地图是 main 面板（不是遮罩）', (await page.evaluate(() => window.__harness.panelState())).selectedPanel === 'mind-map')
   await page.click('[class*="tm_backButton"]')
   await page.waitForTimeout(400)
   check('返回按钮回到对话', await page.evaluate(() => document.querySelector('[data-harness-placeholder]') !== null))
@@ -863,15 +863,15 @@ try {
   await openMap()
   await page.waitForTimeout(600)
   const currentCard = await page.evaluate(() => {
-    const marked = [...document.querySelectorAll('[data-talkmap-session]')]
+    const marked = [...document.querySelectorAll('[data-mindmap-session]')]
       .filter(node => node.querySelector('[class*="cardReticle"]') !== null)
-      .map(node => node.getAttribute('data-talkmap-session'))
+      .map(node => node.getAttribute('data-mindmap-session'))
     return marked
   })
   check('打开地图前所在的那个对话被标成当前',
     currentCard.includes(markedSession), `${JSON.stringify(currentCard)} vs ${markedSession}`)
   const currentRing = await page.evaluate(() => {
-    const node = [...document.querySelectorAll('[data-talkmap-session]')]
+    const node = [...document.querySelectorAll('[data-mindmap-session]')]
       .find(item => item.querySelector('[class*="cardReticle"]') !== null)
     if (node === undefined) return null
     const corners = [...node.querySelectorAll('[class*="cardReticle"] i')]
@@ -891,7 +891,7 @@ try {
       && currentRing?.top === '2px' && currentRing?.right === '0px' && currentRing?.bottom === '0px',
     JSON.stringify(currentRing))
   check('当前卡片不压暗', await page.evaluate(() => {
-    const node = [...document.querySelectorAll('[data-talkmap-session]')]
+    const node = [...document.querySelectorAll('[data-mindmap-session]')]
       .find(item => item.querySelector('[class*="cardReticle"]') !== null)
     return node !== undefined && Number(getComputedStyle(node).opacity) === 1
   }))
@@ -930,13 +930,13 @@ try {
 
   // ---- 7. resize: edges + corners -------------------------------------
   const handleAxes = await page.evaluate(() =>
-    [...document.querySelectorAll('[data-talkmap-workspace="ws-daily"] [data-talkmap-resize]')]
-      .map(el => el.getAttribute('data-talkmap-resize')))
+    [...document.querySelectorAll('[data-mindmap-workspace="ws-daily"] [data-mindmap-resize]')]
+      .map(el => el.getAttribute('data-mindmap-resize')))
   check('四边四角共 8 个拉伸把手', ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'].every(axis => handleAxes.includes(axis)), JSON.stringify(handleAxes))
 
   const labBefore = (await page.evaluate(() => window.__harness.nodeBoxes().frames))['ws-lab']
   const north = await page.evaluate(() => {
-    const r = document.querySelector('[data-talkmap-workspace="ws-lab"] [data-talkmap-resize="n"]').getBoundingClientRect()
+    const r = document.querySelector('[data-mindmap-workspace="ws-lab"] [data-mindmap-resize="n"]').getBoundingClientRect()
     return { x: r.x + r.width / 2, y: r.y + r.height / 2 }
   })
   await page.mouse.move(north.x, north.y)
@@ -950,7 +950,7 @@ try {
 
   const cornerBefore = (await page.evaluate(() => window.__harness.nodeBoxes().frames))['ws-lab']
   const corner = await page.evaluate(() => {
-    const el = document.querySelector('[data-talkmap-workspace="ws-lab"] [data-talkmap-resize="se"]')
+    const el = document.querySelector('[data-mindmap-workspace="ws-lab"] [data-mindmap-resize="se"]')
     const r = el.getBoundingClientRect()
     const x = r.x + r.width / 2, y = r.y + r.height / 2
     const hit = document.elementFromPoint(x, y)
@@ -999,7 +999,7 @@ try {
   // ---- 10. title bar wins over the top edge handle ---------------------
   const beforeTitleDrag = (await page.evaluate(() => window.__harness.nodeBoxes().frames))['ws-medkit']
   const titleGrab = await page.evaluate(() => {
-    const el = document.querySelector('[data-talkmap-workspace="ws-medkit"] [class*="wsFrameLabel"]')
+    const el = document.querySelector('[data-mindmap-workspace="ws-medkit"] [class*="wsFrameLabel"]')
     const r = el.getBoundingClientRect()
     // Lower edge of the chip = inside the frame's top band, where the N handle sits.
     return { x: r.x + r.width / 2, y: r.y + r.height - 2, hit: document.elementFromPoint(r.x + r.width / 2, r.y + r.height - 2)?.className ?? '' }
@@ -1016,7 +1016,7 @@ try {
       && (Math.abs(afterTitleDrag.x - beforeTitleDrag.x) > 10 || Math.abs(afterTitleDrag.y - beforeTitleDrag.y) > 10),
     `${beforeTitleDrag.x}/${beforeTitleDrag.y} ${beforeTitleDrag.w}x${beforeTitleDrag.h} → ${afterTitleDrag.x}/${afterTitleDrag.y} ${afterTitleDrag.w}x${afterTitleDrag.h}`)
 
-  const frameLabelBox = await box('[data-talkmap-workspace="ws-daily"] [class*="wsFrameLabel"]')
+  const frameLabelBox = await box('[data-mindmap-workspace="ws-daily"] [class*="wsFrameLabel"]')
   await page.mouse.click(frameLabelBox.x + 20, frameLabelBox.y + 10, { button: 'right' })
   await page.waitForTimeout(350)
   const wsMenu = await menuItems()
@@ -1038,7 +1038,7 @@ try {
       && wsCall?.detail?.args?.request?.title === '改过的工作区',
     JSON.stringify(wsCall?.detail))
   const wsLabelNow = await page.evaluate(() =>
-    document.querySelector('[data-talkmap-workspace="ws-daily"] [class*="wsFrameLabel"]')?.textContent ?? null)
+    document.querySelector('[data-mindmap-workspace="ws-daily"] [class*="wsFrameLabel"]')?.textContent ?? null)
   check('文件夹标题跟着改', (wsLabelNow ?? '').includes('改过的工作区'), String(wsLabelNow))
 
 
@@ -1069,7 +1069,7 @@ try {
     await page.mouse.click(digestRow.x, digestRow.y)
     await page.waitForTimeout(500)
     const digestDialog = await page.evaluate(() => {
-      const dialog = document.querySelector('[data-talkmap-digest-dialog]')
+      const dialog = document.querySelector('[data-mindmap-digest-dialog]')
       if (dialog === null) return null
       const areas = [...dialog.querySelectorAll('textarea')].map(node => node.value)
       return { areas: areas.length, hasRecall: areas.some(text => text.includes('提醒')), sample: (areas[0] ?? '').slice(0, 50) }
@@ -1121,9 +1121,9 @@ try {
   })
   check('置顶后卡片排到最前', medkitOrder[0] === 's7', JSON.stringify(medkitOrder))
   const pinnedCard = await page.evaluate(() => {
-    const card = document.querySelector('[data-talkmap-session="s7"]')
+    const card = document.querySelector('[data-mindmap-session="s7"]')
     if (card === null) return null
-    const mark = card.querySelector('[data-talkmap-pin]')
+    const mark = card.querySelector('[data-mindmap-pin]')
     const style = mark === null ? null : getComputedStyle(mark)
     return {
       pin: mark !== null,
@@ -1162,7 +1162,7 @@ try {
     renameCall?.detail?.endpoint === 'session/rename' && renameCall?.detail?.args?.request?.sessionId === 's7' && renameCall?.detail?.args?.request?.title === '改过的标题',
     JSON.stringify(renameCall?.detail))
   const renamedTitle = await page.evaluate(() => {
-    const node = document.querySelector('[data-talkmap-session="s7"] [class*="cardTitle"]')
+    const node = document.querySelector('[data-mindmap-session="s7"] [class*="cardTitle"]')
     return node === null ? null : node.textContent
   })
   check('卡片标题跟着改名', renamedTitle === '改过的标题', String(renamedTitle))
@@ -1193,8 +1193,8 @@ try {
   await clickMenuItem('批量操作')
   const boxes = await page.evaluate(() => ({
     bar: document.querySelector('[class*="tm_batchBar"]') !== null,
-    total: document.querySelectorAll('[data-talkmap-pick]').length,
-    checked: document.querySelectorAll('[data-talkmap-pick][aria-checked="true"]').length,
+    total: document.querySelectorAll('[data-mindmap-pick]').length,
+    checked: document.querySelectorAll('[data-mindmap-pick][aria-checked="true"]').length,
   }))
   check('批量模式每张卡右上角都有勾选框', boxes.bar && boxes.total >= 4, JSON.stringify(boxes))
   check('进入批量时第一张已勾选', boxes.checked === 1, `checked=${boxes.checked}`)
@@ -1203,7 +1203,7 @@ try {
   await page.waitForTimeout(400)
   const batchAfterPick = await page.evaluate(() => ({
     count: document.querySelector('[class*="tm_batchCount"]')?.textContent ?? '',
-    checked: document.querySelectorAll('[data-talkmap-pick][aria-checked="true"]').length,
+    checked: document.querySelectorAll('[data-mindmap-pick][aria-checked="true"]').length,
   }))
   check('再点一张 → 勾选框变勾 + 计数 2', /2/.test(batchAfterPick.count) && batchAfterPick.checked === 2, JSON.stringify(batchAfterPick))
 
@@ -1268,8 +1268,8 @@ try {
     }
   })
   const storedDrawer = await page.evaluate(() => ({
-    stored: localStorage.getItem('dsh.talk-map.drawer.v1'),
-    scroll: localStorage.getItem('dsh.talk-map.drawer-scroll.v1'),
+    stored: localStorage.getItem('dsh.mind-map.drawer.v1'),
+    scroll: localStorage.getItem('dsh.mind-map.drawer-scroll.v1'),
   }))
   console.log('   drawer storage:', JSON.stringify(storedDrawer))
   check('回到地图时抽屉还开着（保留打开进度）',
@@ -1279,15 +1279,15 @@ try {
     String(drawerBefore.rows) + ' → ' + String(drawerAfter.rows))
   // Connections between cards of this folder are spelled out inside the drawer.
   const drawerLinks = await page.evaluate(() => ({
-    chips: document.querySelectorAll('[data-talkmap-card-links] [data-talkmap-link]').length,
-    text: [...document.querySelectorAll('[data-talkmap-card-links] [data-talkmap-link]')].map(n => n.textContent.trim()),
+    chips: document.querySelectorAll('[data-mindmap-card-links] [data-mindmap-link]').length,
+    text: [...document.querySelectorAll('[data-mindmap-card-links] [data-mindmap-link]')].map(n => n.textContent.trim()),
   }))
   check('抽屉里显示同一文件夹内卡片之间的连线',
     drawerLinks.chips >= 1, JSON.stringify(drawerLinks))
 
   // Drag the second card onto the first: the order must change and stay.
   const beforeOrder = await page.evaluate(() =>
-    [...document.querySelectorAll('[data-stack-card]')].map(n => n.getAttribute('data-talkmap-session')))
+    [...document.querySelectorAll('[data-stack-card]')].map(n => n.getAttribute('data-mindmap-session')))
   // Drive the drag in steps: React has to commit the dragstart state before
   // the dragover handler will accept a drop.
   await page.evaluate(() => {
@@ -1318,7 +1318,7 @@ try {
   })
   await page.waitForTimeout(900)
   const afterOrder = await page.evaluate(() =>
-    [...document.querySelectorAll('[data-stack-card]')].map(n => n.getAttribute('data-talkmap-session')))
+    [...document.querySelectorAll('[data-stack-card]')].map(n => n.getAttribute('data-mindmap-session')))
   check('抽屉里拖动卡片可以改变排序并保留',
     beforeOrder.length >= 2 && beforeOrder.join() !== afterOrder.join(),
     JSON.stringify({ before: beforeOrder, after: afterOrder }))
@@ -1336,7 +1336,7 @@ try {
 
   // ---- 11c. drawer search: titles + full conversation content ------------
   const searchBoxPoint = await page.evaluate(() => {
-    const input = document.querySelector('[data-talkmap-drawer-search]')
+    const input = document.querySelector('[data-mindmap-drawer-search]')
     if (input === null) return null
     const r = input.getBoundingClientRect()
     return { x: Math.round(r.x + 30), y: Math.round(r.y + r.height / 2) }
@@ -1345,13 +1345,13 @@ try {
 
   // The search is LOCAL now: it filters the rows this folder is rendering.
   const routeCallsBeforeSearch = await page.evaluate(() => window.__harness.searchRouteCalls().length)
-  await page.fill('[data-talkmap-drawer-search]', '清理')
+  await page.fill('[data-mindmap-drawer-search]', '清理')
   await page.keyboard.press('Enter')
   await page.waitForTimeout(500)
   const localHits = await page.evaluate(() => ({
-    hits: document.querySelectorAll('[data-talkmap-search-hit]').length,
-    text: document.querySelector('[data-talkmap-search-hit]')?.textContent ?? null,
-    marks: document.querySelectorAll('[data-talkmap-search-hit] mark').length,
+    hits: document.querySelectorAll('[data-mindmap-search-hit]').length,
+    text: document.querySelector('[data-mindmap-search-hit]')?.textContent ?? null,
+    marks: document.querySelectorAll('[data-mindmap-search-hit] mark').length,
     routeCalls: window.__harness.searchRouteCalls().length,
   }))
   check('抽屉搜索命中卡片正文（不查宿主语料）',
@@ -1361,13 +1361,13 @@ try {
   check('命中处有高亮', localHits.marks >= 1, JSON.stringify(localHits))
 
   // Header search: same idea, over the cards on the board.
-  await page.fill('[data-talkmap-global-search]', '网格')
+  await page.fill('[data-mindmap-global-search]', '网格')
   await page.keyboard.press('Enter')
   await page.waitForTimeout(600)
   const globalLocal = await page.evaluate(() => ({
     panel: document.querySelector('[class*="globalSearchPanel"]') !== null,
-    hits: document.querySelectorAll('[data-talkmap-search-hit]').length,
-    marks: document.querySelectorAll('[data-talkmap-search-hit] mark').length,
+    hits: document.querySelectorAll('[data-mindmap-search-hit]').length,
+    marks: document.querySelectorAll('[data-mindmap-search-hit] mark').length,
     routeCalls: window.__harness.searchRouteCalls().length,
   }))
   check('顶栏搜索也只在地图上的卡片里找',
@@ -1400,8 +1400,8 @@ try {
   await clickMenuItem('标为未读')
   await page.waitForTimeout(600)
   const markedUnread = await page.evaluate((sessionId) => {
-    const chip = document.querySelector('[data-talkmap-session="' + sessionId + '"] [data-talkmap-chip]')
-    return chip === null ? null : { kind: chip.getAttribute('data-talkmap-chip'), text: chip.textContent.trim() }
+    const chip = document.querySelector('[data-mindmap-session="' + sessionId + '"] [data-mindmap-chip]')
+    return chip === null ? null : { kind: chip.getAttribute('data-mindmap-chip'), text: chip.textContent.trim() }
   }, unreadPoint.sessionId)
   check('右键「标为未读」→ 卡片变成待查看（绿）',
     markedUnread?.kind === 'done' && markedUnread.text === '待查看',
@@ -1431,7 +1431,7 @@ try {
   const framesNow = await page.evaluate(() => window.__harness.nodeBoxes().frames)
   const dailyBefore = framesNow['ws-daily']
   const medkitBefore = framesNow['ws-medkit']
-  const eastHandle = await box('[data-talkmap-workspace="ws-daily"] [data-talkmap-resize="e"]')
+  const eastHandle = await box('[data-mindmap-workspace="ws-daily"] [data-mindmap-resize="e"]')
   await page.mouse.move(eastHandle.x + eastHandle.w / 2, eastHandle.y + eastHandle.h / 2)
   await page.mouse.down()
   await page.mouse.move(eastHandle.x + 600, eastHandle.y + eastHandle.h / 2, { steps: 14 })
@@ -1443,7 +1443,7 @@ try {
     `右边缘 ${Math.round(dailyAfterPush.x + dailyAfterPush.w)} vs 邻居左边 ${Math.round(medkitBefore.x)}（原宽 ${Math.round(dailyBefore.w)}）`)
 
   const framesBeforeDrop = await page.evaluate(() => window.__harness.nodeBoxes().frames)
-  const frameLabel2 = await box('[data-talkmap-workspace="ws-medkit"] [class*="wsFrameLabel"]')
+  const frameLabel2 = await box('[data-mindmap-workspace="ws-medkit"] [class*="wsFrameLabel"]')
   const dropTarget = {
     x: framesBeforeDrop['ws-daily'].x + framesBeforeDrop['ws-daily'].w / 2,
     y: framesBeforeDrop['ws-daily'].y + framesBeforeDrop['ws-daily'].h / 2,
@@ -1453,7 +1453,7 @@ try {
   await page.mouse.move(dropTarget.x, dropTarget.y, { steps: 16 })
   await page.waitForTimeout(200)
   const blockedOutline = await page.evaluate(() => {
-    const node = document.querySelector('[data-talkmap-workspace="ws-medkit"]')
+    const node = document.querySelector('[data-mindmap-workspace="ws-medkit"]')
     return node === null ? null : node.className.includes('wsFrameBlocked')
   })
   await page.mouse.up()
@@ -1482,7 +1482,7 @@ try {
 
   // A legal drop still sticks: drag a folder into empty space.
   const framesBeforeFree = await page.evaluate(() => window.__harness.nodeBoxes().frames)
-  const freeLabel = await box('[data-talkmap-workspace="ws-medkit"] [class*="wsFrameLabel"]')
+  const freeLabel = await box('[data-mindmap-workspace="ws-medkit"] [class*="wsFrameLabel"]')
   await page.mouse.move(freeLabel.x + 18, freeLabel.y + 10)
   await page.mouse.down()
   await page.mouse.move(freeLabel.x + 40, freeLabel.y + 200, { steps: 14 })
@@ -1597,7 +1597,7 @@ try {
   // All three live in localStorage, so a reload must bring them back — the
   // harness rebuilds its status map from scratch, exactly like a restart.
   // The panel must be UP for these transitions to be observed at all.
-  if ((await page.evaluate(() => window.__harness.panelState())).selectedPanel !== 'talk-map') await openMap()
+  if ((await page.evaluate(() => window.__harness.panelState())).selectedPanel !== 'mind-map') await openMap()
   await page.waitForTimeout(400)
   await page.evaluate(() => window.__harness.setRunning('s4', true))
   await page.waitForTimeout(300)
@@ -1605,17 +1605,17 @@ try {
   await page.evaluate(() => window.__harness.setRunning('s5', true))
   await page.evaluate(() => window.__harness.raiseError('s3'))
   await page.waitForTimeout(800)
-  const preReloadBadge = await page.evaluate(() => { const chip = document.querySelector('[data-talkmap-session="s4"] [data-talkmap-chip]'); return chip === null ? null : chip.getAttribute('data-talkmap-chip') })
+  const preReloadBadge = await page.evaluate(() => { const chip = document.querySelector('[data-mindmap-session="s4"] [data-mindmap-chip]'); return chip === null ? null : chip.getAttribute('data-mindmap-chip') })
   check('重启前 s4 已是待读', preReloadBadge === 'done', String(preReloadBadge))
   await page.evaluate(() => window.dispatchEvent(new Event('beforeunload')))
   await page.reload()
   await page.waitForTimeout(1800)
-  if ((await page.evaluate(() => window.__harness.panelState())).selectedPanel !== 'talk-map') await openMap()
+  if ((await page.evaluate(() => window.__harness.panelState())).selectedPanel !== 'mind-map') await openMap()
   await page.click('.react-flow__node[data-id^="stack-"] [class*="stackFace"]')
   await page.waitForTimeout(500)
   // The drawer restores its last search; clear it so every card is listed.
   await page.evaluate(() => {
-    const input = document.querySelector('[data-talkmap-drawer-search]')
+    const input = document.querySelector('[data-mindmap-drawer-search]')
     if (input === null) return
     const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
     if (setter !== undefined) setter.call(input, '')
@@ -1624,12 +1624,12 @@ try {
   await page.waitForTimeout(400)
   const restored = await page.evaluate(() => {
     const out = { chips: {}, interrupted: [], draft: [] }
-    for (const root of document.querySelectorAll('[data-talkmap-session]')) {
-      const sessionId = root.getAttribute('data-talkmap-session')
-      const chip = root.querySelector('[data-talkmap-chip]')
-      if (chip !== null) out.chips[sessionId] = chip.getAttribute('data-talkmap-chip')
-      if (root.querySelector('[data-talkmap-interrupted]') !== null) out.interrupted.push(sessionId)
-      if (root.querySelector('[data-talkmap-draft]') !== null) out.draft.push(sessionId)
+    for (const root of document.querySelectorAll('[data-mindmap-session]')) {
+      const sessionId = root.getAttribute('data-mindmap-session')
+      const chip = root.querySelector('[data-mindmap-chip]')
+      if (chip !== null) out.chips[sessionId] = chip.getAttribute('data-mindmap-chip')
+      if (root.querySelector('[data-mindmap-interrupted]') !== null) out.interrupted.push(sessionId)
+      if (root.querySelector('[data-mindmap-draft]') !== null) out.draft.push(sessionId)
     }
     return out
   })
@@ -1696,13 +1696,13 @@ try {
   }
 
   // A session that still has work must be stopped, then moved — not refused.
-  if ((await page.evaluate(() => window.__harness.panelState())).selectedPanel !== 'talk-map') await openMap()
+  if ((await page.evaluate(() => window.__harness.panelState())).selectedPanel !== 'mind-map') await openMap()
   await page.waitForTimeout(600)
   await page.evaluate(() => window.__harness.recycleBusy(true, 1))
   // Pick whichever card is on the board right now (this runs after a reload).
   const busySessionId = await page.evaluate(() => {
-    const node = document.querySelector('[data-talkmap-session]')
-    return node === null ? null : node.getAttribute('data-talkmap-session')
+    const node = document.querySelector('[data-mindmap-session]')
+    return node === null ? null : node.getAttribute('data-mindmap-session')
   })
   const busyPoint = busySessionId === null ? null : await cardPoint(busySessionId)
   if (busyPoint === null) {
@@ -1715,7 +1715,7 @@ try {
   const busyDelete = await page.evaluate((sid) => ({
     stopCalls: window.__harness.log.filter(entry => entry.kind === 'ui.archiveSession' && entry.detail?.options?.stopActivity === true).length,
     recycleCalls: window.__harness.recycleCalls().length,
-    stillThere: [...document.querySelectorAll('[data-talkmap-session]')].some(node => node.getAttribute('data-talkmap-session') === sid),
+    stillThere: [...document.querySelectorAll('[data-mindmap-session]')].some(node => node.getAttribute('data-mindmap-session') === sid),
   }), busySessionId)
   check('会话还在跑时删除：先停止工作再重试删除',
     busyDelete.stopCalls >= 1 && busyDelete.stillThere === false,

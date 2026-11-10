@@ -34093,7 +34093,7 @@
     return Math.round(value * 100) / 100;
   }
 
-  // src/client/TalkMapEdge.tsx
+  // src/client/MindMapEdge.tsx
   var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
   var boardCache = { at: 0, boxes: [] };
   function boardBoxes() {
@@ -34118,7 +34118,7 @@
     const left = pane?.left ?? 0;
     const top = pane?.top ?? 0;
     const boxes = [];
-    for (const element of document.querySelectorAll("[data-talkmap-session]")) {
+    for (const element of document.querySelectorAll("[data-mindmap-session]")) {
       const rect = element.getBoundingClientRect();
       if (rect.width < 8 || rect.height < 8) continue;
       boxes.push({
@@ -34146,7 +34146,7 @@
     const pad = 40;
     return x >= box.x - pad && x <= box.x + box.w + pad && y >= box.y - pad && y <= box.y + box.h + pad;
   }
-  function TalkMapEdge(props) {
+  function MindMapEdge(props) {
     const data = props.data ?? {};
     const synced = data.sync === "synced";
     const hidden = synced && data.structural !== true;
@@ -34276,7 +34276,7 @@
       )
     ] });
   }
-  var edgeTypes = { talkMap: TalkMapEdge };
+  var edgeTypes = { mindMap: MindMapEdge };
 
   // src/client/edge-routing.ts
   var DEFAULT_MIN_SPAN = 96;
@@ -34331,7 +34331,7 @@
   var CARD_H = 120;
   var scene = { "nodes": [{ "id": "card-36dfcda1-8374-4e10-bf40-ee839958830b", "x": -288, "y": -514 }, { "id": "card-2327435a-a8bc-46d3-b997-8903d1cc04a1", "x": 256, "y": -514 }, { "id": "card-8165bacf-05f0-4946-993b-6b4227963f34", "x": 528, "y": -514 }, { "id": "card-4fb0f01e-58fd-4c2e-8360-c7308a5b7e45", "x": -16, "y": -514 }], "pairs": [["card-36dfcda1-8374-4e10-bf40-ee839958830b", "card-2327435a-a8bc-46d3-b997-8903d1cc04a1"], ["card-36dfcda1-8374-4e10-bf40-ee839958830b", "card-8165bacf-05f0-4946-993b-6b4227963f34"], ["card-36dfcda1-8374-4e10-bf40-ee839958830b", "card-4fb0f01e-58fd-4c2e-8360-c7308a5b7e45"], ["card-2327435a-a8bc-46d3-b997-8903d1cc04a1", "card-8165bacf-05f0-4946-993b-6b4227963f34"], ["card-2327435a-a8bc-46d3-b997-8903d1cc04a1", "card-4fb0f01e-58fd-4c2e-8360-c7308a5b7e45"], ["card-8165bacf-05f0-4946-993b-6b4227963f34", "card-4fb0f01e-58fd-4c2e-8360-c7308a5b7e45"]] };
   var nodeTypes = {
-    card: ({ data }) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { "data-card-id": data.id, "data-talkmap-session": data.id, style: {
+    card: ({ data }) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { "data-card-id": data.id, "data-mindmap-session": data.id, style: {
       width: CARD_W,
       height: CARD_H,
       background: "#23262d",
@@ -34369,7 +34369,7 @@
       id: "e" + index2,
       source: from,
       target: to,
-      type: "talkMap",
+      type: "mindMap",
       sourceHandle: faces.fromHandle,
       targetHandle: faces.toHandle,
       data: {

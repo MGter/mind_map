@@ -25,7 +25,7 @@ const oldEffect = `  // Title filter is instant; the content search is debounced
           if (!alive) return
           // Never swallow it: the drawer says what the Host answered, which is
           // the only way to tell "no hits" from "the search did not run".
-          console.warn('[dsh-talk-map] content search failed:', cause)
+          console.warn('[mind_map] content search failed:', cause)
           setHits([])
           setSearchError(String(cause?.message ?? cause))
         })
@@ -49,7 +49,7 @@ const newEffect = `  // The title filter is instant and local. The content searc
       setHits(found)
       setSearchError(null)
     } catch (cause) {
-      console.warn('[dsh-talk-map] content search failed:', cause)
+      console.warn('[mind_map] content search failed:', cause)
       setHits([])
       setSearchError(String((cause as Error)?.message ?? cause))
     } finally {
@@ -69,7 +69,7 @@ const oldInput = J([
   '            value={query}',
   "            placeholder={t('stack.searchPlaceholder')}",
   "            aria-label={t('stack.searchPlaceholder')}",
-  '            data-talkmap-drawer-search=""',
+  '            data-mindmap-drawer-search=""',
   '            onChange={(event) => { setQuery(event.target.value) }}',
   "            onKeyDown={(event) => { if (event.key === 'Escape') event.stopPropagation() }}",
   '          />',
@@ -80,7 +80,7 @@ const newInput = J([
   '            value={query}',
   "            placeholder={t('stack.searchPlaceholder')}",
   "            aria-label={t('stack.searchPlaceholder')}",
-  '            data-talkmap-drawer-search=""',
+  '            data-mindmap-drawer-search=""',
   '            onChange={(event) => {',
   '              setQuery(event.target.value)',
   '              // Clearing the box forgets the previous search, so the list goes',
@@ -97,7 +97,7 @@ const newInput = J([
   '          <button',
   '            type="button"',
   "            className={styles['drawerSearchGo']}",
-  '            data-talkmap-drawer-search-run=""',
+  '            data-mindmap-drawer-search-run=""',
   '            onClick={() => { void runSearch() }}',
   '          >',
   "            {t('global.searchRun')}",

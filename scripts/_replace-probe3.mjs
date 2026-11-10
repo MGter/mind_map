@@ -27,7 +27,7 @@ const block = [
   '      return {',
   '        total: rows.length,',
   '        selected: picked.length,',
-  '        sessions: picked.map(node => node.getAttribute(\'data-talkmap-session\')),',
+  '        sessions: picked.map(node => node.getAttribute(\'data-mindmap-session\')),',
   '      }',
   '    })',
   '    // Close by clicking the backdrop: Escape would also drop batch mode.',

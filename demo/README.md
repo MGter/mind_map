@@ -1,8 +1,8 @@
-# 对话地图 · 交互演示页
+# 思维图 · 交互演示页
 
 **双击 `index.html` 即可打开**——这不是模拟页，是插件**真身**在浏览器里跑：页面加载的是 `client/client.dev.js`（插件客户端构建产物）+ `test/harness.js`（离线宿主桩），所以渲染、交互、样式与 DSH 里的面板 100% 一致。
 
-无构建、无网络请求；file:// 直接可用（演示模式通过 `window.__talkMapDemo` 开启，不依赖 URL 参数）。
+无构建、无网络请求；file:// 直接可用（演示模式通过 `window.__mindMapDemo` 开启，不依赖 URL 参数）。
 
 ## 演示数据（全部虚构）
 
@@ -17,7 +17,7 @@
 
 ### 布局自动保存
 
-演示页把每次写操作（拖卡、挪框架、连线、删除…）镜像进 localStorage（`dsh-talk-map.demo-state.v1`），**刷新/重开后布局保持**。想恢复出厂演示布局，清掉这个键即可（F12 → Application → Local Storage）。
+演示页把每次写操作（拖卡、挪框架、连线、删除…）镜像进 localStorage（`mind_map.demo-state.v1`），**刷新/重开后布局保持**。想恢复出厂演示布局，清掉这个键即可（F12 → Application → Local Storage）。
 
 探针（`node test/probe.mjs`，不带 demo 参数）仍用原 fixture，150/150 不受影响。
 

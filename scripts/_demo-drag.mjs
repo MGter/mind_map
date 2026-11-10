@@ -32,13 +32,13 @@ await page.waitForTimeout(2500)
 
 // Pick a vertical stack: a card that has another card well below it.
 const plan = await page.evaluate(() => {
-  const cards = [...document.querySelectorAll('[data-talkmap-session]')].map(element => {
+  const cards = [...document.querySelectorAll('[data-mindmap-session]')].map(element => {
     const rect = element.getBoundingClientRect()
-    return { id: element.getAttribute('data-talkmap-session'), x: rect.left, y: rect.top, w: rect.width, h: rect.height }
+    return { id: element.getAttribute('data-mindmap-session'), x: rect.left, y: rect.top, w: rect.width, h: rect.height }
   })
   const handle = (card, handleId) => {
     for (const node of document.querySelectorAll('.react-flow__node')) {
-      if (node.querySelector('[data-talkmap-session="' + card.id + '"]') === null) continue
+      if (node.querySelector('[data-mindmap-session="' + card.id + '"]') === null) continue
       const element = node.querySelector('[data-handleid="' + handleId + '"]')
       if (element === null) continue
       const rect = element.getBoundingClientRect()
@@ -82,9 +82,9 @@ await page.mouse.up()
 await page.waitForTimeout(1000)
 
 const report = await page.evaluate(({ sourceId, targetId }) => {
-  const cards = [...document.querySelectorAll('[data-talkmap-session]')].map(element => {
+  const cards = [...document.querySelectorAll('[data-mindmap-session]')].map(element => {
     const rect = element.getBoundingClientRect()
-    return { id: element.getAttribute('data-talkmap-session'), x: rect.left, y: rect.top, w: rect.width, h: rect.height }
+    return { id: element.getAttribute('data-mindmap-session'), x: rect.left, y: rect.top, w: rect.width, h: rect.height }
   })
   const out = []
   for (const group of document.querySelectorAll('.react-flow__edge')) {

@@ -1,7 +1,7 @@
 /** EOL-aware patch: drop markerEnd, insert the hand-drawn arrow. */
 import fs from 'node:fs'
 
-const file = 'src/client/TalkMapEdge.tsx'
+const file = 'src/client/MindMapEdge.tsx'
 let source = fs.readFileSync(file, 'utf8')
 const EOL = source.includes('\r\n') ? '\r\n' : '\n'
 const J = (lines) => lines.join(EOL)

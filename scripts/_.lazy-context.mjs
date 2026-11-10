@@ -4,17 +4,17 @@ import fs from 'node:fs'
 // ---- api.ts: context route --------------------------------------------
 let api = fs.readFileSync('src/client/api.ts', 'utf8')
 api = api.replace(
-  "  searchSessions(query: string): Promise<{ items: { sessionId: string; blocks?: string[][]; lines?: string[]; snippet?: string }[]; hasMore?: boolean }> {\n    return postJson('/talk-map/search', { query })\n  },",
+  "  searchSessions(query: string): Promise<{ items: { sessionId: string; blocks?: string[][]; lines?: string[]; snippet?: string }[]; hasMore?: boolean }> {\n    return postJson('/mind-map/search', { query })\n  },",
   [
     "  searchSessions(query: string): Promise<{",
     '    items: { sessionId: string; blocks?: string[][]; seqs?: (number | null)[]; lines?: string[]; snippet?: string }[]',
     '    hasMore?: boolean',
     '  }> {',
-    "    return postJson('/talk-map/search', { query })",
+    "    return postJson('/mind-map/search', { query })",
     '  },',
     '  /** The passage around one hit — fetched only when the pointer rests on it. */',
     '  searchContext(sessionId: string, seq: number, query: string): Promise<{ lines: string[] }> {',
-    "    return postJson('/talk-map/search-context', { sessionId, seq, query })",
+    "    return postJson('/mind-map/search-context', { sessionId, seq, query })",
     '  },',
   ].join('\n'),
 )
@@ -102,7 +102,7 @@ rpc += `
 /** The passage around one hit, loaded when the pointer rests on it. */
 export async function fetchSearchContext(sessionId: string, seq: number, query: string): Promise<string[]> {
   try {
-    const page = await talkMapApi.searchContext(sessionId, seq, query)
+    const page = await mindMapApi.searchContext(sessionId, seq, query)
     return Array.isArray(page.lines) ? page.lines.filter(line => typeof line === 'string' && line !== '') : []
   } catch (error) {
     reportToHost({ phase: 'search-context-failed', sessionId, seq, message: String((error as Error)?.message ?? error) })

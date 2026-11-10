@@ -15,7 +15,7 @@ const entry = `
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { ReactFlowProvider, ReactFlow } from '@xyflow/react'
-import { TalkMapEdge, edgeTypes } from '../../src/client/TalkMapEdge.tsx'
+import { MindMapEdge, edgeTypes } from '../../src/client/MindMapEdge.tsx'
 
 const W = 224
 const H = 120
@@ -59,7 +59,7 @@ const edges = LINKS.map(([from, to, fromFace, toFace], index) => {
     id: 'e' + index,
     source: from,
     target: to,
-    type: 'talkMap',
+    type: 'mindMap',
     sourcePosition: position(fromFace),
     targetPosition: position(toFace),
     data: {
@@ -84,7 +84,7 @@ const nodes = cards.map(card => ({
     borderRadius: 10, color: '#cfd6e3', fontSize: 12 },
 }))
 
-// TalkMapEdge gets its coordinates from React Flow; mirror them onto the node handles.
+// MindMapEdge gets its coordinates from React Flow; mirror them onto the node handles.
 const withHandles = edges.map(edge => {
   const a = boxOf(edge.source)
   const b = boxOf(edge.target)
@@ -139,7 +139,7 @@ await build({
   logLevel: 'error',
 })
 
-const rawCss = fs.readFileSync('src/client/talk-map.module.css', 'utf8')
+const rawCss = fs.readFileSync('src/client/mind-map.module.css', 'utf8')
 const scopedCss = rawCss.replace(/:global\(([^()]*)\)/g, '$1').replace(/\.([a-zA-Z][\w-]*)/g, '.tm_$1')
 fs.writeFileSync('test/shots/mapmulti.html', `<!doctype html><meta charset="utf-8">
 <link rel="stylesheet" href="https://unpkg.com/@xyflow/react@12/dist/style.css">

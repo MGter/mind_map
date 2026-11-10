@@ -112,9 +112,9 @@ const html = `<!doctype html>
   </g>
 </svg>
 </body>`
-const profileDir = path.join(os.tmpdir(), 'talkmap-edge-preview')
+const profileDir = path.join(os.tmpdir(), 'mindmap-edge-preview')
 fs.rmSync(profileDir, { recursive: true, force: true })
-const pageFile = path.join(os.tmpdir(), 'talkmap-edge-preview.html')
+const pageFile = path.join(os.tmpdir(), 'mindmap-edge-preview.html')
 fs.writeFileSync(pageFile, html, 'utf8')
 
 const CDP = 9361

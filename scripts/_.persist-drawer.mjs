@@ -92,7 +92,7 @@ shared = shared.replace(
   J([
     '            {pending[hit.sessionId] === true',
     '              ? (',
-    "                  <div className={styles['searchInlineLoading']} data-talkmap-search-pending={hit.sessionId}>",
+    "                  <div className={styles['searchInlineLoading']} data-mindmap-search-pending={hit.sessionId}>",
     "                    <span className={styles['searchSkeletonLine']} />",
     '                  </div>',
     '                )',

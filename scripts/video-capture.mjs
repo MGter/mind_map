@@ -46,7 +46,7 @@ const EDGE = [
   'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
 ].find(candidate => fs.existsSync(candidate))
 if (EDGE === undefined) throw new Error('msedge not found')
-const profileDir = path.join(os.tmpdir(), 'talkmap-video-capture')
+const profileDir = path.join(os.tmpdir(), 'mindmap-video-capture')
 fs.rmSync(profileDir, { recursive: true, force: true })
 const CDP = 9365
 const edge = spawn(EDGE, [

@@ -39,16 +39,16 @@ import { draftWatch } from './draft-watch.ts'
 import { cleanPreviewText } from './preview-text.ts'
 import { loadPreviewCache, putPreview, readPreviewTexts } from './preview-cache.ts'
 import { ContextMenu, type MenuItem, type MenuState } from './ContextMenu.tsx'
-import { edgeTypes } from './TalkMapEdge.tsx'
+import { edgeTypes } from './MindMapEdge.tsx'
 
 /** Registered in dgeTypes: the map's only edge renderer. */
-const TALK_MAP_EDGE_TYPE = 'talkMap'
+const MIND_MAP_EDGE_TYPE = 'mindMap'
 import { RenameDialog, type RenameTarget } from './RenameDialog.tsx'
 import { SessionCardNode, type CardGlow, type SessionCardData, type SessionCardNodeType } from './SessionCard.tsx'
 import { SpawnPreview, type PendingSpawn } from './SpawnPreview.tsx'
 import { WsFrameNode, type ResizeAxis, type WsFrameNodeType } from './WsFrame.tsx'
 import { activeLocale, subscribeLocale, t } from './i18n.ts'
-import { talkMapApi, type ApiError } from './api.ts'
+import { mindMapApi, type ApiError } from './api.ts'
 import {
   CARD_H, CARD_W, FRAME_LABEL_H, FRAME_PAD, GAP_X, GAP_Y, MIN_FRAME_HEIGHT, MIN_FRAME_WIDTH,
   capacityFor, colsForWidth, frameRect, layoutFor, readingOrder, slotIndexAt, slotPoint, visibleCount, type PlacedCard,
@@ -57,7 +57,7 @@ import { StackDrawer, type StackEntry } from './StackDrawer.tsx'
 import { StackNode, type StackNodeType } from './StackNode.tsx'
 import { StatusRail, type StatusRailEntry, type StatusLamp } from './StatusRail.tsx'
 import { useDsDarkTheme } from './use-dark.ts'
-import styles from './talk-map.module.css'
+import styles from './mind-map.module.css'
 
 const nodeTypes = {
   sessionCard: SessionCardNode,
@@ -70,7 +70,7 @@ const COLS = 3
 /** v4: frames became user-sized containers with slot layout inside. */
 const LAYOUT_VERSION = 4
 
-type TalkMapNode = SessionCardNodeType | WsFrameNodeType | StackNodeType
+type MindMapNode = SessionCardNodeType | WsFrameNodeType | StackNodeType
 
 /** Stable empty projection for a runtime without the ui-session status hook. */
 const EMPTY_SESSION_STATUS: ReadonlyMap<string, SessionStatusFact> = new Map()
@@ -236,9 +236,9 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
   /** Bumped after a push: edges recompute their sync state (lineage has no edge row). */
   const [pushEpoch, setPushEpoch] = useState(0)
   /** Lineage lines (fork/subagent provenance) can be switched off entirely. */
-  const LINEAGE_KEY = 'dsh.talk-map.lineage-hidden.v1'
+  const LINEAGE_KEY = 'dsh.mind-map.lineage-hidden.v1'
   /** Fork lines the user deleted one by one; keyed `parent->child`. */
-  const LINEAGE_CUT_KEY = 'dsh.talk-map.lineage-cut.v1'
+  const LINEAGE_CUT_KEY = 'dsh.mind-map.lineage-cut.v1'
   const [lineageCut, setLineageCut] = useState<readonly string[]>(() => {
     try {
       const raw = window.localStorage.getItem(LINEAGE_CUT_KEY)
@@ -261,7 +261,7 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
 
   const [lineageHidden, setLineageHiddenState] = useState(() => {
     try {
-      return localStorage.getItem('dsh.talk-map.lineage-hidden.v1') === '1'
+      return localStorage.getItem('dsh.mind-map.lineage-hidden.v1') === '1'
     } catch {
       return false
     }
@@ -269,7 +269,7 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
   const setLineageHidden = (next: boolean): void => {
     setLineageHiddenState(next)
     try {
-      localStorage.setItem('dsh.talk-map.lineage-hidden.v1', next ? '1' : '0')
+      localStorage.setItem('dsh.mind-map.lineage-hidden.v1', next ? '1' : '0')
     } catch { /* private mode: the choice lasts this session */ }
   }
   const [renameTarget, setRenameTarget] = useState<RenameTarget | null>(null)
@@ -299,7 +299,7 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
   // flow and corrupts React Flow's in-flight hit testing — the intermittent
   // "one small box selects everything / selects nothing" reports.
   const [isSelecting, setIsSelecting] = useState(false)
-  const frozenRef = useRef<{ nodes: TalkMapNode[]; edges: Edge[] } | null>(null)
+  const frozenRef = useRef<{ nodes: MindMapNode[]; edges: Edge[] } | null>(null)
 
   // Copy inside React Flow nodes is memoised by the flow itself, so a
   // language switch has to invalidate the memos that build them — hence
@@ -383,7 +383,7 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
       }
       if (pending.length === 0) return
       for (const [sessionId, stamp] of stamps) previewStamp.current.set(sessionId, stamp)
-      void talkMapApi.lastUserMessages(pending)
+      void mindMapApi.lastUserMessages(pending)
         .then(({ texts }) => {
           const cleaned: Record<string, string> = {}
           for (const [sessionId, text] of Object.entries(texts)) {
@@ -927,9 +927,9 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
     setCenter(point.x + CARD_W / 2, point.y + CARD_H / 2, { zoom: getZoom(), duration: 320 })
   }, [cardLayout, visibleCards, setCenter, getZoom, setSelectedIds])
 
-  const liveNodes = useMemo<TalkMapNode[]>(() => {
+  const liveNodes = useMemo<MindMapNode[]>(() => {
     const wsColors = canvasState.global?.wsColors ?? {}
-    const frameNodes: TalkMapNode[] = Object.entries(frameRects).map(([groupId, rect]) => {
+    const frameNodes: MindMapNode[] = Object.entries(frameRects).map(([groupId, rect]) => {
       const members = membersByGroup.get(groupId) ?? []
       return {
         id: `frame-${groupId}`,
@@ -963,7 +963,7 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
         style: { pointerEvents: 'none' as const },
       }
     })
-    const cardNodes: TalkMapNode[] = Object.entries(visibleCards)
+    const cardNodes: MindMapNode[] = Object.entries(visibleCards)
       .filter(([, card]) => card.boardId === INBOX_BOARD_ID)
       .map(([cardId, card]) => {
         const summary = sessions.byId[card.sessionId]
@@ -1005,7 +1005,7 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
       })
     // Overflow cells: one per folder that cannot show all of its cards, sitting
     // in the last visible slot with a count of what it swallowed.
-    const stackNodes: TalkMapNode[] = Object.entries(foldedCards).map(([groupId, folded]) => {
+    const stackNodes: MindMapNode[] = Object.entries(foldedCards).map(([groupId, folded]) => {
       const layout = folderLayouts[groupId]
       const rect = layout?.rect ?? frameRects[groupId]
       const index = layout?.shown.length ?? 0
@@ -1210,7 +1210,7 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
         ...(edge.fromHandle !== undefined && edge.toHandle !== undefined
           ? { sourceHandle: edge.fromHandle, targetHandle: edge.toHandle }
           : computedHandles(edge.fromCardId, edge.toCardId)),
-        type: TALK_MAP_EDGE_TYPE,
+        type: MIND_MAP_EDGE_TYPE,
         selected: liveSelectedEdgeIds.has(edgeId),
         // Endpoints ride along for the edge context menu (id parsing would
         // be ambiguous — card ids contain dashes); `sync` drives the look.
@@ -1288,7 +1288,7 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
         // Derived lines route like any other: faces are recomputed from the
         // cards' current positions, so a 12px neighbour gap becomes a real loop.
         ...computedHandles(parentCardId, cardId),
-        type: TALK_MAP_EDGE_TYPE,
+        type: MIND_MAP_EDGE_TYPE,
         // Selectable on purpose: right-clicking it must answer "what is this",
         // and offer to hide it. It used to be un-clickable mystery wiring.
         // 血缘线就按“一条还没同步的普通连线”渲染：同样的虚线、同样的箭头、
@@ -1331,7 +1331,7 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
         && inFolder.has(edge.source) && inFolder.has(edge.target))
       .map(edge => {
         const data = (edge.data ?? {}) as { sync?: string; structural?: boolean }
-        // Same rule as TalkMapEdge: transfers vanish once in sync, fork lines
+        // Same rule as MindMapEdge: transfers vanish once in sync, fork lines
         // never do.
         const visible = !(data.sync === 'synced' && data.structural !== true)
         return { from: edge.source, to: edge.target, visible }
@@ -1357,9 +1357,9 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
     )))
   }
 
-  const onNodesChange = (changes: NodeChange<TalkMapNode>[]): void => {
+  const onNodesChange = (changes: NodeChange<MindMapNode>[]): void => {
     const removedCardIds = changes
-      .filter((change): change is Extract<NodeChange<TalkMapNode>, { type: 'remove' }> => change.type === 'remove')
+      .filter((change): change is Extract<NodeChange<MindMapNode>, { type: 'remove' }> => change.type === 'remove')
       .map(change => change.id)
       .filter(id => !id.startsWith('frame-') && !id.startsWith('stack-'))
     for (const change of changes) {
@@ -1601,13 +1601,13 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
     try {
       // The digest is not kept warm any more: refresh it here, but only when
       // this conversation actually changed (the Host skips the LLM call).
-      const fresh = await talkMapApi.ensureDigest(fromCard.sessionId)
+      const fresh = await mindMapApi.ensureDigest(fromCard.sessionId)
       const digest = fresh.digest ?? canvasState.digests[fromCard.sessionId]
       if (digest === undefined || digestIsEmpty(digest)) {
         showToast(t('digest.empty'))
         return
       }
-      await talkMapApi.injectContext(toCard.sessionId, [
+      await mindMapApi.injectContext(toCard.sessionId, [
         { sessionId: fromCard.sessionId, text: buildPushText(fromTitle, digest) },
       ])
       // Remember when this line last delivered: "synced" is decided from it.
@@ -2120,7 +2120,7 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
             const services = getServices()
             if (services === undefined || parentDir === '') throw new Error('no workspace root available')
             const path = `${parentDir}/${value}`
-            await talkMapApi.ensureDir(path)
+            await mindMapApi.ensureDir(path)
             const created = await callRpc<{ workspace: { workspaceId: string } }>('workspace/create', { path })
             importWorkspace(created.workspace.workspaceId, menu.flowX, menu.flowY)
             close()

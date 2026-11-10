@@ -34092,9 +34092,9 @@
     return Math.round(value * 100) / 100;
   }
 
-  // src/client/TalkMapEdge.tsx
+  // src/client/MindMapEdge.tsx
   var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
-  function TalkMapEdge(props) {
+  function MindMapEdge(props) {
     const data = props.data ?? {};
     const synced = data.sync === "synced";
     const hidden = synced && data.structural !== true;
@@ -34215,7 +34215,7 @@
       )
     ] });
   }
-  var edgeTypes = { talkMap: TalkMapEdge };
+  var edgeTypes = { mindMap: MindMapEdge };
 
   // src/client/edge-routing.ts
   var DEFAULT_MIN_SPAN = 96;
@@ -34321,9 +34321,9 @@
     toRect: rectOf(toId)
   });
   var edges = [
-    { id: "sync", source: "a", target: "b", type: "talkMap", data: dataFor("a", "b", "synced"), ...faceFor("a", "b") },
-    { id: "idle", source: "a", target: "b", type: "talkMap", data: dataFor("a", "b", "idle"), ...faceFor("a", "b") },
-    { id: "adjacent", source: "c", target: "d", type: "talkMap", data: dataFor("c", "d", "synced"), ...faceFor("c", "d") }
+    { id: "sync", source: "a", target: "b", type: "mindMap", data: dataFor("a", "b", "synced"), ...faceFor("a", "b") },
+    { id: "idle", source: "a", target: "b", type: "mindMap", data: dataFor("a", "b", "idle"), ...faceFor("a", "b") },
+    { id: "adjacent", source: "c", target: "d", type: "mindMap", data: dataFor("c", "d", "synced"), ...faceFor("c", "d") }
   ];
   (0, import_client.createRoot)(document.getElementById("root")).render(
     /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { width: 820, height: 560 }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(ReactFlowProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(index, { nodes: allNodes, edges, edgeTypes, nodeTypes, connectionMode: ConnectionMode.Loose, fitView: true, proOptions: { hideAttribution: true }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Background, {}) }) }) })

@@ -12,19 +12,19 @@ for (const file of files) {
   let source = fs.readFileSync(file, 'utf8')
   const before = source
 
-  // 1) { kind: "plugin", plugin: "dsh-talk-map" }  →  { kind: "plugin:dsh-talk-map" }
+  // 1) { kind: "plugin", plugin: "mind_map" }  →  { kind: "plugin:mind_map" }
   source = source.replace(
-    /source:\s*\{\s*\n(\s*)kind:\s*"plugin",\s*\n\s*plugin:\s*"dsh-talk-map"\s*\n\s*\}/g,
-    (match, indent) => `source: {\n${indent}kind: "plugin:dsh-talk-map"\n${indent.slice(0, -1)}}`,
+    /source:\s*\{\s*\n(\s*)kind:\s*"plugin",\s*\n\s*plugin:\s*"mind_map"\s*\n\s*\}/g,
+    (match, indent) => `source: {\n${indent}kind: "plugin:mind_map"\n${indent.slice(0, -1)}}`,
   )
   // 2) with extra fields (form / summary)
   source = source.replace(
-    /source:\s*\{\s*\n(\s*)kind:\s*"plugin",\s*\n\s*plugin:\s*"dsh-talk-map",\s*\n/g,
-    (match, indent) => `source: {\n${indent}kind: "plugin:dsh-talk-map",\n`,
+    /source:\s*\{\s*\n(\s*)kind:\s*"plugin",\s*\n\s*plugin:\s*"mind_map",\s*\n/g,
+    (match, indent) => `source: {\n${indent}kind: "plugin:mind_map",\n`,
   )
   // 3) single-quoted source (src/*.ts style)
-  source = source.replace(/kind: 'plugin',\s*\n(\s*)plugin: 'dsh-talk-map',/g, "kind: 'plugin:dsh-talk-map',")
-  source = source.replace(/kind: 'plugin',\s*\n(\s*)plugin: 'dsh-talk-map'\s*\n/g, "kind: 'plugin:dsh-talk-map'\n")
+  source = source.replace(/kind: 'plugin',\s*\n(\s*)plugin: 'mind_map',/g, "kind: 'plugin:mind_map',")
+  source = source.replace(/kind: 'plugin',\s*\n(\s*)plugin: 'mind_map'\s*\n/g, "kind: 'plugin:mind_map'\n")
 
   if (source !== before) {
     fs.writeFileSync(file, source, 'utf8')

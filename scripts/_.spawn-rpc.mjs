@@ -36,9 +36,9 @@ spawn = spawn.replace(
   `        const created = unwrap(await api.sessions.create(
           pending.parentWorkspaceId !== undefined ? { workspaceId: pending.parentWorkspaceId } : {},
         ), 'session.create')
-        await talkMapApi.injectContext(created.sessionId, [`,
+        await mindMapApi.injectContext(created.sessionId, [`,
   `        const created = await createSession()
-        await talkMapApi.injectContext(created.sessionId, [`,
+        await mindMapApi.injectContext(created.sessionId, [`,
 )
 
 spawn = spawn.replace(
@@ -70,14 +70,14 @@ canvas = canvas.replace(
   `            const api = connectionApi()
             if (api === undefined) throw new Error(t('spawn.apiUnavailable'))
             const path = \`\${parentDir}/\${value}\`
-            await talkMapApi.ensureDir(path)
+            await mindMapApi.ensureDir(path)
             const response = await api.workspace.create({ path })
             if (!response.result.ok) {
               throw new Error(\`workspace.create: \${response.result.error.message ?? response.result.error.code ?? ''}\`)
             }
             importWorkspace(response.result.value.workspace.workspaceId, menu.flowX, menu.flowY)`,
   `            const path = \`\${parentDir}/\${value}\`
-            await talkMapApi.ensureDir(path)
+            await mindMapApi.ensureDir(path)
             const created = await callRpc<{ workspace: { workspaceId: string } }>('workspace/create', { path })
             importWorkspace(created.workspace.workspaceId, menu.flowX, menu.flowY)`,
 )

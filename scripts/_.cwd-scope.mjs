@@ -16,10 +16,10 @@ host = host.replace(
 )
 // route: pass cwd through
 host = host.replace(
-  `				if (route === "POST /talk-map/search") {
+  `				if (route === "POST /mind-map/search") {
 					const body = await readJsonBody(request);
 					const query = typeof body?.query === "string" ? body.query.trim() : "";`,
-  `				if (route === "POST /talk-map/search") {
+  `				if (route === "POST /mind-map/search") {
 					const body = await readJsonBody(request);
 					const query = typeof body?.query === "string" ? body.query.trim() : "";
 					const cwd = typeof body?.cwd === "string" ? body.cwd : "";`,
@@ -34,8 +34,8 @@ api = api.replace(
   '  searchSessions(query: string, cwd?: string): Promise<{',
 )
 api = api.replace(
-  "    return postJson('/talk-map/search', { query })",
-  "    return postJson('/talk-map/search', cwd === undefined ? { query } : { query, cwd })",
+  "    return postJson('/mind-map/search', { query })",
+  "    return postJson('/mind-map/search', cwd === undefined ? { query } : { query, cwd })",
 )
 fs.writeFileSync('src/client/api.ts', api, 'utf8')
 
@@ -54,8 +54,8 @@ rpc = rpc.replace(
   'async function searchSessionsUncached(query: string, cwd?: string): Promise<ContentHit[]> {',
 )
 rpc = rpc.replace(
-  '    const page = await talkMapApi.searchSessions(query)',
-  '    const page = await talkMapApi.searchSessions(query, cwd)',
+  '    const page = await mindMapApi.searchSessions(query)',
+  '    const page = await mindMapApi.searchSessions(query, cwd)',
 )
 fs.writeFileSync('src/client/rpc.ts', rpc, 'utf8')
 

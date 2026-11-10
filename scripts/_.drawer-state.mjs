@@ -19,9 +19,9 @@ drawer = drawer.replace(
 )
 
 drawer = drawer.replace(
-  `import styles from './talk-map.module.css'`,
+  `import styles from './mind-map.module.css'`,
   `import { drawerState } from './drawer-state.ts'
-import styles from './talk-map.module.css'`,
+import styles from './mind-map.module.css'`,
 )
 
 // restore / persist the scroll offset of the drawer body

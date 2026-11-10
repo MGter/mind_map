@@ -2,7 +2,7 @@ import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path'
 import { pickFaces } from '../src/client/edge-routing.ts'
 import { routeEdge } from '../src/client/edge-route.ts'
 const W = 224, H = 120
-const raw = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.dsh', 'storages', 'talk_map.json'), 'utf8'))
+const raw = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.dsh', 'storages', 'mind_map.json'), 'utf8'))
 const cards = Object.entries(raw.tables.cards).map(([id, c]) => ({ id, b: c.boardId ?? 'inbox', x: c.x, y: c.y, w: W, h: H }))
 const pool = cards.filter(c => c.b === 'inbox')
 const sorted = [...pool].sort((a, b) => (a.y - b.y) || (a.x - b.x))

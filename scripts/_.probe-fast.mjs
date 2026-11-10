@@ -30,13 +30,13 @@ source = source.replace(
     "      window.__harness.searchSessionCalls().length)",
     "    check('搜索阶段不去翻每条会话的其它命中', beforeMore === 0, String(beforeMore))",
     '    await page.evaluate(() => {',
-    "      const button = document.querySelector('[data-talkmap-search-more]')",
+    "      const button = document.querySelector('[data-mindmap-search-more]')",
     '      if (button !== null) button.click()',
     '    })',
     '    await page.waitForTimeout(500)',
     "    const afterMore = await page.evaluate(() => ({",
     "      calls: window.__harness.searchSessionCalls().length,",
-    "      lines: document.querySelectorAll('[data-talkmap-search-hit] [data-talkmap-search-line]').length,",
+    "      lines: document.querySelectorAll('[data-mindmap-search-hit] [data-mindmap-search-line]').length,",
     '    }))',
     "    check('点「更多命中」才去查这条会话（并且多出行来）',",
     '      afterMore.calls === 1 && afterMore.lines >= 2, JSON.stringify(afterMore))',
@@ -55,16 +55,16 @@ source = source.replace(
 
 // 4) failure checks must use an uncached query (the cache answers repeats)
 source = source.replace(
-  "    await page.evaluate(() => window.__harness.failSearchRpc(true))\n    await page.fill('[data-talkmap-drawer-search]', '')\n    await page.keyboard.type('物理')",
-  "    await page.evaluate(() => window.__harness.failSearchRpc(true))\n    await page.fill('[data-talkmap-drawer-search]', '')\n    await page.keyboard.type('没有任何缓存的新词')",
+  "    await page.evaluate(() => window.__harness.failSearchRpc(true))\n    await page.fill('[data-mindmap-drawer-search]', '')\n    await page.keyboard.type('物理')",
+  "    await page.evaluate(() => window.__harness.failSearchRpc(true))\n    await page.fill('[data-mindmap-drawer-search]', '')\n    await page.keyboard.type('没有任何缓存的新词')",
 )
 source = source.replace(
-  "      window.__harness.failSearchRpc(true)\n      window.__harness.failSearchRoute(true)\n    })\n    await page.fill('[data-talkmap-drawer-search]', '')\n    await page.keyboard.type('物理')",
-  "      window.__harness.failSearchRpc(true)\n      window.__harness.failSearchRoute(true)\n    })\n    await page.fill('[data-talkmap-drawer-search]', '')\n    await page.keyboard.type('索引关闭测试词')",
+  "      window.__harness.failSearchRpc(true)\n      window.__harness.failSearchRoute(true)\n    })\n    await page.fill('[data-mindmap-drawer-search]', '')\n    await page.keyboard.type('物理')",
+  "      window.__harness.failSearchRpc(true)\n      window.__harness.failSearchRoute(true)\n    })\n    await page.fill('[data-mindmap-drawer-search]', '')\n    await page.keyboard.type('索引关闭测试词')",
 )
 source = source.replace(
-  "      window.__harness.searchRouteError('session search is disabled: this deployment configures the session-query index with openAt never')\n      window.__harness.failSearchRpc(true)\n      window.__harness.failSearchRoute(true)\n    })\n    await page.fill('[data-talkmap-drawer-search]', '')\n    await page.keyboard.type('物理')",
-  "      window.__harness.searchRouteError('session search is disabled: this deployment configures the session-query index with openAt never')\n      window.__harness.failSearchRpc(true)\n      window.__harness.failSearchRoute(true)\n    })\n    await page.fill('[data-talkmap-drawer-search]', '')\n    await page.keyboard.type('索引关闭另一测试词')",
+  "      window.__harness.searchRouteError('session search is disabled: this deployment configures the session-query index with openAt never')\n      window.__harness.failSearchRpc(true)\n      window.__harness.failSearchRoute(true)\n    })\n    await page.fill('[data-mindmap-drawer-search]', '')\n    await page.keyboard.type('物理')",
+  "      window.__harness.searchRouteError('session search is disabled: this deployment configures the session-query index with openAt never')\n      window.__harness.failSearchRpc(true)\n      window.__harness.failSearchRoute(true)\n    })\n    await page.fill('[data-mindmap-drawer-search]', '')\n    await page.keyboard.type('索引关闭另一测试词')",
 )
 
 fs.writeFileSync(file, source, 'utf8')

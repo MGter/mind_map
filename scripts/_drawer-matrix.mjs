@@ -103,7 +103,7 @@ await build({
   logLevel: 'error',
 })
 
-const rawCss = fs.readFileSync('src/client/talk-map.module.css', 'utf8')
+const rawCss = fs.readFileSync('src/client/mind-map.module.css', 'utf8')
 const scopedCss = rawCss
   .replace(/:global\(([^()]*)\)/g, '$1')
   .replace(/\.([a-zA-Z][\w-]*)/g, '.tm_$1')

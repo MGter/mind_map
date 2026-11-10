@@ -1,7 +1,7 @@
 /**
  * Digest becomes on-demand:
  *  • no per-turn generation by default (DIGEST_DEFAULTS.enabled = false)
- *  • POST /talk-map/digest/ensure — regenerates ONLY when the transcript changed
+ *  • POST /mind-map/digest/ensure — regenerates ONLY when the transcript changed
  *    (the pipeline's own sha256 skip), used by push / spawn
  *  • auto push stays available, per edge: turn/end only queues sessions that are
  *    the source of an edge with injection.autoPush === true
@@ -52,9 +52,9 @@ source = source.replace(
 
 // 4. route --------------------------------------------------------------
 source = source.replace(
-  '\t\t\t\tif (route === "POST /talk-map/digest/refresh") {',
+  '\t\t\t\tif (route === "POST /mind-map/digest/refresh") {',
   J([
-    '\t\t\t\tif (route === "POST /talk-map/digest/ensure") {',
+    '\t\t\t\tif (route === "POST /mind-map/digest/ensure") {',
     '\t\t\t\t\tif (runtime.digest === void 0) {',
     '\t\t\t\t\t\tsendJson(response, 503, { error: "digest layer unavailable (llm service missing)" });',
     '\t\t\t\t\t\treturn;',
@@ -64,7 +64,7 @@ source = source.replace(
     '\t\t\t\t\tsendJson(response, 200, { sessionId: ensureBody.sessionId, digest: ensured });',
     '\t\t\t\t\treturn;',
     '\t\t\t\t}',
-    '\t\t\t\tif (route === "POST /talk-map/digest/refresh") {',
+    '\t\t\t\tif (route === "POST /mind-map/digest/refresh") {',
   ]),
 )
 
@@ -126,9 +126,9 @@ source = source.replace(
     '\t\t\t\t\tfor (const target of targets) {',
     '\t\t\t\t\t\ttry {',
     '\t\t\t\t\t\t\tawait runtime.spawner.injectInto(target.toSessionId, [{ sessionId, text }]);',
-    '\t\t\t\t\t\t\tservices.logger?.info?.(`[dsh-talk-map] auto-pushed digest ${edgeId} → ${target.toSessionId}`);',
+    '\t\t\t\t\t\t\tservices.logger?.info?.(`[mind_map] auto-pushed digest ${edgeId} → ${target.toSessionId}`);',
     '\t\t\t\t\t\t} catch (error) {',
-    '\t\t\t\t\t\t\tservices.logger?.warn(`[dsh-talk-map] auto push ${edgeId} failed: ${String(error)}`);',
+    '\t\t\t\t\t\t\tservices.logger?.warn(`[mind_map] auto push ${edgeId} failed: ${String(error)}`);',
     '\t\t\t\t\t\t}',
     '\t\t\t\t\t}',
     '\t\t\t\t},',

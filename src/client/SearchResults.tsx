@@ -9,7 +9,7 @@
  * nobody reads — a match shows its own text.)
  */
 import { renderMarkdownInline } from './markdown-inline.tsx'
-import styles from './talk-map.module.css'
+import styles from './mind-map.module.css'
 
 export interface SearchHitView {
   sessionId: string
@@ -30,12 +30,12 @@ export interface SearchResultsProps {
 
 export function SearchResults(props: SearchResultsProps): React.JSX.Element {
   return (
-    <div className={styles['drawerHits']} data-talkmap-local-results="">
+    <div className={styles['drawerHits']} data-mindmap-local-results="">
       {props.hits.length === 0
         ? <div className={styles['drawerEmpty']}>{props.empty}</div>
         : null}
       {props.hits.map(hit => (
-        <div key={hit.sessionId} className={styles['drawerHit']} data-talkmap-search-hit={hit.sessionId}>
+        <div key={hit.sessionId} className={styles['drawerHit']} data-mindmap-search-hit={hit.sessionId}>
           <div className={styles['drawerHitHead']}>
             <button
               type="button"
@@ -53,7 +53,7 @@ export function SearchResults(props: SearchResultsProps): React.JSX.Element {
                 key={index}
                 type="button"
                 className={styles['drawerHitLine']}
-                data-talkmap-search-line={hit.sessionId}
+                data-mindmap-search-line={hit.sessionId}
                 onClick={() => { props.onOpenSession(hit.sessionId) }}
               >
                 {renderMarkdownInline(line, props.query).nodes}

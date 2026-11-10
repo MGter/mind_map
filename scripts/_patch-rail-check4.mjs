@@ -8,7 +8,7 @@ let text = fs.readFileSync(file, 'utf8')
 const bad = [
   "const layoutWidth = await page.evaluate(() => {",
   "  const rail = document.querySelector('[class*=\"statusRailCard\"]')",
-  "  const board = document.querySelector('[data-talkmap-session]')",
+  "  const board = document.querySelector('[data-mindmap-session]')",
   "  return { rail: rail === null ? 0 : rail.offsetWidth, board: board === null ? 0 : board.offsetWidth }",
   "})",
 ].join('\n')
@@ -20,7 +20,7 @@ const anchor = "const shot = process.argv.includes('--shot')"
 text = text.replace(anchor, [
   "const layoutWidth = await page.evaluate(() => {",
   "  const rail = document.querySelector('[class*=\"statusRailCard\"]')",
-  "  const board = document.querySelector('[data-talkmap-session]')",
+  "  const board = document.querySelector('[data-mindmap-session]')",
   "  return { rail: rail === null ? 0 : rail.offsetWidth, board: board === null ? 0 : board.offsetWidth }",
   "})",
   '',

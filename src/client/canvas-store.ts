@@ -1,11 +1,11 @@
 /**
- * Canvas data store: the client-side working copy of the talk-map domain.
- * Reads land here from GET /talk-map/state plus the SSE change feed; writes
+ * Canvas data store: the client-side working copy of the mind-map domain.
+ * Reads land here from GET /mind-map/state plus the SSE change feed; writes
  * are optimistic (local first) with debounced persistence. Card positions
  * are sacred user data — nothing here ever moves a card except an explicit
  * user drag or the one-time auto-placement of a session that has no card yet.
  */
-import { talkMapApi } from './api.ts'
+import { mindMapApi } from './api.ts'
 import { setLocalePref } from './i18n.ts'
 import type { Card, Digest, FrameGeometry, MapEdgeData, MapGlobal, Camera } from '../shared/model.ts'
 import { INBOX_BOARD_ID } from '../shared/model.ts'
@@ -102,13 +102,13 @@ function restoreSnapshot(snapshot: BoardSnapshot): void {
   const goneCards = Object.keys(previousCards).filter(id => snapshot.cards[id] === undefined)
   const goneEdges = Object.keys(previousEdges).filter(id => snapshot.edges[id] === undefined)
   void (async () => {
-    if (Object.keys(snapshot.cards).length > 0) await talkMapApi.upsertCards({ ...snapshot.cards })
-    if (goneCards.length > 0) await talkMapApi.deleteCards(goneCards)
-    if (Object.keys(snapshot.edges).length > 0) await talkMapApi.upsertEdges({ ...snapshot.edges })
-    if (goneEdges.length > 0) await talkMapApi.deleteEdges(goneEdges)
+    if (Object.keys(snapshot.cards).length > 0) await mindMapApi.upsertCards({ ...snapshot.cards })
+    if (goneCards.length > 0) await mindMapApi.deleteCards(goneCards)
+    if (Object.keys(snapshot.edges).length > 0) await mindMapApi.upsertEdges({ ...snapshot.edges })
+    if (goneEdges.length > 0) await mindMapApi.deleteEdges(goneEdges)
     if (global !== null) await persistGlobal(global, 'undo')
   })().catch((error) => {
-    console.error('[dsh-talk-map] undo sync failed:', error)
+    console.error('[mind_map] undo sync failed:', error)
   })
 }
 
@@ -122,8 +122,8 @@ let globalWritesInFlight = 0
 
 function persistGlobal(value: MapGlobal, label: string): Promise<void> {
   globalWritesInFlight += 1
-  return talkMapApi.setGlobal(value).catch((error) => {
-    console.error(`[dsh-talk-map] ${label} save failed:`, error)
+  return mindMapApi.setGlobal(value).catch((error) => {
+    console.error(`[mind_map] ${label} save failed:`, error)
   }).finally(() => {
     globalWritesInFlight -= 1
   })
@@ -161,9 +161,9 @@ async function flushCards(): Promise<void> {
   if (Object.keys(payload).length === 0) return
   cardWritesInFlight += 1
   try {
-    await talkMapApi.upsertCards(payload)
+    await mindMapApi.upsertCards(payload)
   } catch (error) {
-    console.error('[dsh-talk-map] card flush failed:', error)
+    console.error('[mind_map] card flush failed:', error)
     for (const id of Object.keys(payload)) dirtyCards.add(id)
   } finally {
     cardWritesInFlight -= 1
@@ -188,7 +188,7 @@ export const canvas = {
       if (state.phase !== 'loading') return
       setState({ phase: 'error', error: 'timeout' })
     }, 12000)
-    talkMapApi.getState().then((payload) => {
+    mindMapApi.getState().then((payload) => {
       clearTimeout(timer)
       setState({
         phase: 'ready',
@@ -212,7 +212,7 @@ export const canvas = {
 
   /** SSE mirror: applies host-confirmed changes (idempotent over our own writes). */
   connect(): () => void {
-    return talkMapApi.subscribeChanges((change) => {
+    return mindMapApi.subscribeChanges((change) => {
       if (change.table === 'cards') {
         // Never clobber a position the user is actively dragging.
         if (dirtyCards.has(change.key)) return
@@ -276,8 +276,8 @@ export const canvas = {
   addCards(entries: Record<string, Card>): void {
     pushUndo()
     setState({ cards: { ...state.cards, ...entries } })
-    trackCardWrite(talkMapApi.upsertCards(entries).catch((error) => {
-      console.error('[dsh-talk-map] card upsert failed:', error)
+    trackCardWrite(mindMapApi.upsertCards(entries).catch((error) => {
+      console.error('[mind_map] card upsert failed:', error)
     }))
   },
 
@@ -285,8 +285,8 @@ export const canvas = {
   addEdges(entries: Record<string, MapEdgeData>): void {
     pushUndo()
     setState({ edges: { ...state.edges, ...entries } })
-    void talkMapApi.upsertEdges(entries).catch((error) => {
-      console.error('[dsh-talk-map] edge upsert failed:', error)
+    void mindMapApi.upsertEdges(entries).catch((error) => {
+      console.error('[mind_map] edge upsert failed:', error)
     })
   },
 
@@ -299,8 +299,8 @@ export const canvas = {
     const edges = { ...state.edges }
     for (const id of present) delete edges[id]
     setState({ edges })
-    void talkMapApi.deleteEdges(present).catch((error) => {
-      console.error('[dsh-talk-map] edge delete failed:', error)
+    void mindMapApi.deleteEdges(present).catch((error) => {
+      console.error('[mind_map] edge delete failed:', error)
     })
   },
 
@@ -310,7 +310,7 @@ export const canvas = {
   refresh(): void {
     if (state.phase !== 'ready' || dirtyCards.size > 0 || globalWritesInFlight > 0 || cardWritesInFlight > 0) return
     const seqAtStart = editSeq
-    talkMapApi.getState().then((payload) => {
+    mindMapApi.getState().then((payload) => {
       if (state.phase !== 'ready' || dirtyCards.size > 0 || globalWritesInFlight > 0) return
       // A local edit landed while this fetch was in flight: the answer is stale.
       if (seqAtStart !== editSeq) return
@@ -354,8 +354,8 @@ export const canvas = {
     } else {
       setState({ cards })
     }
-    trackCardWrite(talkMapApi.deleteCards([id]).catch((error) => {
-      console.error('[dsh-talk-map] card delete failed:', error)
+    trackCardWrite(mindMapApi.deleteCards([id]).catch((error) => {
+      console.error('[mind_map] card delete failed:', error)
     }))
   },
 
@@ -368,8 +368,8 @@ export const canvas = {
     if (wsOverride === undefined) delete next.wsOverride
     else next.wsOverride = wsOverride
     setState({ cards: { ...state.cards, [id]: next } })
-    void talkMapApi.upsertCards({ [id]: next }).catch((error) => {
-      console.error('[dsh-talk-map] card override save failed:', error)
+    void mindMapApi.upsertCards({ [id]: next }).catch((error) => {
+      console.error('[mind_map] card override save failed:', error)
     })
   },
 

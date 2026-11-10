@@ -1,5 +1,5 @@
 /**
- * Render the REAL board (frames + slot positions from talk_map.json) with the real
+ * Render the REAL board (frames + slot positions from mind_map.json) with the real
  * edge component in headless Edge, then measure the *rendered* SVG paths against the
  * *rendered* card boxes in screen space (getScreenCTM / getBoundingClientRect).
  *
@@ -15,7 +15,7 @@ import { build } from 'esbuild'
 import { chromium } from 'playwright-core'
 import { CARD_W, CARD_H, layoutFor } from '../src/client/grid-layout.ts'
 
-const raw = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.dsh', 'storages', 'talk_map.json'), 'utf8'))
+const raw = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.dsh', 'storages', 'mind_map.json'), 'utf8'))
 const cards = Object.entries(raw.tables.cards).map(([id, card]) => ({ id, x: card.x, y: card.y }))
 const frames = raw.global?.wsFrames ?? {}
 
@@ -59,7 +59,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { ReactFlow, ReactFlowProvider, Background, Handle, Position, ConnectionMode } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { edgeTypes } from '../../src/client/TalkMapEdge.tsx'
+import { edgeTypes } from '../../src/client/MindMapEdge.tsx'
 import { pickFaces } from '../../src/client/edge-routing.ts'
 
 const CARD_W = 224
@@ -68,7 +68,7 @@ const scene = ${JSON.stringify(scene)}
 
 const nodeTypes = {
   card: ({ data }) => (
-    <div data-talkmap-session={data.id} style={{ width: CARD_W, height: CARD_H, boxSizing: 'content-box', padding: '10px 12px', border: '1px solid #333a45', background: '#23262d',
+    <div data-mindmap-session={data.id} style={{ width: CARD_W, height: CARD_H, boxSizing: 'content-box', padding: '10px 12px', border: '1px solid #333a45', background: '#23262d',
       color: '#cfd6e3', border: '1px solid #333a45', borderRadius: 10 }}>
       <Handle id="t" type="source" position={Position.Top} />
       <Handle id="r" type="source" position={Position.Right} />
@@ -86,7 +86,7 @@ const edges = scene.pairs.map(([from, to], index) => {
     { id: to, x: rectOf(to).x, y: rectOf(to).y },
     placed.map(n => ({ id: n.id, x: n.x, y: n.y })), { cardWidth: CARD_W, cardHeight: CARD_H })
   return {
-    id: 'e' + index, source: from, target: to, type: 'talkMap',
+    id: 'e' + index, source: from, target: to, type: 'mindMap',
     sourceHandle: faces.fromHandle, targetHandle: faces.toHandle,
     data: {
       sync: 'idle',
@@ -147,9 +147,9 @@ await page.goto('file:///' + path.resolve('test/shots/real-board.html').replace(
 await page.waitForTimeout(2000)
 
 const report = await page.evaluate(() => {
-  const cards = [...document.querySelectorAll('[data-talkmap-session]')].map(element => {
+  const cards = [...document.querySelectorAll('[data-mindmap-session]')].map(element => {
     const rect = element.getBoundingClientRect()
-    return { id: element.getAttribute('data-talkmap-session'), x: rect.left, y: rect.top, w: rect.width, h: rect.height }
+    return { id: element.getAttribute('data-mindmap-session'), x: rect.left, y: rect.top, w: rect.width, h: rect.height }
   })
   const out = []
   for (const group of document.querySelectorAll('.react-flow__edge')) {

@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { relativeTime, LAMP_CHIP, type CardGlow } from './SessionCard.tsx'
 import { t } from './i18n.ts'
-import styles from './talk-map.module.css'
+import styles from './mind-map.module.css'
 
 export type StatusLamp = CardGlow
 
@@ -53,8 +53,8 @@ interface DragState {
   width: number
 }
 
-const OPEN_KEY = 'dsh.talk-map.status-rail.open.v1'
-const ORDER_KEY = 'dsh.talk-map.status-rail.order.v1'
+const OPEN_KEY = 'dsh.mind-map.status-rail.open.v1'
+const ORDER_KEY = 'dsh.mind-map.status-rail.order.v1'
 const FLIP_MS = 180
 
 const LAMP_CLASS: Record<StatusLamp, string> = {

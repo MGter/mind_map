@@ -21,7 +21,7 @@ const block = [
   '  const busyDelete = await page.evaluate(() => ({',
   "    stopCalls: window.__harness.log.filter(entry => entry.kind === 'ui.archiveSession' && entry.detail?.options?.stopActivity === true).length,",
   '    recycleCalls: window.__harness.recycleCalls().length,',
-  '    stillThere: [...document.querySelectorAll(\'[data-talkmap-session]\')].some(node => node.getAttribute(\'data-talkmap-session\') === \'s8\'),',
+  '    stillThere: [...document.querySelectorAll(\'[data-mindmap-session]\')].some(node => node.getAttribute(\'data-mindmap-session\') === \'s8\'),',
   '  }))',
   "  check('会话还在跑时删除：先停止工作再重试删除',",
   '    busyDelete.stopCalls >= 1 && busyDelete.stillThere === false,',

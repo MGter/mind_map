@@ -33,7 +33,7 @@ text = text.replace(
 fs.writeFileSync(route, text, 'utf8')
 
 // The map edge passes its own offset.
-const edge = 'src/client/TalkMapEdge.tsx'
+const edge = 'src/client/MindMapEdge.tsx'
 let tsx = fs.readFileSync(edge, 'utf8')
 if (!tsx.includes('laneOffset')) {
   tsx = tsx.replace(

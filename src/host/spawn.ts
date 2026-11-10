@@ -10,7 +10,7 @@
  * events claimed at the next step, surviving restarts unread.
  */
 import type { SpawnHostServices, UserMessageLite, AgentHandleLite } from './dsh-host.ts'
-import type { TalkMapStore, Card, MapEdge } from './store.ts'
+import type { MindMapStore, Card, MapEdge } from './store.ts'
 
 export interface SpawnParent {
   cardId: string
@@ -75,7 +75,7 @@ export class Spawner {
         role: 'user',
         content: [{ type: 'text', text: guarded }],
         source: {
-          kind: 'plugin:dsh-talk-map',
+          kind: 'plugin:mind_map',
           form: 'notice',
           summary: `Context injected from session ${parent.sessionId}`,
         },
@@ -89,7 +89,7 @@ export class Spawner {
 
   constructor(
     private readonly services: SpawnHostServices,
-    private readonly storeReady: Promise<TalkMapStore>,
+    private readonly storeReady: Promise<MindMapStore>,
   ) {}
 
   async spawn(request: SpawnRequest): Promise<SpawnResult> {
@@ -119,7 +119,7 @@ export class Spawner {
         const workspace = await this.services.workspaceRegistry.resolveByPath(parentRecord.header.cwd)
         await workspace?.attachSession(sessionId)
       } catch (error) {
-        this.services.logger?.warn(`[dsh-talk-map] workspace attach failed: ${String(error)}`)
+        this.services.logger?.warn(`[mind_map] workspace attach failed: ${String(error)}`)
       }
     }
 
@@ -129,7 +129,7 @@ export class Spawner {
         role: 'user',
         content: [{ type: 'text', text: parent.text }],
         source: {
-          kind: 'plugin:dsh-talk-map',
+          kind: 'plugin:mind_map',
           form: 'notice',
           summary: `Context injected from session ${parent.sessionId}`,
         },
@@ -162,7 +162,7 @@ export class Spawner {
       edges[edgeId] = edge
     }
 
-    this.services.logger?.info?.(`[dsh-talk-map] spawned ${sessionId} from ${request.parents.length} parent(s)`)
+    this.services.logger?.info?.(`[mind_map] spawned ${sessionId} from ${request.parents.length} parent(s)`)
     return { sessionId, cardId, card, edges }
   }
 }

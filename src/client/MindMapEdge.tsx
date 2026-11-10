@@ -10,7 +10,7 @@ import { BaseEdge, getSmoothStepPath, type EdgeProps } from '@xyflow/react'
 import { routeBetween, roundedPath, type Face, type Point, type Rect } from './edge-route.ts'
 import { pickFaces } from './edge-routing.ts'
 
-export interface TalkMapEdgeData {
+export interface MindMapEdgeData {
   fromCardId?: string
   toCardId?: string
   sync?: 'synced' | 'idle'
@@ -42,7 +42,7 @@ function boardBoxes(): Rect[] {
   const viewport = document.querySelector('.react-flow__viewport') as HTMLElement | null
   if (viewport === null) return boardCache.boxes
   const boxes: Rect[] = []
-  for (const element of document.querySelectorAll('[data-talkmap-session]')) {
+  for (const element of document.querySelectorAll('[data-mindmap-session]')) {
     const node = element as HTMLElement
     // offsetLeft/offsetTop are LAYOUT pixels — untransformed — so they are flow
     // coordinates already, and they do not change when the canvas is zoomed. Using
@@ -97,8 +97,8 @@ function containsPoint(box: Rect, x: number, y: number): boolean {
   return x >= box.x - pad && x <= box.x + box.w + pad && y >= box.y - pad && y <= box.y + box.h + pad
 }
 
-export function TalkMapEdge(props: EdgeProps): React.JSX.Element {
-  const data = (props.data ?? {}) as TalkMapEdgeData
+export function MindMapEdge(props: EdgeProps): React.JSX.Element {
+  const data = (props.data ?? {}) as MindMapEdgeData
   const synced = data.sync === 'synced'
   // Only transfer lines disappear once they are in sync; a fork link is part of
   // the map structure and stays where it is.
@@ -328,4 +328,4 @@ export function TalkMapEdge(props: EdgeProps): React.JSX.Element {
   )
 }
 
-export const edgeTypes = { talkMap: TalkMapEdge }
+export const edgeTypes = { mindMap: MindMapEdge }

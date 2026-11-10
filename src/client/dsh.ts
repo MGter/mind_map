@@ -250,7 +250,7 @@ export interface ConnectionService {
 }
 
 /** The client cordis context surface this plugin relies on (structural). */
-export interface TalkMapClientContext {
+export interface MindMapClientContext {
   slots: SlotsService
   sessions: SessionsService
   workspaces: WorkspacesService
@@ -266,6 +266,6 @@ export interface TalkMapClientContext {
    * after a replacement). This is how a plugin that boots before `connection`
    * and `uiWorkspace` are ready gets their live handles.
    */
-  inject?(deps: string[], run: (scoped: TalkMapClientContext) => void): unknown
+  inject?(deps: string[], run: (scoped: MindMapClientContext) => void): unknown
   effect(callback: () => unknown, label?: string): void
 }

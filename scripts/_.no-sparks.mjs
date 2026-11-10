@@ -1,7 +1,7 @@
 /** 去掉粒子，流光提速。 */
 import fs from 'node:fs'
 
-const file = 'src/client/TalkMapEdge.tsx'
+const file = 'src/client/MindMapEdge.tsx'
 let source = fs.readFileSync(file, 'utf8')
 const EOL = source.includes('\r\n') ? '\r\n' : '\n'
 const before = source

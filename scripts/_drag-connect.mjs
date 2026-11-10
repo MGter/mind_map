@@ -30,7 +30,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { ReactFlow, ReactFlowProvider, Background, Handle, Position, ConnectionMode, useReactFlow } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { edgeTypes } from '../../src/client/TalkMapEdge.tsx'
+import { edgeTypes } from '../../src/client/MindMapEdge.tsx'
 
 const SCENE = ${JSON.stringify(SCENE)}
 const CARD_W = 224
@@ -38,7 +38,7 @@ const CARD_H = 120
 
 const nodeTypes = {
   card: ({ data }) => (
-    <div data-talkmap-session={data.id} style={{ width: data.w, height: data.h, background: '#23262d',
+    <div data-mindmap-session={data.id} style={{ width: data.w, height: data.h, background: '#23262d',
       color: '#cfd6e3', border: '1px solid #333a45', borderRadius: 10, position: 'relative' }}>
       <Handle id="t" type="source" position={Position.Top} />
       <Handle id="r" type="source" position={Position.Right} />
@@ -67,7 +67,7 @@ function Canvas() {
       target: connection.target,
       sourceHandle: connection.sourceHandle,
       targetHandle: connection.targetHandle,
-      type: 'talkMap',
+      type: 'mindMap',
       data: {
         sync: 'idle',
         obstacles: others.map(card => ({ x: card.x, y: card.y, w: card.w, h: card.h })),
@@ -127,13 +127,13 @@ await page.goto('file:///' + path.resolve('test/shots/drag.html').replace(/\\/g,
 await page.waitForTimeout(1200)
 await page.screenshot({ path: 'test/shots/drag-before.png' })
 console.log('viewport', await page.evaluate(() => getComputedStyle(document.querySelector('.react-flow__viewport')).transform))
-console.log('nodes', JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('[data-talkmap-session]')].map(el => { const r = el.getBoundingClientRect(); return { id: el.getAttribute('data-talkmap-session'), x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) } }))))
+console.log('nodes', JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('[data-mindmap-session]')].map(el => { const r = el.getBoundingClientRect(); return { id: el.getAttribute('data-mindmap-session'), x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) } }))))
 
 // the actual gesture: press the top card's bottom handle, drag down, release on the
 // bottom card's top handle
 const handles = await page.evaluate(() => {
   const find = (cardId, handleId) => {
-    const node = document.querySelector(`[data-talkmap-session="${cardId}"]`)
+    const node = document.querySelector(`[data-mindmap-session="${cardId}"]`)
     const handle = node?.parentElement?.querySelector(`[data-handleid="${handleId}"]`) ?? node?.querySelector(`[data-handleid="${handleId}"]`)
     if (!handle) return null
     const rect = handle.getBoundingClientRect()
@@ -157,9 +157,9 @@ await page.mouse.up()
 await page.waitForTimeout(800)
 
 const report = await page.evaluate(() => {
-  const cards = [...document.querySelectorAll('[data-talkmap-session]')].map(element => {
+  const cards = [...document.querySelectorAll('[data-mindmap-session]')].map(element => {
     const rect = element.getBoundingClientRect()
-    return { id: element.getAttribute('data-talkmap-session'), x: rect.left, y: rect.top, w: rect.width, h: rect.height }
+    return { id: element.getAttribute('data-mindmap-session'), x: rect.left, y: rect.top, w: rect.width, h: rect.height }
   })
   const out = []
   for (const group of document.querySelectorAll('.react-flow__edge')) {

@@ -26,7 +26,7 @@ const trace: JumpTrace = {
 
 function report(): void {
   try {
-    void fetch('/talk-map/client-boot', {
+    void fetch('/mind-map/client-boot', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ phase: 'jump-debug', ...trace }),

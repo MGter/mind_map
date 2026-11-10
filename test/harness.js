@@ -1,5 +1,5 @@
 /**
- * Offline harness for the talk-map client bundle.
+ * Offline harness for the mind-map client bundle.
  *
  * Loads the real built artifact (client/client.js) in a real browser with a
  * fake Cordis context and fake DSH services, so UI/layout changes can be
@@ -54,7 +54,7 @@
     { workspaceId: 'ws-sync', title: '自动同步', path: 'D:/Projects/sync', sessionIds: ['s10'] },
   ]
   /** demo=1: fictional showcase data — no real session titles leak into the demo page. */
-  const demoMode = new URLSearchParams(location.search).get('demo') === '1' || window.__talkMapDemo === true
+  const demoMode = new URLSearchParams(location.search).get('demo') === '1' || window.__mindMapDemo === true
 
   const DEMO_TITLES = {
     s1: '产品官网重构', s2: '周报自动汇总', s3: '客户反馈分析',
@@ -64,7 +64,7 @@
   }
 
   const titles = demoMode === true ? DEMO_TITLES : {
-    s1: '对话地图插件改版', s2: '桌面自动化脚本清理', s3: 'DSH 会话日志解析',
+    s1: '思维图插件改版', s2: '桌面自动化脚本清理', s3: 'DSH 会话日志解析',
     s4: 'Matter.js 物理参数换算', s5: '云盘同步目录整理',
     s6: '医学影像标注流程', s7: '标注工具离线化', s8: '数据集切分脚本',
     s9: '代理端口探测', s10: '自动同步进来的会话',
@@ -364,7 +364,7 @@
     // 自动保存: mirror the served payload into localStorage on every write,
     // and re-read it on the next open — the visitor's layout survives reload.
     sessionsState = { ids: Object.keys(sessionRows), byId: sessionRows }
-    globalThis.__demoStateKey = 'dsh-talk-map.demo-state.v1'
+    globalThis.__demoStateKey = 'mind_map.demo-state.v1'
     try {
       const raw = window.localStorage.getItem(globalThis.__demoStateKey)
       if (raw !== null) globalThis.__demoSaved = JSON.parse(raw)
@@ -399,7 +399,7 @@
   }
 
   // ---- fetch / EventSource mocks ------------------------------------
-  /** '/talk-map/search' hits, and a switch to make the RPC path fail. */
+  /** '/mind-map/search' hits, and a switch to make the RPC path fail. */
   const searchRouteCalls = []
   const searchContextCalls = []
   const digestCalls = []
@@ -445,26 +445,26 @@
       try { body = JSON.parse(init.body) } catch { body = init.body }
       posts.push({ path, body })
       // Behave like the real host: persist card writes into the served state, so
-      // a later /talk-map/state read reflects them (the client refreshes on open).
-      if (path.includes('/talk-map/cards/upsert') && body !== null) {
+      // a later /mind-map/state read reflects them (the client refreshes on open).
+      if (path.includes('/mind-map/cards/upsert') && body !== null) {
         Object.assign(payload.cards, body.cards ?? {})
       }
-      if (path.includes('/talk-map/cards/delete') && body !== null) {
+      if (path.includes('/mind-map/cards/delete') && body !== null) {
         for (const id of body.ids ?? []) delete payload.cards[id]
       }
-      if (path.includes('/talk-map/global') && body !== null && body.global !== undefined) {
+      if (path.includes('/mind-map/global') && body !== null && body.global !== undefined) {
         payload.global = body.global
       }
       if (demoMode === true) {
         try {
-          window.localStorage.setItem(globalThis.__demoStateKey ?? 'dsh-talk-map.demo-state.v1',
+          window.localStorage.setItem(globalThis.__demoStateKey ?? 'mind_map.demo-state.v1',
             JSON.stringify(payload))
         } catch { /* quota: the board still works this session */ }
       }
       // Host-side fallback for the drawer's full-text search (the client calls
     // this when the shared RPC surface does not answer).
     // Extra hits inside one conversation (asked for with the ＋ button).
-    if (path.indexOf('/talk-map/search-session') >= 0) {
+    if (path.indexOf('/mind-map/search-session') >= 0) {
       searchSessionCalls.push({ sessionId: body?.sessionId, query: body?.query })
       return json({
         blocks: [['用 **物理参数** 换算，见 `PX_PER_M`'], ['第二条：*物理量* 走 PX_PER_M']],
@@ -472,16 +472,16 @@
       })
     }
     // On-demand digest: the push path refreshes before injecting (hash-aware).
-    if (path.indexOf('/talk-map/digest/ensure') >= 0 || path.indexOf('/talk-map/digest/refresh') >= 0) {
+    if (path.indexOf('/mind-map/digest/ensure') >= 0 || path.indexOf('/mind-map/digest/refresh') >= 0) {
       digestCalls.push({ sessionId: String(body?.sessionId ?? ''), kind: path.includes('ensure') ? 'ensure' : 'refresh' })
       return json({ sessionId: String(body?.sessionId ?? ''), digest: digests[String(body?.sessionId ?? '')] ?? null })
     }
     // Lazy passage for one hit (hover).
-    if (path.indexOf('/talk-map/search-context') >= 0) {
+    if (path.indexOf('/mind-map/search-context') >= 0) {
       searchContextCalls.push({ sessionId: body?.sessionId, seq: body?.seq })
       return json({ lines: ['上文第一行', '上文第二行', '…按 SI 单位换算 Matter.js 的物理参数…', '下文第一行', '下文第二行'] })
     }
-    if (path.indexOf('/talk-map/search') >= 0) {
+    if (path.indexOf('/mind-map/search') >= 0) {
       if (searchRouteFails) return Promise.resolve(new Response(JSON.stringify({ error: searchRouteMessage }), { status: 500, headers: { 'content-type': 'application/json' } }))
       searchRouteCalls.push(String(body?.query ?? ''))
       searchRouteScopes.push(String(body?.cwd ?? ''))
@@ -502,7 +502,7 @@
       return json({ items, hasMore: false })
     }
     // The card body is the user's last message now, not an LLM digest.
-      if (path.indexOf('/talk-map/last-user') >= 0) {
+      if (path.indexOf('/mind-map/last-user') >= 0) {
         const texts = {}
         for (const sessionId of body?.sessionIds ?? []) {
           texts[sessionId] = userMessages[sessionId] ?? '你最后说的那句话'
@@ -514,23 +514,23 @@
       }
       return json({ ok: true })
     }
-    if (path.indexOf('/talk-map/state') >= 0) return json(payload)
-    if (path.indexOf('/talk-map/defaults') >= 0) {
+    if (path.indexOf('/mind-map/state') >= 0) return json(payload)
+    if (path.indexOf('/mind-map/defaults') >= 0) {
       return json({ model: { provider: 'deepseek', model: 'deepseek-v4-pro' }, preset: 'standard' })
     }
     // Host-side fallback for the drawer's full-text search (the client calls
     // this when the shared RPC surface does not answer).
     // On-demand digest: the push path refreshes before injecting (hash-aware).
-    if (path.indexOf('/talk-map/digest/ensure') >= 0 || path.indexOf('/talk-map/digest/refresh') >= 0) {
+    if (path.indexOf('/mind-map/digest/ensure') >= 0 || path.indexOf('/mind-map/digest/refresh') >= 0) {
       digestCalls.push({ sessionId: String(body?.sessionId ?? ''), kind: path.includes('ensure') ? 'ensure' : 'refresh' })
       return json({ sessionId: String(body?.sessionId ?? ''), digest: digests[String(body?.sessionId ?? '')] ?? null })
     }
     // Lazy passage for one hit (hover).
-    if (path.indexOf('/talk-map/search-context') >= 0) {
+    if (path.indexOf('/mind-map/search-context') >= 0) {
       searchContextCalls.push({ sessionId: body?.sessionId, seq: body?.seq })
       return json({ lines: ['上文第一行', '上文第二行', '…按 SI 单位换算 Matter.js 的物理参数…', '下文第一行', '下文第二行'] })
     }
-    if (path.indexOf('/talk-map/search') >= 0) {
+    if (path.indexOf('/mind-map/search') >= 0) {
       if (searchRouteFails) return Promise.resolve(new Response(JSON.stringify({ error: searchRouteMessage }), { status: 500, headers: { 'content-type': 'application/json' } }))
       searchRouteCalls.push(String(body?.query ?? ''))
       searchRouteScopes.push(String(body?.cwd ?? ''))
@@ -549,7 +549,7 @@
       return json({ items, hasMore: false })
     }
     // The card body is the user's last message now, not an LLM digest.
-    if (path.indexOf('/talk-map/last-user') >= 0) {
+    if (path.indexOf('/mind-map/last-user') >= 0) {
       const texts = {}
       for (const sessionId of body?.sessionIds ?? []) {
         texts[sessionId] = userMessages[sessionId] ?? '你最后说的那句话'
@@ -735,7 +735,7 @@
   }
 
   function sync() {
-    const MapPanel = panels['talk-map']
+    const MapPanel = panels['mind-map']
     const Toggle = registered['sidebar.footer.action']?.component
     if (root === null) {
       root = ReactDOM.createRoot(document.getElementById('host'))
@@ -759,7 +759,7 @@
         },
       }, Toggle === undefined ? null : h(Toggle, { wide: !sidebarCollapsed })),
       h('div', { style: { flex: 1, minWidth: 0, position: 'relative', display: 'flex', flexDirection: 'column' } },
-        selectedPanel === 'talk-map' && MapPanel !== undefined
+        selectedPanel === 'mind-map' && MapPanel !== undefined
           ? h(MapPanel, props)
           : h('div', {
               'data-harness-placeholder': 'conversation',
@@ -770,7 +770,7 @@
 
   window.__harness = {
     boot() {
-      const entry = registry['dsh-talk-map']
+      const entry = registry['mind_map']
       if (entry === undefined) throw new Error('client.js did not reach __ModuleLoader__')
       const moduleExports = entry.factory((id) => {
         if (id === 'react') return React

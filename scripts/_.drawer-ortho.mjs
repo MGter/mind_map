@@ -11,8 +11,8 @@ const before = source
 // 1) import
 if (!source.includes("import { getSmoothStepPath, Position } from '@xyflow/react'")) {
   source = source.replace(
-    "import styles from './talk-map.module.css'",
-    "import { getSmoothStepPath, Position } from '@xyflow/react'" + D + "import styles from './talk-map.module.css'",
+    "import styles from './mind-map.module.css'",
+    "import { getSmoothStepPath, Position } from '@xyflow/react'" + D + "import styles from './mind-map.module.css'",
   )
 }
 

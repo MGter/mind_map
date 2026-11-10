@@ -23,8 +23,8 @@ source = source.replace(
   `    // Every match of a conversation arrives on its own — no button to press.
     await page.waitForTimeout(600)
     const autoHits = await page.evaluate(() => ({
-      lines: document.querySelectorAll('[data-talkmap-search-hit] [data-talkmap-search-line]').length,
-      buttons: document.querySelectorAll('[data-talkmap-search-more]').length,
+      lines: document.querySelectorAll('[data-mindmap-search-hit] [data-mindmap-search-line]').length,
+      buttons: document.querySelectorAll('[data-mindmap-search-more]').length,
       sessionCalls: window.__harness.searchSessionCalls().length,
     }))
     check('每条对话的全部命中自动补上（不再有「更多命中」按钮）',

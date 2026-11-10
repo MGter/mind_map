@@ -338,7 +338,7 @@
  * slot. The card under the pointer is exempt — it has to track the drag 1:1. */
 /* ---- edges: 两种样子 ------------------------------------------------
    未同步 = 灰白静态虚线；同步中 = 灰白静态实线 + 一枚软光点沿曲线跑过去。
-   线体和光点都由 TalkMapEdge 组件画（光点是 animateMotion 跟随路径的径向
+   线体和光点都由 MindMapEdge 组件画（光点是 animateMotion 跟随路径的径向
    渐变圆），样式表在这里只保留一个兜底：动效受限时让光点停住但仍在。 */
 @media (prefers-reduced-motion: reduce) {
   .canvas :global(.react-flow__edge) circle {
@@ -413,10 +413,10 @@
   height: 8px;
   border-radius: 50%;
   background: #ffffff;
-  animation: talkmap-pulse 1.6s ease-in-out infinite;
+  animation: mindmap-pulse 1.6s ease-in-out infinite;
 }
 
-@keyframes talkmap-pulse {
+@keyframes mindmap-pulse {
   50% { opacity: 0.35; }
 }
 
@@ -736,10 +736,10 @@
   flex: none;
   color: rgb(255, 214, 106);
   filter: drop-shadow(0 0 5px rgba(255, 214, 106, 0.85));
-  animation: talkmap-pin-glow 2.6s ease-in-out infinite;
+  animation: mindmap-pin-glow 2.6s ease-in-out infinite;
 }
 
-@keyframes talkmap-pin-glow {
+@keyframes mindmap-pin-glow {
   0%, 100% {
     filter: drop-shadow(0 0 4px rgba(255, 214, 106, 0.6));
     opacity: 0.92;
@@ -817,27 +817,27 @@
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  animation: talkmap-ring-sweep 1.8s linear infinite;
+  animation: mindmap-ring-sweep 1.8s linear infinite;
   pointer-events: none;
 }
 
-@keyframes talkmap-ring-sweep {
+@keyframes mindmap-ring-sweep {
   to { --tm-ring-angle: 360deg; }
 }
 
 .cardLampDone {
-  animation: talkmap-lamp-green 2.8s ease-in-out infinite;
+  animation: mindmap-lamp-green 2.8s ease-in-out infinite;
 }
 
 .cardLampError {
-  animation: talkmap-lamp-red 1.9s ease-in-out infinite;
+  animation: mindmap-lamp-red 1.9s ease-in-out infinite;
 }
 
 .cardLampWaiting {
-  animation: talkmap-lamp-amber 3.4s ease-in-out infinite;
+  animation: mindmap-lamp-amber 3.4s ease-in-out infinite;
 }
 
-@keyframes talkmap-lamp-green {
+@keyframes mindmap-lamp-green {
   0%, 100% {
     box-shadow:
       inset 0 0 0 1px rgba(52, 199, 89, 0.40),
@@ -852,7 +852,7 @@
   }
 }
 
-@keyframes talkmap-lamp-amber {
+@keyframes mindmap-lamp-amber {
   0%, 100% {
     box-shadow:
       inset 0 0 0 1px rgba(245, 178, 46, 0.42),
@@ -867,7 +867,7 @@
   }
 }
 
-@keyframes talkmap-lamp-red {
+@keyframes mindmap-lamp-red {
   0%, 100% {
     box-shadow:
       inset 0 0 0 1px rgba(242, 78, 78, 0.46),
@@ -948,10 +948,10 @@
 
 .cardRefreshBusy {
   opacity: 1;
-  animation: talkmap-spin 1s linear infinite;
+  animation: mindmap-spin 1s linear infinite;
 }
 
-@keyframes talkmap-spin {
+@keyframes mindmap-spin {
   to { transform: rotate(360deg); }
 }
 
@@ -1762,7 +1762,7 @@
   background: rgba(255, 255, 255, 0.07);
 }
 
-.drawerRoleChip[data-talkmap-role="user"] {
+.drawerRoleChip[data-mindmap-role="user"] {
   color: rgba(160, 210, 255, 0.95);
   background: rgba(90, 160, 255, 0.14);
 }
@@ -1932,7 +1932,7 @@
   cursor: grab;
 }
 
-.drawerCard[data-talkmap-drag="1"] {
+.drawerCard[data-mindmap-drag="1"] {
   cursor: grabbing;
   opacity: 0.55;
   transform: scale(0.98);
@@ -1959,7 +1959,7 @@
   background: rgba(255, 255, 255, 0.06);
 }
 
-.cardLinkChip[data-talkmap-link="out"] {
+.cardLinkChip[data-mindmap-link="out"] {
   color: rgba(255, 214, 106, 0.9);
   background: rgba(255, 214, 106, 0.12);
 }

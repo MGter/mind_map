@@ -16,7 +16,7 @@ import { fontScale } from './font-scale.ts'
 import { GlobalSearch } from './GlobalSearch.tsx'
 import { closeMapPanel, hideSidebarForMap, mapUi, openSessionInUi, restoreSidebarAfterMap } from './map-state.ts'
 import { MapCanvas } from './MapCanvas.tsx'
-import styles from './talk-map.module.css'
+import styles from './mind-map.module.css'
 
 /**
  * Text size for the whole map: one step = +1px on every style, each keeping its
@@ -117,7 +117,7 @@ export function MapOverlay(props: RootSlotStandardProps): React.JSX.Element {
       lang={activeLocale()}
       role="dialog"
       aria-label={t('map.title')}
-      // One variable drives every font size in the panel (see talk-map.module.css).
+      // One variable drives every font size in the panel (see mind-map.module.css).
       style={{ '--tm-font-step': `${fontStep}px` } as React.CSSProperties}
     >
       <div className={styles['header']}>

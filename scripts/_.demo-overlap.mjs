@@ -1,6 +1,6 @@
 /**
  * 1) demo 模式把 ws-sync 框架下移，避免与 ws-lab 加高后重叠；
- * 2) demoMode 同时认 window.__talkMapDemo（file:// 下没有 location.search）。
+ * 2) demoMode 同时认 window.__mindMapDemo（file:// 下没有 location.search）。
  */
 import fs from 'node:fs'
 
@@ -11,7 +11,7 @@ const before = source
 
 source = source.replace(
   "  const demoMode = new URLSearchParams(location.search).get('demo') === '1'",
-  "  const demoMode = new URLSearchParams(location.search).get('demo') === '1' || window.__talkMapDemo === true",
+  "  const demoMode = new URLSearchParams(location.search).get('demo') === '1' || window.__mindMapDemo === true",
 )
 
 source = source.replace(

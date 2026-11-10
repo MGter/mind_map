@@ -22,7 +22,7 @@ text = text.replace(
 fs.writeFileSync(tsx, text, 'utf8')
 
 // 2) the drawer's scroll-snap fought every wheel tick (slow, then stuck when reversing)
-const css = 'src/client/talk-map.module.css'
+const css = 'src/client/mind-map.module.css'
 let sheet = fs.readFileSync(css, 'utf8')
 sheet = sheet.replace('  scroll-snap-type: y proximity;\n', '')
 sheet = sheet.replace('  scroll-snap-align: start;\n', '')

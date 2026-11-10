@@ -150,7 +150,7 @@ export interface AgentsService {
 }
 
 /** The host cordis context surface this plugin relies on (structural). */
-export interface TalkMapHostServices {
+export interface MindMapHostServices {
   storageDomain: StorageDomainService
   webServer: WebServerService
   logger?: { info?(message: string): void; warn(message: string): void }

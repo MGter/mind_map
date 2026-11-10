@@ -29,7 +29,7 @@ const check = (name, ok, detail) => {
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
 
-check('包名与版本', pkg.name === 'dsh-talk-map', `${pkg.name}@${pkg.version}`)
+check('包名与版本', pkg.name === 'mind_map', `${pkg.name}@${pkg.version}`)
 check('exports["./client"] 存在', typeof pkg.exports?.['./client'] === 'string', pkg.exports?.['./client'])
 const clientEntry = pkg.exports?.['./client']
 check('client 入口文件真的在包里',
@@ -65,7 +65,7 @@ try {
 } catch (error) {
   check('client.js 可执行', false, String(error).slice(0, 160))
 }
-check('client 注册了 id', captured?.id === 'dsh-talk-map', JSON.stringify(captured?.id))
+check('client 注册了 id', captured?.id === 'mind_map', JSON.stringify(captured?.id))
 check('client 提供 factory', typeof captured?.factory === 'function', typeof captured?.factory)
 
 // host bundle：只做语法与形态检查（真正挂载需要 cordis 宿主）

@@ -3,7 +3,7 @@
  */
 import fs from 'node:fs'
 
-const file = 'src/client/TalkMapEdge.tsx'
+const file = 'src/client/MindMapEdge.tsx'
 const content = `/**
  * One edge renderer for the whole map.
  *
@@ -14,14 +14,14 @@ const content = `/**
  */
 import { BaseEdge, getSmoothStepPath, type EdgeProps } from '@xyflow/react'
 
-export interface TalkMapEdgeData {
+export interface MindMapEdgeData {
   fromCardId?: string
   toCardId?: string
   sync?: 'synced' | 'idle'
 }
 
-export function TalkMapEdge(props: EdgeProps): React.JSX.Element {
-  const data = (props.data ?? {}) as TalkMapEdgeData
+export function MindMapEdge(props: EdgeProps): React.JSX.Element {
+  const data = (props.data ?? {}) as MindMapEdgeData
   const synced = data.sync === 'synced'
   const [path] = getSmoothStepPath({
     sourceX: props.sourceX,
@@ -71,7 +71,7 @@ export function TalkMapEdge(props: EdgeProps): React.JSX.Element {
   )
 }
 
-export const edgeTypes = { talkMap: TalkMapEdge }
+export const edgeTypes = { mindMap: MindMapEdge }
 `
 fs.writeFileSync(file, content, 'utf8')
 

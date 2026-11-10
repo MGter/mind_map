@@ -7,7 +7,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { mapUi } from './map-state.ts'
 import { t } from './i18n.ts'
-import styles from './talk-map.module.css'
+import styles from './mind-map.module.css'
 import { MenuIcon, type MenuIconName } from './MenuIcons.tsx'
 
 export interface MenuItem {

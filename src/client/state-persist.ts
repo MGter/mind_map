@@ -8,7 +8,7 @@
  * shell's own draft store, and survive a restart without touching the Host
  * schema (MapGlobal is zod-validated and would drop unknown fields).
  */
-const STORAGE_KEY = 'dsh.talk-map.lamp-state.v1'
+const STORAGE_KEY = 'dsh.mind-map.lamp-state.v1'
 /** Marks older than this are noise from long-dead sessions. */
 const MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000
 

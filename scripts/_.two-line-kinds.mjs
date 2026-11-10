@@ -82,7 +82,7 @@ fs.writeFileSync(file, source, 'utf8')
 console.log('canvas: two line looks, no info row')
 
 // ---- 2. CSS: two looks only -------------------------------------------
-const cssFile = 'src/client/talk-map.module.css'
+const cssFile = 'src/client/mind-map.module.css'
 let css = fs.readFileSync(cssFile, 'utf8')
 const start = css.indexOf('/* ---- edge sync: a packet runs along a line that is still in sync ------- */')
 const endMarker = '@media (prefers-reduced-motion: reduce) {'

@@ -34258,7 +34258,7 @@
     return { fromHandle: freeFrom, toHandle: freeTo };
   }
 
-  // src/client/TalkMapEdge.tsx
+  // src/client/MindMapEdge.tsx
   var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
   var boardCache = { at: 0, boxes: [] };
   function boardBoxes() {
@@ -34268,7 +34268,7 @@
     const viewport = document.querySelector(".react-flow__viewport");
     if (viewport === null) return boardCache.boxes;
     const boxes = [];
-    for (const element of document.querySelectorAll("[data-talkmap-session]")) {
+    for (const element of document.querySelectorAll("[data-mindmap-session]")) {
       const node = element;
       let x = 0;
       let y = 0;
@@ -34288,7 +34288,7 @@
     }
     return boxes;
   }
-  function TalkMapEdge(props) {
+  function MindMapEdge(props) {
     const data = props.data ?? {};
     const synced = data.sync === "synced";
     const hidden = synced && data.structural !== true || data.ready === false;
@@ -34469,7 +34469,7 @@
       }, children: [
         /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { position: "absolute", left: 0, top: -18, fontSize: 11, color: "#6b7280" }, children: scene.key }),
         /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("svg", { width: CELL_W, height: CELL_H, style: { position: "absolute", left: 0, top: 0 }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
-          TalkMapEdge,
+          MindMapEdge,
           {
             id: "e" + index2,
             source: "from",
@@ -34479,7 +34479,7 @@
             selected: false,
             animated: false,
             interactionWidth: 18,
-            type: "talkMap",
+            type: "mindMap",
             markerEnd: void 0,
             ...scene.props,
             data: {

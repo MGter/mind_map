@@ -1,4 +1,4 @@
-window.__ModuleLoader__.load({ id: "dsh-talk-map", factory: (require) => {
+window.__ModuleLoader__.load({ id: "mind_map", factory: (require) => {
 	var module = { exports: {} };
 	var exports = module.exports;
 	"use strict";
@@ -7,9 +7,9 @@ window.__ModuleLoader__.load({ id: "dsh-talk-map", factory: (require) => {
 	// Evidence trail. The console line lands in the shell's crash report (its
 	// console section survives); the POST retries because a fetch issued during
 	// module evaluation can outrun the shell's request routing.
-	console.error('[dsh-talk-map] client bundle evaluated', new Date().toISOString());
+	console.error('[mind_map] client bundle evaluated', new Date().toISOString());
 	try {
-		const ping = (phase) => { try { fetch('/talk-map/client-boot', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ phase }) }).catch(() => {}) } catch {} };
+		const ping = (phase) => { try { fetch('/mind_map/client-boot', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ phase }) }).catch(() => {}) } catch {} };
 		ping('evaluate');
 		setTimeout(() => { ping('alive-1s') }, 1000);
 		setTimeout(() => { ping('alive-5s') }, 5000);
@@ -237,47 +237,47 @@ function postJson(path, body) {
     body: JSON.stringify(body)
   });
 }
-var talkMapApi = {
+var mindMapApi = {
   getState() {
-    return requestJson("/talk-map/state");
+    return requestJson("/mind_map/state");
   },
   upsertCards(cards) {
-    return postJson("/talk-map/cards/upsert", { cards });
+    return postJson("/mind_map/cards/upsert", { cards });
   },
   deleteCards(ids) {
-    return postJson("/talk-map/cards/delete", { ids });
+    return postJson("/mind_map/cards/delete", { ids });
   },
   upsertEdges(edges) {
-    return postJson("/talk-map/edges/upsert", { edges });
+    return postJson("/mind_map/edges/upsert", { edges });
   },
   deleteEdges(ids) {
-    return postJson("/talk-map/edges/delete", { ids });
+    return postJson("/mind_map/edges/delete", { ids });
   },
   setGlobal(global) {
-    return postJson("/talk-map/global", { global });
+    return postJson("/mind_map/global", { global });
   },
   spawn(request) {
-    return postJson("/talk-map/spawn", request);
+    return postJson("/mind_map/spawn", request);
   },
   injectContext(sessionId, parents) {
-    return postJson("/talk-map/inject", { sessionId, parents });
+    return postJson("/mind_map/inject", { sessionId, parents });
   },
   refreshDigest(sessionId) {
-    return postJson("/talk-map/digest/refresh", { sessionId });
+    return postJson("/mind_map/digest/refresh", { sessionId });
   },
   /**
    * Regenerate ONLY if the conversation moved on: the Host hashes the
    * transcript and hands back the stored digest when it is still current.
    */
   ensureDigest(sessionId) {
-    return postJson("/talk-map/digest/ensure", { sessionId });
+    return postJson("/mind_map/digest/ensure", { sessionId });
   },
   /**
    * The last message the USER sent, per session — what the card body shows now
    * that the LLM summary is gone. Read straight off the Host's session surface.
    */
   lastUserMessages(sessionIds) {
-    return postJson("/talk-map/last-user", { sessionIds });
+    return postJson("/mind_map/last-user", { sessionIds });
   },
   /**
    * Full-text search across every conversation, done Host-side. This is the
@@ -285,28 +285,28 @@ var talkMapApi = {
    * drawer's search never silently degrades to title-only matching.
    */
   searchSessions(query, cwd) {
-    return postJson("/talk-map/search", cwd === void 0 ? { query } : { query, cwd });
+    return postJson("/mind_map/search", cwd === void 0 ? { query } : { query, cwd });
   },
   /** Every extra hit inside ONE conversation (asked for explicitly). */
   searchSessionHits(sessionId, query) {
-    return postJson("/talk-map/search-session", { sessionId, query });
+    return postJson("/mind_map/search-session", { sessionId, query });
   },
   /** The passage around one hit — fetched only when the pointer rests on it. */
   searchContext(sessionId, seq, query) {
-    return postJson("/talk-map/search-context", { sessionId, seq, query });
+    return postJson("/mind_map/search-context", { sessionId, seq, query });
   },
   ensureDir(path) {
-    return postJson("/talk-map/fs/ensure-dir", { path });
+    return postJson("/mind_map/fs/ensure-dir", { path });
   },
   getDefaults() {
-    return requestJson("/talk-map/defaults");
+    return requestJson("/mind_map/defaults");
   },
   /**
    * Subscribe to host-side domain changes (multi-tab sync, digest arrivals).
    * @returns disposer closing the EventSource.
    */
   subscribeChanges(onChange) {
-    const source = new EventSource("/talk-map/events");
+    const source = new EventSource("/mind_map/events");
     source.addEventListener("change", (event) => {
       try {
         onChange(JSON.parse(event.data));
@@ -321,10 +321,10 @@ var talkMapApi = {
 
 // src/client/i18n.ts
 var zh = {
-  "map.title": "对话地图 ·v2",
+  "map.title": "思维图 ·v2",
   "map.close": "关闭地图（Esc）",
   "map.back": "返回",
-  "map.toggle": "对话地图",
+  "map.toggle": "思维图",
   "map.backToCurrent": "回到当前对话",
   "map.empty": "地图是空的 —— 右键导入工作区或对话；双击空白直接开新对话",
   "statusRail.title": "队列中的任务",
@@ -742,20 +742,20 @@ function restoreSnapshot(snapshot5) {
   const goneCards = Object.keys(previousCards).filter((id2) => snapshot5.cards[id2] === void 0);
   const goneEdges = Object.keys(previousEdges).filter((id2) => snapshot5.edges[id2] === void 0);
   void (async () => {
-    if (Object.keys(snapshot5.cards).length > 0) await talkMapApi.upsertCards({ ...snapshot5.cards });
-    if (goneCards.length > 0) await talkMapApi.deleteCards(goneCards);
-    if (Object.keys(snapshot5.edges).length > 0) await talkMapApi.upsertEdges({ ...snapshot5.edges });
-    if (goneEdges.length > 0) await talkMapApi.deleteEdges(goneEdges);
+    if (Object.keys(snapshot5.cards).length > 0) await mindMapApi.upsertCards({ ...snapshot5.cards });
+    if (goneCards.length > 0) await mindMapApi.deleteCards(goneCards);
+    if (Object.keys(snapshot5.edges).length > 0) await mindMapApi.upsertEdges({ ...snapshot5.edges });
+    if (goneEdges.length > 0) await mindMapApi.deleteEdges(goneEdges);
     if (global !== null) await persistGlobal(global, "undo");
   })().catch((error) => {
-    console.error("[dsh-talk-map] undo sync failed:", error);
+    console.error("[mind_map] undo sync failed:", error);
   });
 }
 var globalWritesInFlight = 0;
 function persistGlobal(value, label) {
   globalWritesInFlight += 1;
-  return talkMapApi.setGlobal(value).catch((error) => {
-    console.error(`[dsh-talk-map] ${label} save failed:`, error);
+  return mindMapApi.setGlobal(value).catch((error) => {
+    console.error(`[mind_map] ${label} save failed:`, error);
   }).finally(() => {
     globalWritesInFlight -= 1;
   });
@@ -788,9 +788,9 @@ async function flushCards() {
   if (Object.keys(payload).length === 0) return;
   cardWritesInFlight += 1;
   try {
-    await talkMapApi.upsertCards(payload);
+    await mindMapApi.upsertCards(payload);
   } catch (error) {
-    console.error("[dsh-talk-map] card flush failed:", error);
+    console.error("[mind_map] card flush failed:", error);
     for (const id2 of Object.keys(payload)) dirtyCards.add(id2);
   } finally {
     cardWritesInFlight -= 1;
@@ -813,7 +813,7 @@ var canvas = {
       if (state.phase !== "loading") return;
       setState({ phase: "error", error: "timeout" });
     }, 12e3);
-    talkMapApi.getState().then((payload) => {
+    mindMapApi.getState().then((payload) => {
       clearTimeout(timer4);
       setState({
         phase: "ready",
@@ -835,7 +835,7 @@ var canvas = {
   },
   /** SSE mirror: applies host-confirmed changes (idempotent over our own writes). */
   connect() {
-    return talkMapApi.subscribeChanges((change) => {
+    return mindMapApi.subscribeChanges((change) => {
       if (change.table === "cards") {
         if (dirtyCards.has(change.key)) return;
         const cards = { ...state.cards };
@@ -892,16 +892,16 @@ var canvas = {
   addCards(entries) {
     pushUndo();
     setState({ cards: { ...state.cards, ...entries } });
-    trackCardWrite(talkMapApi.upsertCards(entries).catch((error) => {
-      console.error("[dsh-talk-map] card upsert failed:", error);
+    trackCardWrite(mindMapApi.upsertCards(entries).catch((error) => {
+      console.error("[mind_map] card upsert failed:", error);
     }));
   },
   /** Add edges: local state first, then persisted (no SSE round-trip needed). */
   addEdges(entries) {
     pushUndo();
     setState({ edges: { ...state.edges, ...entries } });
-    void talkMapApi.upsertEdges(entries).catch((error) => {
-      console.error("[dsh-talk-map] edge upsert failed:", error);
+    void mindMapApi.upsertEdges(entries).catch((error) => {
+      console.error("[mind_map] edge upsert failed:", error);
     });
   },
   removeEdges(ids) {
@@ -911,8 +911,8 @@ var canvas = {
     const edges = { ...state.edges };
     for (const id2 of present) delete edges[id2];
     setState({ edges });
-    void talkMapApi.deleteEdges(present).catch((error) => {
-      console.error("[dsh-talk-map] edge delete failed:", error);
+    void mindMapApi.deleteEdges(present).catch((error) => {
+      console.error("[mind_map] edge delete failed:", error);
     });
   },
   /** Background re-sync with the server (missed SSE while the map was
@@ -921,7 +921,7 @@ var canvas = {
   refresh() {
     if (state.phase !== "ready" || dirtyCards.size > 0 || globalWritesInFlight > 0 || cardWritesInFlight > 0) return;
     const seqAtStart = editSeq;
-    talkMapApi.getState().then((payload) => {
+    mindMapApi.getState().then((payload) => {
       if (state.phase !== "ready" || dirtyCards.size > 0 || globalWritesInFlight > 0) return;
       if (seqAtStart !== editSeq) return;
       setState({
@@ -961,8 +961,8 @@ var canvas = {
     } else {
       setState({ cards });
     }
-    trackCardWrite(talkMapApi.deleteCards([id2]).catch((error) => {
-      console.error("[dsh-talk-map] card delete failed:", error);
+    trackCardWrite(mindMapApi.deleteCards([id2]).catch((error) => {
+      console.error("[mind_map] card delete failed:", error);
     }));
   },
   /** Adopt a card into another workspace's frame (map-level membership). */
@@ -974,8 +974,8 @@ var canvas = {
     if (wsOverride === void 0) delete next.wsOverride;
     else next.wsOverride = wsOverride;
     setState({ cards: { ...state.cards, [id2]: next } });
-    void talkMapApi.upsertCards({ [id2]: next }).catch((error) => {
-      console.error("[dsh-talk-map] card override save failed:", error);
+    void mindMapApi.upsertCards({ [id2]: next }).catch((error) => {
+      console.error("[mind_map] card override save failed:", error);
     });
   },
   /** Manual frame geometry (drag/resize); local now, persisted debounced. */
@@ -1112,7 +1112,7 @@ var mapUi = {
     return escGuards.size > 0;
   }
 };
-var MAP_PANEL_ID = "talk-map";
+var MAP_PANEL_ID = "mind_map";
 var services;
 function attachServices(next) {
   services = next;
@@ -1183,7 +1183,7 @@ function openMapPanel() {
   try {
     layout.selectPanel(MAP_PANEL_ID);
   } catch (error) {
-    console.error("[dsh-talk-map] selectPanel failed:", error);
+    console.error("[mind_map] selectPanel failed:", error);
     mapUi.setOpen(true);
   }
 }
@@ -1197,7 +1197,7 @@ function closeMapPanel() {
   try {
     layout.selectPanel(null);
   } catch (error) {
-    console.error("[dsh-talk-map] selectPanel(null) failed:", error);
+    console.error("[mind_map] selectPanel(null) failed:", error);
     mapUi.setOpen(false);
   }
 }
@@ -1216,7 +1216,7 @@ function hideSidebarForMap() {
     layout.toggleSidebar();
     sidebarHiddenByMap = true;
   } catch (error) {
-    console.error("[dsh-talk-map] collapsing the sidebar failed:", error);
+    console.error("[mind_map] collapsing the sidebar failed:", error);
   }
 }
 function restoreSidebarAfterMap() {
@@ -1228,7 +1228,7 @@ function restoreSidebarAfterMap() {
   try {
     layout.toggleSidebar();
   } catch (error) {
-    console.error("[dsh-talk-map] restoring the sidebar failed:", error);
+    console.error("[mind_map] restoring the sidebar failed:", error);
   }
 }
 function connectionService() {
@@ -1248,19 +1248,19 @@ function openSessionInUi(sessionId) {
       return true;
     }
   } catch (error) {
-    console.error("[dsh-talk-map] opening session failed:", sessionId, error);
+    console.error("[mind_map] opening session failed:", sessionId, error);
     return false;
   }
-  console.error("[dsh-talk-map] this DSH build exposes no session navigation service; cannot open", sessionId);
+  console.error("[mind_map] this DSH build exposes no session navigation service; cannot open", sessionId);
   return false;
 }
 function forkSessionInUi(sessionId) {
   const current = getServices();
-  if (current === void 0) return Promise.reject(new Error("dsh-talk-map: services are not attached"));
+  if (current === void 0) return Promise.reject(new Error("mind_map: services are not attached"));
   const ui = resolveUiWorkspace(current);
   if (ui !== void 0 && typeof ui.forkSession === "function") return ui.forkSession(sessionId);
   if (typeof current.sessions.fork === "function") return current.sessions.fork({ sessionId, increaseTitle: true });
-  return Promise.reject(new Error("dsh-talk-map: this DSH build exposes no fork API"));
+  return Promise.reject(new Error("mind_map: this DSH build exposes no fork API"));
 }
 var titleResolver;
 function setTitleResolver(resolver) {
@@ -1282,7 +1282,7 @@ function allCards() {
 var import_react15 = require("react");
 
 // src/client/font-scale.ts
-var STORAGE_KEY = "dsh.talk-map.font-step";
+var STORAGE_KEY = "dsh.mind_map.font-step";
 var MIN = -3;
 var MAX = 9;
 function read() {
@@ -1395,20 +1395,21 @@ function cleanSnippet(raw, query) {
   return text === "" ? String(raw ?? "").trim() : text;
 }
 
-// dsh-css: dsh-css:src/client/talk-map.module.css
-var __tagId = "dsh-talk-map/talk-map.module.css";
-var __css = `.tm_toggleButton { display: flex; align-items: center; justify-content: center; gap: 6px; width: 32px; height: 32px; padding: 0; border: none; border-radius: 8px; background: transparent; color: var(--dsw-alias-label-secondary); cursor: pointer; } .tm_toggleButton:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); } .tm_toggleButtonActive { background: var(--dsw-alias-interactive-bg-active); color: var(--dsw-alias-brand-primary); } .tm_toggleRow { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 10px; border: none; border-radius: 8px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: calc(13px + var(--tm-font-step, 0px)); cursor: pointer; text-align: left; } .tm_toggleRow:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); } .tm_toggleLabel { white-space: nowrap; } .tm_toggleIcon { width: 18px; height: 18px; flex: none; } .tm_panel { height: 100%; min-height: 0; box-sizing: border-box; display: flex; flex-direction: column; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); } .tm_header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-1); flex: none; } .tm_backButton { display: inline-flex; align-items: center; gap: 6px; flex: none; height: 38px; padding: 0 18px 0 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: calc(14px + var(--tm-font-step, 0px)); font-weight: 600; line-height: 1; cursor: pointer; } .tm_backButton:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); } .tm_globalSearch { position: relative; display: flex; align-items: center; gap: 6px; margin-right: 8px; } .tm_globalSearchInput { width: 200px; font: inherit; font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-layer-2, rgba(255, 255, 255, 0.06)); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 5px 9px; outline: none; } .tm_globalSearchInput:focus { border-color: var(--dsw-alias-border-l3, rgba(255, 255, 255, 0.3)); } .tm_globalSearchButton { font: inherit; font-size: calc(11.5px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); background: transparent; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 5px 10px; cursor: pointer; } .tm_globalSearchButton:hover { color: var(--dsw-alias-label-primary); } .tm_globalSearchBackdrop { position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, 0.45); display: flex; align-items: flex-start; justify-content: center; padding-top: 9vh; } .tm_globalSearchPanel { width: min(980px, 92vw); max-height: 76vh; display: flex; flex-direction: column; border-radius: 14px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1); box-shadow: 0 22px 60px rgba(0, 0, 0, 0.5); overflow: hidden; } .tm_globalSearchHead { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--dsw-alias-border-l2); } .tm_globalSearchTitle { font-size: calc(13px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); } .tm_globalSearchBody { padding: 0 16px 14px; overflow-y: auto; overscroll-behavior: contain; } .tm_searchInlineLoading { display: flex; align-items: center; padding: 4px 0 2px 10px; } .tm_searchInlineLoading > span { width: 62%; } .tm_drawerScrollSensor { width: 100%; height: 1px; opacity: 0; } .tm_fontGroup { display: flex; align-items: center; gap: 4px; margin-right: 6px; } .tm_fontButton { display: inline-flex; align-items: center; justify-content: center; gap: 3px; min-width: 46px; height: 28px; padding: 0 8px; line-height: 1; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: calc(12px + var(--tm-font-step, 0px)); cursor: pointer; } .tm_fontButton:hover:not(:disabled) { color: var(--dsw-alias-label-primary); border-color: var(--dsw-alias-border-l3, rgba(255, 255, 255, 0.3)); } .tm_fontButton:disabled { opacity: 0.4; cursor: default; } .tm_fontGlyphSmall, .tm_fontGlyphLarge { display: inline-block; width: calc(9px + 0px); text-align: center; line-height: 1; } .tm_fontGlyphSmall, .tm_fontGlyphLarge { font-size: calc(13px + var(--tm-font-step, 0px)); } .tm_fontSign { display: inline-block; font-size: calc(10px + var(--tm-font-step, 0px)); line-height: 1; transform: translateY(-3px); } .tm_fontReset { min-width: 50px; } .tm_fontReset { min-width: 44px; } .tm_headerSpace { flex: 1; } .tm_langButton { flex: none; min-width: 72px; height: 34px; padding: 0 14px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: calc(13px + var(--tm-font-step, 0px)); cursor: pointer; white-space: nowrap; } .tm_langButton:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); } .tm_closeButton { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 38px; height: 38px; padding: 0; border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: transparent; color: var(--dsw-alias-label-secondary); cursor: pointer; } .tm_closeButton:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); } .tm_zoomResetLabel { font-size: calc(9px + var(--tm-font-step, 0px)); font-weight: 700; letter-spacing: -0.5px; } .tm_canvas { flex: 1; min-height: 0; position: relative; } @media (prefers-reduced-motion: reduce) { .tm_canvas .react-flow__edge circle { opacity: 0.28; } } .tm_canvas .react-flow__node { transition: transform 200ms cubic-bezier(0.2, 0.8, 0.25, 1); } .tm_canvas .react-flow__node.dragging, .tm_canvas .react-flow__node.tmDragging { transition: none; } .tm_canvas .react-flow__nodesselection, .tm_canvas .react-flow__nodesselection-rect { display: none !important; pointer-events: none !important; } .tm_card { position: relative; width: 224px; min-height: 104px; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 10px; background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); box-shadow: 0 1px 3px var(--dsw-alias-bg-mask-1); font-size: calc(13px + var(--tm-font-step, 0px)); } .tm_cardSelected { border-color: var(--dsw-alias-brand-primary); } .tm_cardGhost { opacity: 0.55; border-style: dashed; } .tm_cardTop { display: flex; align-items: center; gap: 6px; min-width: 0; } .tm_cardTitle { font-weight: 600; font-size: calc(13px + var(--tm-font-step, 0px)); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; } .tm_runningDot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #ffffff; animation: tm_talkmap-pulse 1.6s ease-in-out infinite; } @keyframes tm_talkmap-pulse { 50% { opacity: 0.35; } } .tm_cardNext { display: flex; align-items: baseline; gap: 6px; font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); min-width: 0; } .tm_cardNextLabel { flex: none; font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-brand-primary); font-weight: 600; } .tm_cardNextText { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } .tm_cardStale { flex: none; color: var(--dsw-alias-state-warn-primary); font-size: calc(12px + var(--tm-font-step, 0px)); } .tm_cardFooter { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); } .tm_cardTime { flex: none; } .tm_cardChip { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border-radius: 999px; font-size: calc(10px + var(--tm-font-step, 0px)); font-weight: 600; white-space: nowrap; border: 1px solid transparent; } .tm_cardChipRunning { color: #ffffff; background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.35); } .tm_cardChipWaiting { color: rgb(245, 178, 46); background: rgba(245, 178, 46, 0.14); border-color: rgba(245, 178, 46, 0.42); } .tm_cardChipDone { color: rgb(52, 199, 89); background: rgba(52, 199, 89, 0.14); border-color: rgba(52, 199, 89, 0.42); } .tm_cardChipError { color: rgb(242, 78, 78); background: rgba(242, 78, 78, 0.14); border-color: rgba(242, 78, 78, 0.45); } .tm_cardChipDraft { color: rgb(255, 197, 61); background: rgba(255, 197, 61, 0.18); border-color: rgba(255, 197, 61, 0.5); } .tm_cardChipInterrupted { color: rgb(214, 158, 92); background: rgba(214, 158, 92, 0.14); border-color: rgba(214, 158, 92, 0.42); } .tm_cardSummary { font-size: calc(12px + var(--tm-font-step, 0px)); line-height: 1.45; color: var(--dsw-alias-label-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; } .tm_cardBadgeWaiting { padding: 1px 7px; border-radius: 999px; font-size: calc(10px + var(--tm-font-step, 0px)); color: var(--dsw-alias-state-warn-label); background: var(--dsw-alias-state-warn-tertiary); } .tm_cardBadgeDone { padding: 1px 7px; border-radius: 999px; font-size: calc(10px + var(--tm-font-step, 0px)); color: var(--dsw-alias-state-success-primary); background: var(--dsw-alias-state-success-tertiary); } .tm_cardLampRunning { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.34), 0 0 16px 2px rgba(255, 255, 255, 0.2), 0 0 40px 9px rgba(255, 255, 255, 0.1); } .tm_dialogBackdrop { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(2px); animation: tm_tmFadeIn 140ms ease-out; } .tm_digestDialog { width: min(720px, 86vw); max-height: 82vh; display: flex; flex-direction: column; gap: 8px; padding: 16px 18px 14px; border-radius: 14px; background: var(--dsw-alias-bg-elevated, #232323); border: 1px solid rgba(255, 255, 255, 0.09); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); animation: tm_tmRiseIn 200ms cubic-bezier(0.16, 1, 0.3, 1); } .tm_digestDialogHead { display: flex; align-items: baseline; gap: 8px; min-width: 0; } .tm_digestDialogTitle { font-size: calc(13px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); } .tm_digestDialogFrom { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); } .tm_digestLabel { margin-top: 4px; font-size: calc(10.5px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary, rgba(255, 255, 255, 0.5)); } .tm_digestText { width: 100%; min-height: 96px; max-height: 30vh; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.04); color: var(--dsw-alias-label-primary); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: calc(11.5px + var(--tm-font-step, 0px)); line-height: 1.62; resize: none; } .tm_digestEmpty { padding: 18px 4px; font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); } .tm_digestActions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; } .tm_renameBackdrop { position: fixed; inset: 0; z-index: 40; background: rgba(0, 0, 0, 0.42); display: flex; align-items: flex-start; justify-content: center; padding-top: 22vh; } .tm_renameDialog { width: min(420px, 90vw); background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42); padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 10px; } .tm_renameHeading { font-size: calc(13px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); } .tm_renameInput { width: 100%; box-sizing: border-box; font: inherit; font-size: calc(13px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-layer-2, rgba(255, 255, 255, 0.06)); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 8px 10px; outline: none; } .tm_renameInput:focus { border-color: var(--dsw-alias-border-l3, rgba(255, 255, 255, 0.35)); } .tm_renameError { font-size: calc(12px + var(--tm-font-step, 0px)); color: rgb(242, 78, 78); } .tm_renameActions { display: flex; justify-content: flex-end; gap: 8px; } .tm_renameButton { font: inherit; font-size: calc(12.5px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); background: transparent; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 6px 12px; cursor: pointer; } .tm_renameButton:hover { color: var(--dsw-alias-label-primary); } .tm_renamePrimary { color: #0b0b0c; background: rgb(255, 214, 106); border-color: rgb(255, 214, 106); } .tm_renamePrimary:disabled { opacity: 0.5; cursor: default; } .tm_cardPin { display: inline-flex; align-items: center; flex: none; color: rgb(255, 214, 106); filter: drop-shadow(0 0 5px rgba(255, 214, 106, 0.85)); animation: tm_talkmap-pin-glow 2.6s ease-in-out infinite; } @keyframes tm_talkmap-pin-glow { 0%, 100% { filter: drop-shadow(0 0 4px rgba(255, 214, 106, 0.6)); opacity: 0.92; } 50% { filter: drop-shadow(0 0 9px rgba(255, 214, 106, 1)); opacity: 1; } } .tm_cardReticle { position: absolute; inset: -5px; pointer-events: none; filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.45)); } .tm_cardReticle i { position: absolute; width: 13px; height: 13px; border: 2px solid rgba(255, 255, 255, 0.9); } .tm_cardReticle i:nth-child(1) { left: 0; top: 0; border-right: 0; border-bottom: 0; border-top-left-radius: 4px; } .tm_cardReticle i:nth-child(2) { right: 0; top: 0; border-left: 0; border-bottom: 0; border-top-right-radius: 4px; } .tm_cardReticle i:nth-child(3) { left: 0; bottom: 0; border-right: 0; border-top: 0; border-bottom-left-radius: 4px; } .tm_cardReticle i:nth-child(4) { right: 0; bottom: 0; border-left: 0; border-top: 0; border-bottom-right-radius: 4px; } .tm_cardQuiet { opacity: 0.62; transition: opacity 140ms ease; } .tm_cardQuiet:hover { opacity: 1; } .tm_stackBadgeBusy { color: rgb(255, 197, 61); border-color: rgba(255, 197, 61, 0.5); } @property --tm-ring-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; } .tm_cardLampRunning::after { content: ''; position: absolute; inset: -2px; border-radius: 12px; padding: 2px; background: conic-gradient( from var(--tm-ring-angle), rgba(255, 255, 255, 0) 0deg, rgba(255, 255, 255, 0) 190deg, rgba(255, 255, 255, 0.18) 250deg, rgba(255, 255, 255, 0.55) 292deg, rgba(255, 255, 255, 1) 325deg, rgba(255, 255, 255, 0.4) 352deg, rgba(255, 255, 255, 0) 360deg ); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: tm_talkmap-ring-sweep 1.8s linear infinite; pointer-events: none; } @keyframes tm_talkmap-ring-sweep { to { --tm-ring-angle: 360deg; } } .tm_cardLampDone { animation: tm_talkmap-lamp-green 2.8s ease-in-out infinite; } .tm_cardLampError { animation: tm_talkmap-lamp-red 1.9s ease-in-out infinite; } .tm_cardLampWaiting { animation: tm_talkmap-lamp-amber 3.4s ease-in-out infinite; } @keyframes tm_talkmap-lamp-green { 0%, 100% { box-shadow: inset 0 0 0 1px rgba(52, 199, 89, 0.40), 0 0 14px 1px rgba(52, 199, 89, 0.26), 0 0 34px 8px rgba(52, 199, 89, 0.11); } 50% { box-shadow: inset 0 0 0 1px rgba(52, 199, 89, 0.72), 0 0 24px 5px rgba(52, 199, 89, 0.46), 0 0 62px 20px rgba(52, 199, 89, 0.22); } } @keyframes tm_talkmap-lamp-amber { 0%, 100% { box-shadow: inset 0 0 0 1px rgba(245, 178, 46, 0.42), 0 0 14px 1px rgba(245, 178, 46, 0.24), 0 0 34px 8px rgba(245, 178, 46, 0.11); } 50% { box-shadow: inset 0 0 0 1px rgba(245, 178, 46, 0.72), 0 0 24px 5px rgba(245, 178, 46, 0.44), 0 0 60px 19px rgba(245, 178, 46, 0.20); } } @keyframes tm_talkmap-lamp-red { 0%, 100% { box-shadow: inset 0 0 0 1px rgba(242, 78, 78, 0.46), 0 0 14px 1px rgba(242, 78, 78, 0.28), 0 0 34px 8px rgba(242, 78, 78, 0.12); } 50% { box-shadow: inset 0 0 0 1px rgba(242, 78, 78, 0.80), 0 0 26px 6px rgba(242, 78, 78, 0.52), 0 0 66px 22px rgba(242, 78, 78, 0.26); } } .tm_cardRemove { align-self: flex-start; padding: 3px 8px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 6px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: calc(12px + var(--tm-font-step, 0px)); cursor: pointer; } .tm_cardRemove:hover { background: var(--dsw-alias-interactive-bg-hover-danger); color: var(--dsw-alias-state-error-primary); } .tm_cardHandle { width: 10px; height: 10px; background: var(--dsw-alias-border-l3); border: 2px solid var(--dsw-alias-bg-layer-1); opacity: 0; } .tm_card:hover .tm_cardHandle, .tm_canvasConnecting .tm_cardHandle { opacity: 1; } .tm_cardHandle:hover { background: var(--dsw-alias-brand-primary); } .tm_cardRefresh { flex: none; margin-left: auto; width: 22px; height: 22px; padding: 0; border: none; border-radius: 6px; background: transparent; color: var(--dsw-alias-label-tertiary); font-size: calc(13px + var(--tm-font-step, 0px)); line-height: 1; cursor: pointer; opacity: 0; transition: opacity 120ms ease; } .tm_card:hover .tm_cardRefresh { opacity: 1; } .tm_cardRefresh:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); } .tm_cardRefreshBusy { opacity: 1; animation: tm_talkmap-spin 1s linear infinite; } @keyframes tm_talkmap-spin { to { transform: rotate(360deg); } } .tm_spawnPanel { position: absolute; right: 24px; top: 24px; z-index: 6; width: 420px; max-width: calc(100% - 48px); display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; background: var(--dsw-alias-bg-layer-1); box-shadow: 0 8px 30px var(--dsw-alias-bg-mask-2); } .tm_spawnHeading { font-size: calc(14px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); } .tm_spawnFrom { font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); } .tm_spawnModes { display: flex; gap: 6px; } .tm_spawnModeBtn { flex: 1; padding: 5px 0; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: calc(12px + var(--tm-font-step, 0px)); cursor: pointer; } .tm_spawnModeBtn:hover { background: var(--dsw-alias-interactive-bg-hover); } .tm_spawnModeActive { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary); background: var(--dsw-alias-interactive-bg-active); } .tm_spawnHint { font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); } .tm_spawnTextarea { width: 100%; resize: vertical; min-height: 140px; padding: 10px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); font-size: calc(13px + var(--tm-font-step, 0px)); line-height: 1.5; font-family: inherit; } .tm_spawnError { font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-state-error-primary); word-break: break-all; } .tm_spawnActions { display: flex; justify-content: flex-end; gap: 8px; } .tm_spawnBtnPrimary { padding: 6px 16px; border: none; border-radius: 8px; background: var(--dsw-alias-button-primary-fill); color: var(--dsw-alias-label-primary-foreground); font-size: calc(13px + var(--tm-font-step, 0px)); cursor: pointer; } .tm_spawnBtnPrimary:hover { background: var(--dsw-alias-button-primary-hover); } .tm_spawnBtnPrimary:disabled { background: var(--dsw-alias-button-primary-dimmed); cursor: default; } .tm_spawnBtnGhost { padding: 6px 16px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: calc(13px + var(--tm-font-step, 0px)); cursor: pointer; } .tm_spawnBtnGhost:hover { background: var(--dsw-alias-interactive-bg-hover); } .tm_wsFrame { position: relative; border: 1.5px dashed var(--dsw-alias-border-l2); border-radius: 16px; background: transparent; } .tm_wsFrameBlocked { border-color: rgb(242, 78, 78) !important; box-shadow: 0 0 0 1px rgba(242, 78, 78, 0.45) inset; } .tm_wsFrameSelected { border-style: solid; border-color: var(--dsw-alias-brand-primary); } .tm_wsFrameLabel { position: absolute; top: -12px; left: 14px; display: flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-1); font-size: calc(12px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-secondary); white-space: nowrap; pointer-events: auto; cursor: grab; z-index: 5; } .tm_wsFrameLabel:active { cursor: grabbing; } .tm_wsFrameEdge { position: absolute; pointer-events: auto; cursor: grab; } .tm_wsFrameEdge:active { cursor: grabbing; } .tm_wsFrameCount { font-weight: 400; color: var(--dsw-alias-label-tertiary); } .tm_menu { position: absolute; z-index: 60; min-width: 200px; max-width: 280px; max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; padding: 6px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 10px; background: var(--dsw-alias-bg-layer-1); box-shadow: 0 8px 30px var(--dsw-alias-bg-mask-2); } .tm_menuTitle { flex: none; padding: 4px 10px 6px; font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); } .tm_menuSearch { flex: none; box-sizing: border-box; width: calc(100% - 8px); margin: 2px 4px 6px; padding: 5px 8px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 7px; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); font-size: calc(12px + var(--tm-font-step, 0px)); font-family: inherit; } .tm_menuHint { font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-dimmed); } .tm_menuPreview { flex: none; padding: 0 10px 4px; font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); word-break: break-all; } .tm_menuError { flex: none; padding: 0 10px 4px; font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-state-error-primary); word-break: break-all; } .tm_menuEmpty { padding: 8px 10px; font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); } .tm_menuItem { flex: none; display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 6px 10px; border: none; border-radius: 7px; background: transparent; color: var(--dsw-alias-label-primary); font-size: calc(13px + var(--tm-font-step, 0px)); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .tm_menuIcon { flex: none; width: 14px; height: 14px; color: var(--dsw-alias-label-secondary); } .tm_menuItemDanger { color: rgb(242, 78, 78); } .tm_menuItemDanger .tm_menuIcon { color: rgb(242, 78, 78); } .tm_menuItem:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); } .tm_menuItem:disabled { color: var(--dsw-alias-label-dimmed); cursor: default; } .tm_wsFrameHidden { font-weight: 400; color: var(--dsw-alias-state-warn-primary); } .tm_emptyHint { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: calc(13px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); pointer-events: none; z-index: 4; } .tm_toast { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 8; max-width: 70%; padding: 7px 16px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 999px; background: var(--dsw-alias-bg-layer-1); box-shadow: 0 4px 16px var(--dsw-alias-bg-mask-2); font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-primary); pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .tm_stackCell { position: relative; width: 224px; height: 104px; cursor: pointer; } .tm_stackSheetBack, .tm_stackSheetMid { position: absolute; inset: 0; border-radius: 12px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1); } .tm_stackSheetBack { transform: translate(11px, 11px) scale(0.95); opacity: 0.35; } .tm_stackSheetMid { transform: translate(5px, 5px) scale(0.977); opacity: 0.6; } .tm_stackFace { position: absolute; inset: 0; box-sizing: border-box; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; background: var(--dsw-alias-bg-layer-1); transition: border-color 140ms ease, transform 140ms ease; } .tm_stackCell:hover .tm_stackFace { border-color: var(--dsw-alias-brand-primary); transform: translateY(-1px); } .tm_stackFaceTitle { font-size: calc(13px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; } .tm_stackBadge { flex: none; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--dsw-alias-border-l2); color: var(--dsw-alias-label-secondary); font-size: calc(11px + var(--tm-font-step, 0px)); font-variant-numeric: tabular-nums; } .tm_drawerBackdrop { position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: var(--dsw-alias-bg-mask-2); } .tm_drawer { width: min(1120px, 94%); max-height: 84%; box-sizing: border-box; display: flex; flex-direction: column; border: 1px solid var(--dsw-alias-border-l1); border-radius: 16px; background: var(--dsw-alias-bg-layer-1); box-shadow: 0 18px 48px var(--dsw-alias-bg-mask-2); overflow: hidden; } .tm_drawerHead { display: flex; align-items: center; gap: 10px; flex: none; padding: 12px 14px; border-bottom: 1px solid var(--dsw-alias-border-l1); } .tm_drawerTitle { font-size: calc(14px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); } .tm_drawerCount { font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); } .tm_drawerSpace { flex: 1; } .tm_drawerHint { font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); } .tm_drawerClose { flex: none; width: 30px; height: 30px; padding: 0; border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: calc(16px + var(--tm-font-step, 0px)); line-height: 1; cursor: pointer; } .tm_drawerClose:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); } .tm_drawerHits > .tm_drawerHit { animation: tm_tmPopIn 240ms cubic-bezier(0.16, 1, 0.3, 1) both; } .tm_drawerHits > .tm_drawerHit:nth-child(1) { animation-delay: 20ms; } .tm_drawerHits > .tm_drawerHit:nth-child(2) { animation-delay: 34ms; } .tm_drawerHits > .tm_drawerHit:nth-child(3) { animation-delay: 48ms; } .tm_drawerHits > .tm_drawerHit:nth-child(4) { animation-delay: 62ms; } .tm_drawerHits > .tm_drawerHit:nth-child(5) { animation-delay: 76ms; } .tm_drawerHits > .tm_drawerHit:nth-child(n+6) { animation-delay: 90ms; } .tm_searchLoading { display: flex; flex-direction: column; gap: 8px; padding: 6px 0 2px; } .tm_searchLoadingBar { position: relative; height: 2px; border-radius: 2px; overflow: hidden; background: rgba(255, 255, 255, 0.07); } .tm_searchLoadingBar > i { position: absolute; inset: 0 auto 0 0; width: 34%; border-radius: 2px; background: linear-gradient(90deg, transparent, var(--dsw-alias-brand-primary), transparent); animation: tm_tmSlideBar 1150ms cubic-bezier(0.4, 0, 0.2, 1) infinite; } @keyframes tm_tmSlideBar { 0% { transform: translateX(-100%); } 100% { transform: translateX(320%); } } .tm_searchSkeletonRow { display: flex; flex-direction: column; gap: 6px; padding: 9px 10px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 9px; } .tm_searchSkeletonTitle, .tm_searchSkeletonLine { display: block; height: 9px; border-radius: 4px; background: linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.12), rgba(255,255,255,0.05)); background-size: 220% 100%; animation: tm_tmShimmer 1300ms ease-in-out infinite; } .tm_searchSkeletonTitle { width: 38%; } .tm_searchSkeletonLine { width: 78%; } @keyframes tm_tmShimmer { 0% { background-position: 120% 0; } 100% { background-position: -60% 0; } } @media (prefers-reduced-motion: reduce) { .tm_drawerHits > .tm_drawerHit, .tm_searchLoadingBar > i, .tm_searchSkeletonTitle, .tm_searchSkeletonLine { animation: none; } } @keyframes tm_tmFadeIn { from { opacity: 0; } to { opacity: 1; } } @keyframes tm_tmFadeOut { from { opacity: 1; } to { opacity: 0; } } @keyframes tm_tmRiseIn { from { opacity: 0; transform: translateY(26px) scale(0.94); } 60% { opacity: 1; } to { opacity: 1; transform: none; } } @keyframes tm_tmRiseOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(10px) scale(0.985); } } @keyframes tm_tmPopIn { from { opacity: 0; transform: translateY(6px) scale(0.97); } to { opacity: 1; transform: none; } } @keyframes tm_tmCardIn { from { opacity: 0; transform: translateY(6px) scale(0.99); } to { opacity: 1; transform: none; } } .tm_drawerBackdrop { animation: tm_tmFadeIn 180ms cubic-bezier(0.16, 1, 0.3, 1) both; } .tm_drawerBackdropOut { animation: tm_tmFadeOut 130ms ease-in both; } .tm_drawer { animation: tm_tmRiseIn 260ms cubic-bezier(0.16, 1, 0.3, 1) both; will-change: transform, opacity; } .tm_drawerOut { animation: tm_tmRiseOut 150ms cubic-bezier(0.4, 0, 0.7, 0.2) both; } .tm_globalSearchBackdrop { animation: tm_tmFadeIn 130ms ease-out both; } .tm_globalSearchPanel { animation: tm_tmRiseIn 240ms cubic-bezier(0.16, 1, 0.3, 1) both; will-change: transform, opacity; } .tm_menu { animation: tm_tmPopIn 120ms cubic-bezier(0.2, 0.9, 0.25, 1) both; } .tm_card { transition: transform 120ms ease-out, box-shadow 160ms ease-out, opacity 160ms ease-out; } .tm_card:hover { transform: translateY(-1px); } .tm_reactFlowNodeEnter { animation: tm_tmCardIn 170ms cubic-bezier(0.2, 0.9, 0.25, 1) both; } .tm_stackCell { transition: transform 120ms ease-out, box-shadow 160ms ease-out; } .tm_stackCell:hover { transform: translateY(-2px); } .tm_wsFrameLabel { transition: color 120ms ease-out, background 120ms ease-out, box-shadow 120ms ease-out; } .tm_wsFrameLabel:hover { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35); } .tm_toast { animation: tm_tmRiseIn 160ms cubic-bezier(0.2, 0.9, 0.25, 1) both; } .tm_snippetCode { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.94em; padding: 0 3px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); } .tm_snippetLink { color: var(--dsw-alias-brand-primary); } @media (prefers-reduced-motion: reduce) { .tm_drawerBackdrop, .tm_drawerBackdropOut, .tm_drawer, .tm_drawerOut, .tm_globalSearchBackdrop, .tm_globalSearchPanel, .tm_menu, .tm_toast, .tm_reactFlowNodeEnter { animation: none; } .tm_card, .tm_stackCell, .tm_wsFrameLabel { transition: none; } .tm_card:hover, .tm_stackCell:hover { transform: none; } } .tm_drawerSearchRow { display: flex; align-items: center; gap: 8px; padding: 0 14px 8px; } .tm_drawerSearch { flex: 1; min-width: 0; font: inherit; font-size: calc(12.5px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-layer-2, rgba(255, 255, 255, 0.06)); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 6px 10px; outline: none; } .tm_drawerSearch:focus { border-color: var(--dsw-alias-border-l3, rgba(255, 255, 255, 0.3)); } .tm_drawerSearchGo { flex: none; font: inherit; font-size: calc(11.5px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); background: transparent; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 5px 10px; cursor: pointer; } .tm_drawerSearchGo:hover { color: var(--dsw-alias-label-primary); } .tm_drawerSearchState { font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); flex: none; } .tm_drawerSearchError { flex: none; max-width: 52%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: calc(11px + var(--tm-font-step, 0px)); color: rgb(242, 78, 78); } .tm_drawerEmpty { grid-column: 1 / -1; padding: 10px 4px; font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); } .tm_drawerHits { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--dsw-alias-border-l2); } .tm_drawerHitsHead { font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); letter-spacing: 0.04em; } .tm_drawerHit { display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 8px 10px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 9px; background: transparent; color: var(--dsw-alias-label-primary); font: inherit; cursor: pointer; } .tm_drawerHit:hover { border-color: var(--dsw-alias-border-l3, rgba(255, 255, 255, 0.3)); } .tm_drawerRoleChip { flex: none; margin-right: 6px; padding: 0 5px; border-radius: 4px; font-size: calc(9.5px + var(--tm-font-step, 0px)); line-height: 1.6; color: var(--dsw-alias-label-secondary); background: rgba(255, 255, 255, 0.07); } .tm_drawerRoleChip[data-talkmap-role="user"] { color: rgba(160, 210, 255, 0.95); background: rgba(90, 160, 255, 0.14); } .tm_hitMark { color: #0b0b0c; background: rgb(255, 214, 106); border-radius: 3px; padding: 0 2px; } .tm_drawerHitHead { display: flex; align-items: center; gap: 6px; min-width: 0; } .tm_drawerAgentChip { flex: none; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--dsw-alias-border-l2); font-size: calc(10px + var(--tm-font-step, 0px)); line-height: 1.5; color: var(--dsw-alias-label-secondary); letter-spacing: 0.02em; } .tm_drawerAgentChipSub { color: rgb(255, 214, 106); border-color: rgba(255, 214, 106, 0.5); background: rgba(255, 214, 106, 0.1); } .tm_drawerHitTitle { display: block; width: 100%; text-align: left; font: inherit; font-size: calc(12.5px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); background: transparent; border: none; padding: 0 0 2px; cursor: pointer; } .tm_drawerHitTitle:hover { color: var(--dsw-alias-brand-primary); } .tm_peek { position: fixed; z-index: 80; width: min(500px, 88vw); max-height: 42vh; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55); } .tm_peekTitle { font-size: calc(11.5px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-secondary); padding-bottom: 4px; margin-bottom: 2px; border-bottom: 1px solid var(--dsw-alias-border-l2); } .tm_peekLine { font-size: calc(12px + var(--tm-font-step, 0px)); line-height: 1.55; color: var(--dsw-alias-label-primary); white-space: pre-wrap; word-break: break-word; } .tm_peekHint { margin-top: 6px; font-size: calc(10.5px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); opacity: 0.7; } .tm_drawerHitMore { align-self: flex-start; margin-top: 2px; font: inherit; font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); background: transparent; border: none; padding: 2px 0 2px 10px; cursor: pointer; } .tm_drawerHitMore:hover { color: var(--dsw-alias-brand-primary); } .tm_drawerHitBlock { display: flex; flex-direction: column; gap: 1px; margin-top: 4px; padding-left: 2px; } .tm_drawerHitLine { display: block; width: 100%; text-align: left; font: inherit; font-size: calc(11.5px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); background: transparent; border: none; padding: 2px 0 2px 10px; border-left: 2px solid var(--dsw-alias-border-l2); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .tm_drawerHitLine:hover { color: var(--dsw-alias-label-primary); border-left-color: var(--dsw-alias-brand-primary); } .tm_drawerScroll { overscroll-behavior: contain; scroll-behavior: auto; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; grid-template-columns: repeat(auto-fill, 224px); justify-content: center; align-content: start; gap: 12px; padding: 16px; } .tm_drawerCard[draggable="true"] { cursor: grab; } .tm_drawerCard[data-talkmap-drag="1"] { cursor: grabbing; opacity: 0.55; transform: scale(0.98); } .tm_cardLinks { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 4px; } .tm_cardLinkChip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 6px; border-radius: 4px; font-size: calc(9.5px + var(--tm-font-step, 0px)); line-height: 1.7; color: var(--dsw-alias-label-secondary); background: rgba(255, 255, 255, 0.06); } .tm_cardLinkChip[data-talkmap-link="out"] { color: rgba(255, 214, 106, 0.9); background: rgba(255, 214, 106, 0.12); } .tm_drawerCard { width: 224px; box-sizing: border-box; text-align: left; font: inherit; cursor: pointer; background: var(--dsw-alias-bg-layer-1); } .tm_drawerCard:hover { border-color: var(--dsw-alias-brand-primary); } .tm_wsFrameResize { position: absolute; z-index: 2; pointer-events: auto; opacity: 0.5; } .tm_wsFrameResize:hover { opacity: 1; border-color: var(--dsw-alias-brand-primary); } .tm_wsFrameResizeN { cursor: ns-resize; border-top: 3px solid var(--dsw-alias-border-l3); border-radius: 14px 14px 0 0; } .tm_wsFrameResizeS { cursor: ns-resize; border-bottom: 3px solid var(--dsw-alias-border-l3); border-radius: 0 0 14px 14px; } .tm_wsFrameResizeW { cursor: ew-resize; border-left: 3px solid var(--dsw-alias-border-l3); border-radius: 14px 0 0 14px; } .tm_wsFrameResizeE { cursor: ew-resize; border-right: 3px solid var(--dsw-alias-border-l3); border-radius: 0 14px 14px 0; } .tm_wsFrameResizeNw, .tm_wsFrameResizeNe, .tm_wsFrameResizeSw, .tm_wsFrameResizeSe { width: 26px; height: 26px; z-index: 3; } .tm_wsFrameResizeNw { cursor: nwse-resize; border-left: 3px solid var(--dsw-alias-border-l3); border-top: 3px solid var(--dsw-alias-border-l3); border-top-left-radius: 14px; } .tm_wsFrameResizeNe { cursor: nesw-resize; border-right: 3px solid var(--dsw-alias-border-l3); border-top: 3px solid var(--dsw-alias-border-l3); border-top-right-radius: 14px; } .tm_wsFrameResizeSw { cursor: nesw-resize; border-left: 3px solid var(--dsw-alias-border-l3); border-bottom: 3px solid var(--dsw-alias-border-l3); border-bottom-left-radius: 14px; } .tm_wsFrameResizeSe { cursor: nwse-resize; border-right: 3px solid var(--dsw-alias-border-l3); border-bottom: 3px solid var(--dsw-alias-border-l3); border-bottom-right-radius: 14px; } .tm_batchBar { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 20; display: flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 999px; background: var(--dsw-alias-bg-layer-1); box-shadow: 0 8px 24px var(--dsw-alias-bg-mask-2); } .tm_batchCount { font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); white-space: nowrap; } .tm_batchSpace { width: 6px; } .tm_batchAction { padding: 5px 14px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: transparent; color: var(--dsw-alias-label-primary); font-size: calc(12px + var(--tm-font-step, 0px)); cursor: pointer; white-space: nowrap; } .tm_batchAction:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); } .tm_batchAction:disabled { opacity: 0.5; cursor: default; } .tm_batchDanger { color: var(--dsw-alias-state-error-primary); } .tm_pickBox { position: absolute; top: 6px; right: 6px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border: 1.5px solid var(--dsw-alias-border-l3); border-radius: 4px; background: var(--dsw-alias-bg-base); color: transparent; font-size: calc(11px + var(--tm-font-step, 0px)); line-height: 1; pointer-events: none; } .tm_pickBoxChecked { border-color: var(--dsw-alias-brand-primary); background: var(--dsw-alias-brand-primary); color: #fff; } .tm_colorToolbar { position: absolute; top: 12px; left: 12px; z-index: 20; display: flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 999px; background: var(--dsw-alias-bg-layer-1); box-shadow: 0 6px 20px var(--dsw-alias-bg-mask-2); } .tm_colorToolbarLabel { font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); margin-right: 2px; white-space: nowrap; } .tm_colorSwatch { width: 16px; height: 16px; padding: 0; border: 1px solid var(--dsw-alias-border-l2); border-radius: 50%; cursor: pointer; } .tm_colorSwatch:hover { transform: scale(1.15); } .tm_colorSwatchClear { display: flex; align-items: center; justify-content: center; background: transparent; color: var(--dsw-alias-label-secondary); font-size: calc(12px + var(--tm-font-step, 0px)); line-height: 1; } .tm_colorSwatchClear:hover { color: var(--dsw-alias-label-primary); background: var(--dsw-alias-interactive-bg-hover); } .tm_drawerWires { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: visible; } .tm_drawerScroll { position: relative; } .tm_drawerScroll > .tm_card, .tm_drawerScroll > [data-stack-card] { position: relative; z-index: 1; } .tm_canvas .react-flow__edges { z-index: 0 !important; } .tm_canvas .react-flow__nodes { z-index: 1 !important; } .tm_statusRail { position: absolute; left: 0; top: 0; bottom: 0; z-index: 6; pointer-events: none; --rail-card-w: 224px; --rail-pad: 10px; --rail-card-outer: calc(var(--rail-card-w) + 26px); --rail-w: calc(var(--rail-card-outer) + var(--rail-pad) * 2 + 2px); } .tm_statusRailPanel { position: absolute; left: 0; top: 0; bottom: 0; width: var(--rail-w); box-sizing: border-box; padding: var(--rail-pad); display: flex; flex-direction: column; gap: 8px; background: var(--dsw-alias-bg-elevated, rgba(18, 20, 26, 0.94)); border-right: 1px solid var(--dsw-alias-border-secondary); box-shadow: 6px 0 26px rgba(0, 0, 0, 0.32); backdrop-filter: blur(10px); transform: translateX(-101%); transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1), box-shadow 320ms ease; pointer-events: none; } .tm_statusRail[data-open="1"] .tm_statusRailPanel { transform: translateX(0); pointer-events: auto; } .tm_statusRailHead { display: flex; align-items: baseline; gap: 8px; padding: 2px 4px 0; } .tm_statusRailTitle { flex: 1; font-size: 12px; letter-spacing: 0.02em; color: var(--dsw-alias-label-secondary); } .tm_statusRailCount { font-size: 11px; color: var(--dsw-alias-label-tertiary, #6b7280); font-variant-numeric: tabular-nums; } .tm_statusRailList { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 2px 0 14px; } .tm_statusRailEmpty { padding: 8px 4px; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-secondary); } .tm_statusRailSlot { position: relative; } .tm_statusRailSlot[draggable="true"] { cursor: grab; } .tm_statusRailSlot[draggable="true"]:active { cursor: grabbing; } .tm_statusRailCard { width: var(--rail-card-w); min-height: 84px; cursor: grab; transition: transform 120ms ease, box-shadow 120ms ease; } .tm_statusRailCard:active { cursor: grabbing; } .tm_statusRailSlotFloating { pointer-events: none; } .tm_statusRailCardDragging { cursor: grabbing; transform: scale(1.02) rotate(-0.3deg); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55); opacity: 0.97; } .tm_statusRailCard:hover { transform: translateY(-1px); } .tm_statusRailTab { position: absolute; top: 50%; left: 0; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 30px; padding: 13px 7px; border: 1px solid rgba(255, 255, 255, 0.16); border-left: none; border-radius: 0 11px 11px 0; background: rgba(38, 42, 52, 0.42); backdrop-filter: blur(16px) saturate(1.5); -webkit-backdrop-filter: blur(16px) saturate(1.5); box-shadow: 3px 0 14px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08); color: var(--dsw-alias-label-primary); cursor: pointer; font: inherit; pointer-events: auto; transition: left 320ms cubic-bezier(0.22, 0.61, 0.36, 1), color 140ms ease, background 140ms ease; } .tm_statusRail[data-open="1"] .tm_statusRailTab { left: calc(var(--rail-w) - 1px); } .tm_statusRailTab:hover { color: #ffffff; background: rgba(58, 64, 78, 0.55); } .tm_statusRailTabCount { font-size: 10px; line-height: 1; padding: 2px 4px; border-radius: 999px; background: var(--dsw-alias-brand-primary); color: #0b0d12; font-variant-numeric: tabular-nums; } .tm_dangerBackdrop { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(8, 10, 14, 0.55); backdrop-filter: blur(2px); } .tm_dangerDialog { width: min(420px, calc(100% - 48px)); padding: 18px 18px 14px; border: 1px solid var(--dsw-alias-border-secondary); border-radius: 14px; background: var(--dsw-alias-bg-elevated, #16181f); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55); } .tm_dangerTitle { font-size: 14px; font-weight: 600; color: var(--dsw-alias-label-primary); } .tm_dangerBody { margin-top: 8px; font-size: 12.5px; line-height: 1.6; color: var(--dsw-alias-label-secondary); } .tm_dangerActions { margin-top: 16px; display: flex; justify-content: flex-end; gap: 8px; } .tm_dangerCancel, .tm_dangerOk { padding: 6px 14px; border-radius: 8px; font: inherit; font-size: 12.5px; cursor: pointer; } .tm_dangerCancel { border: 1px solid var(--dsw-alias-border-secondary); background: transparent; color: var(--dsw-alias-label-secondary); } .tm_dangerCancel:hover { color: var(--dsw-alias-label-primary); background: var(--dsw-alias-interactive-bg-hover); } .tm_dangerOk { border: 1px solid rgba(242, 78, 78, 0.55); background: rgba(242, 78, 78, 0.16); color: #ff6b6b; } .tm_dangerOk:hover { background: rgba(242, 78, 78, 0.28); color: #ff8a8a; } .tm_statusRailGhost { visibility: hidden; } .tm_statusRailFloating { position: fixed; z-index: 20; pointer-events: none; } .tm_toggleWrap { display: inline-flex; align-items: center; gap: 4px; } .tm_toggleWrapWide { width: 100%; } .tm_toggleWrapWide .tm_toggleRow { flex: 1; min-width: 0; } .tm_backToCurrent { display: flex; align-items: center; justify-content: center; flex: none; width: 20px; height: 20px; padding: 0; border: none; border-radius: 6px; background: transparent; color: var(--dsw-alias-label-secondary); cursor: pointer; opacity: 0.75; transition: opacity 120ms ease, color 120ms ease, background 120ms ease; } .tm_toggleWrapWide .tm_backToCurrent { width: 24px; height: 24px; } .tm_backToCurrent:hover { opacity: 1; color: var(--dsw-alias-brand-primary); background: var(--dsw-alias-interactive-bg-hover); } .tm_backToCurrent:active { background: var(--dsw-alias-interactive-bg-active); } .tm_backToCurrentIcon { width: 14px; height: 14px; flex: none; } .tm_toggleWrapWide .tm_backToCurrentIcon { width: 15px; height: 15px; }`;
+// dsh-css: dsh-css:src/client/mind_map.module.css
+var __tagId = "mind_map/mind_map.module.css";
+var __css = `.tm_toggleButton { display: flex; align-items: center; justify-content: center; gap: 6px; width: 32px; height: 32px; padding: 0; border: none; border-radius: 8px; background: transparent; color: var(--dsw-alias-label-secondary); cursor: pointer; } .tm_toggleButton:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); } .tm_toggleButtonActive { background: var(--dsw-alias-interactive-bg-active); color: var(--dsw-alias-brand-primary); } .tm_toggleRow { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 10px; border: none; border-radius: 8px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: calc(13px + var(--tm-font-step, 0px)); cursor: pointer; text-align: left; } .tm_toggleRow:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); } .tm_toggleLabel { white-space: nowrap; } .tm_toggleIcon { width: 18px; height: 18px; flex: none; } .tm_panel { height: 100%; min-height: 0; box-sizing: border-box; display: flex; flex-direction: column; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); } .tm_header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-1); flex: none; } .tm_backButton { display: inline-flex; align-items: center; gap: 6px; flex: none; height: 38px; padding: 0 18px 0 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: calc(14px + var(--tm-font-step, 0px)); font-weight: 600; line-height: 1; cursor: pointer; } .tm_backButton:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); } .tm_globalSearch { position: relative; display: flex; align-items: center; gap: 6px; margin-right: 8px; } .tm_globalSearchInput { width: 200px; font: inherit; font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-layer-2, rgba(255, 255, 255, 0.06)); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 5px 9px; outline: none; } .tm_globalSearchInput:focus { border-color: var(--dsw-alias-border-l3, rgba(255, 255, 255, 0.3)); } .tm_globalSearchButton { font: inherit; font-size: calc(11.5px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); background: transparent; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 5px 10px; cursor: pointer; } .tm_globalSearchButton:hover { color: var(--dsw-alias-label-primary); } .tm_globalSearchBackdrop { position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, 0.45); display: flex; align-items: flex-start; justify-content: center; padding-top: 9vh; } .tm_globalSearchPanel { width: min(980px, 92vw); max-height: 76vh; display: flex; flex-direction: column; border-radius: 14px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1); box-shadow: 0 22px 60px rgba(0, 0, 0, 0.5); overflow: hidden; } .tm_globalSearchHead { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--dsw-alias-border-l2); } .tm_globalSearchTitle { font-size: calc(13px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); } .tm_globalSearchBody { padding: 0 16px 14px; overflow-y: auto; overscroll-behavior: contain; } .tm_searchInlineLoading { display: flex; align-items: center; padding: 4px 0 2px 10px; } .tm_searchInlineLoading > span { width: 62%; } .tm_drawerScrollSensor { width: 100%; height: 1px; opacity: 0; } .tm_fontGroup { display: flex; align-items: center; gap: 4px; margin-right: 6px; } .tm_fontButton { display: inline-flex; align-items: center; justify-content: center; gap: 3px; min-width: 46px; height: 28px; padding: 0 8px; line-height: 1; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: calc(12px + var(--tm-font-step, 0px)); cursor: pointer; } .tm_fontButton:hover:not(:disabled) { color: var(--dsw-alias-label-primary); border-color: var(--dsw-alias-border-l3, rgba(255, 255, 255, 0.3)); } .tm_fontButton:disabled { opacity: 0.4; cursor: default; } .tm_fontGlyphSmall, .tm_fontGlyphLarge { display: inline-block; width: calc(9px + 0px); text-align: center; line-height: 1; } .tm_fontGlyphSmall, .tm_fontGlyphLarge { font-size: calc(13px + var(--tm-font-step, 0px)); } .tm_fontSign { display: inline-block; font-size: calc(10px + var(--tm-font-step, 0px)); line-height: 1; transform: translateY(-3px); } .tm_fontReset { min-width: 50px; } .tm_fontReset { min-width: 44px; } .tm_headerSpace { flex: 1; } .tm_langButton { flex: none; min-width: 72px; height: 34px; padding: 0 14px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: calc(13px + var(--tm-font-step, 0px)); cursor: pointer; white-space: nowrap; } .tm_langButton:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); } .tm_closeButton { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 38px; height: 38px; padding: 0; border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: transparent; color: var(--dsw-alias-label-secondary); cursor: pointer; } .tm_closeButton:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); } .tm_zoomResetLabel { font-size: calc(9px + var(--tm-font-step, 0px)); font-weight: 700; letter-spacing: -0.5px; } .tm_canvas { flex: 1; min-height: 0; position: relative; } @media (prefers-reduced-motion: reduce) { .tm_canvas .react-flow__edge circle { opacity: 0.28; } } .tm_canvas .react-flow__node { transition: transform 200ms cubic-bezier(0.2, 0.8, 0.25, 1); } .tm_canvas .react-flow__node.dragging, .tm_canvas .react-flow__node.tmDragging { transition: none; } .tm_canvas .react-flow__nodesselection, .tm_canvas .react-flow__nodesselection-rect { display: none !important; pointer-events: none !important; } .tm_card { position: relative; width: 224px; min-height: 104px; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 10px; background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); box-shadow: 0 1px 3px var(--dsw-alias-bg-mask-1); font-size: calc(13px + var(--tm-font-step, 0px)); } .tm_cardSelected { border-color: var(--dsw-alias-brand-primary); } .tm_cardGhost { opacity: 0.55; border-style: dashed; } .tm_cardTop { display: flex; align-items: center; gap: 6px; min-width: 0; } .tm_cardTitle { font-weight: 600; font-size: calc(13px + var(--tm-font-step, 0px)); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; } .tm_runningDot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #ffffff; animation: tm_mindmap-pulse 1.6s ease-in-out infinite; } @keyframes tm_mindmap-pulse { 50% { opacity: 0.35; } } .tm_cardNext { display: flex; align-items: baseline; gap: 6px; font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); min-width: 0; } .tm_cardNextLabel { flex: none; font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-brand-primary); font-weight: 600; } .tm_cardNextText { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } .tm_cardStale { flex: none; color: var(--dsw-alias-state-warn-primary); font-size: calc(12px + var(--tm-font-step, 0px)); } .tm_cardFooter { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); } .tm_cardTime { flex: none; } .tm_cardChip { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border-radius: 999px; font-size: calc(10px + var(--tm-font-step, 0px)); font-weight: 600; white-space: nowrap; border: 1px solid transparent; } .tm_cardChipRunning { color: #ffffff; background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.35); } .tm_cardChipWaiting { color: rgb(245, 178, 46); background: rgba(245, 178, 46, 0.14); border-color: rgba(245, 178, 46, 0.42); } .tm_cardChipDone { color: rgb(52, 199, 89); background: rgba(52, 199, 89, 0.14); border-color: rgba(52, 199, 89, 0.42); } .tm_cardChipError { color: rgb(242, 78, 78); background: rgba(242, 78, 78, 0.14); border-color: rgba(242, 78, 78, 0.45); } .tm_cardChipDraft { color: rgb(255, 197, 61); background: rgba(255, 197, 61, 0.18); border-color: rgba(255, 197, 61, 0.5); } .tm_cardChipInterrupted { color: rgb(214, 158, 92); background: rgba(214, 158, 92, 0.14); border-color: rgba(214, 158, 92, 0.42); } .tm_cardSummary { font-size: calc(12px + var(--tm-font-step, 0px)); line-height: 1.45; color: var(--dsw-alias-label-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; } .tm_cardBadgeWaiting { padding: 1px 7px; border-radius: 999px; font-size: calc(10px + var(--tm-font-step, 0px)); color: var(--dsw-alias-state-warn-label); background: var(--dsw-alias-state-warn-tertiary); } .tm_cardBadgeDone { padding: 1px 7px; border-radius: 999px; font-size: calc(10px + var(--tm-font-step, 0px)); color: var(--dsw-alias-state-success-primary); background: var(--dsw-alias-state-success-tertiary); } .tm_cardLampRunning { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.34), 0 0 16px 2px rgba(255, 255, 255, 0.2), 0 0 40px 9px rgba(255, 255, 255, 0.1); } .tm_dialogBackdrop { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(2px); animation: tm_tmFadeIn 140ms ease-out; } .tm_digestDialog { width: min(720px, 86vw); max-height: 82vh; display: flex; flex-direction: column; gap: 8px; padding: 16px 18px 14px; border-radius: 14px; background: var(--dsw-alias-bg-elevated, #232323); border: 1px solid rgba(255, 255, 255, 0.09); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); animation: tm_tmRiseIn 200ms cubic-bezier(0.16, 1, 0.3, 1); } .tm_digestDialogHead { display: flex; align-items: baseline; gap: 8px; min-width: 0; } .tm_digestDialogTitle { font-size: calc(13px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); } .tm_digestDialogFrom { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); } .tm_digestLabel { margin-top: 4px; font-size: calc(10.5px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary, rgba(255, 255, 255, 0.5)); } .tm_digestText { width: 100%; min-height: 96px; max-height: 30vh; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.04); color: var(--dsw-alias-label-primary); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: calc(11.5px + var(--tm-font-step, 0px)); line-height: 1.62; resize: none; } .tm_digestEmpty { padding: 18px 4px; font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); } .tm_digestActions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; } .tm_renameBackdrop { position: fixed; inset: 0; z-index: 40; background: rgba(0, 0, 0, 0.42); display: flex; align-items: flex-start; justify-content: center; padding-top: 22vh; } .tm_renameDialog { width: min(420px, 90vw); background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42); padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 10px; } .tm_renameHeading { font-size: calc(13px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); } .tm_renameInput { width: 100%; box-sizing: border-box; font: inherit; font-size: calc(13px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-layer-2, rgba(255, 255, 255, 0.06)); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 8px 10px; outline: none; } .tm_renameInput:focus { border-color: var(--dsw-alias-border-l3, rgba(255, 255, 255, 0.35)); } .tm_renameError { font-size: calc(12px + var(--tm-font-step, 0px)); color: rgb(242, 78, 78); } .tm_renameActions { display: flex; justify-content: flex-end; gap: 8px; } .tm_renameButton { font: inherit; font-size: calc(12.5px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); background: transparent; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 6px 12px; cursor: pointer; } .tm_renameButton:hover { color: var(--dsw-alias-label-primary); } .tm_renamePrimary { color: #0b0b0c; background: rgb(255, 214, 106); border-color: rgb(255, 214, 106); } .tm_renamePrimary:disabled { opacity: 0.5; cursor: default; } .tm_cardPin { display: inline-flex; align-items: center; flex: none; color: rgb(255, 214, 106); filter: drop-shadow(0 0 5px rgba(255, 214, 106, 0.85)); animation: tm_mindmap-pin-glow 2.6s ease-in-out infinite; } @keyframes tm_mindmap-pin-glow { 0%, 100% { filter: drop-shadow(0 0 4px rgba(255, 214, 106, 0.6)); opacity: 0.92; } 50% { filter: drop-shadow(0 0 9px rgba(255, 214, 106, 1)); opacity: 1; } } .tm_cardReticle { position: absolute; inset: -5px; pointer-events: none; filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.45)); } .tm_cardReticle i { position: absolute; width: 13px; height: 13px; border: 2px solid rgba(255, 255, 255, 0.9); } .tm_cardReticle i:nth-child(1) { left: 0; top: 0; border-right: 0; border-bottom: 0; border-top-left-radius: 4px; } .tm_cardReticle i:nth-child(2) { right: 0; top: 0; border-left: 0; border-bottom: 0; border-top-right-radius: 4px; } .tm_cardReticle i:nth-child(3) { left: 0; bottom: 0; border-right: 0; border-top: 0; border-bottom-left-radius: 4px; } .tm_cardReticle i:nth-child(4) { right: 0; bottom: 0; border-left: 0; border-top: 0; border-bottom-right-radius: 4px; } .tm_cardQuiet { opacity: 0.62; transition: opacity 140ms ease; } .tm_cardQuiet:hover { opacity: 1; } .tm_stackBadgeBusy { color: rgb(255, 197, 61); border-color: rgba(255, 197, 61, 0.5); } @property --tm-ring-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; } .tm_cardLampRunning::after { content: ''; position: absolute; inset: -2px; border-radius: 12px; padding: 2px; background: conic-gradient( from var(--tm-ring-angle), rgba(255, 255, 255, 0) 0deg, rgba(255, 255, 255, 0) 190deg, rgba(255, 255, 255, 0.18) 250deg, rgba(255, 255, 255, 0.55) 292deg, rgba(255, 255, 255, 1) 325deg, rgba(255, 255, 255, 0.4) 352deg, rgba(255, 255, 255, 0) 360deg ); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: tm_mindmap-ring-sweep 1.8s linear infinite; pointer-events: none; } @keyframes tm_mindmap-ring-sweep { to { --tm-ring-angle: 360deg; } } .tm_cardLampDone { animation: tm_mindmap-lamp-green 2.8s ease-in-out infinite; } .tm_cardLampError { animation: tm_mindmap-lamp-red 1.9s ease-in-out infinite; } .tm_cardLampWaiting { animation: tm_mindmap-lamp-amber 3.4s ease-in-out infinite; } @keyframes tm_mindmap-lamp-green { 0%, 100% { box-shadow: inset 0 0 0 1px rgba(52, 199, 89, 0.40), 0 0 14px 1px rgba(52, 199, 89, 0.26), 0 0 34px 8px rgba(52, 199, 89, 0.11); } 50% { box-shadow: inset 0 0 0 1px rgba(52, 199, 89, 0.72), 0 0 24px 5px rgba(52, 199, 89, 0.46), 0 0 62px 20px rgba(52, 199, 89, 0.22); } } @keyframes tm_mindmap-lamp-amber { 0%, 100% { box-shadow: inset 0 0 0 1px rgba(245, 178, 46, 0.42), 0 0 14px 1px rgba(245, 178, 46, 0.24), 0 0 34px 8px rgba(245, 178, 46, 0.11); } 50% { box-shadow: inset 0 0 0 1px rgba(245, 178, 46, 0.72), 0 0 24px 5px rgba(245, 178, 46, 0.44), 0 0 60px 19px rgba(245, 178, 46, 0.20); } } @keyframes tm_mindmap-lamp-red { 0%, 100% { box-shadow: inset 0 0 0 1px rgba(242, 78, 78, 0.46), 0 0 14px 1px rgba(242, 78, 78, 0.28), 0 0 34px 8px rgba(242, 78, 78, 0.12); } 50% { box-shadow: inset 0 0 0 1px rgba(242, 78, 78, 0.80), 0 0 26px 6px rgba(242, 78, 78, 0.52), 0 0 66px 22px rgba(242, 78, 78, 0.26); } } .tm_cardRemove { align-self: flex-start; padding: 3px 8px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 6px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: calc(12px + var(--tm-font-step, 0px)); cursor: pointer; } .tm_cardRemove:hover { background: var(--dsw-alias-interactive-bg-hover-danger); color: var(--dsw-alias-state-error-primary); } .tm_cardHandle { width: 10px; height: 10px; background: var(--dsw-alias-border-l3); border: 2px solid var(--dsw-alias-bg-layer-1); opacity: 0; } .tm_card:hover .tm_cardHandle, .tm_canvasConnecting .tm_cardHandle { opacity: 1; } .tm_cardHandle:hover { background: var(--dsw-alias-brand-primary); } .tm_cardRefresh { flex: none; margin-left: auto; width: 22px; height: 22px; padding: 0; border: none; border-radius: 6px; background: transparent; color: var(--dsw-alias-label-tertiary); font-size: calc(13px + var(--tm-font-step, 0px)); line-height: 1; cursor: pointer; opacity: 0; transition: opacity 120ms ease; } .tm_card:hover .tm_cardRefresh { opacity: 1; } .tm_cardRefresh:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); } .tm_cardRefreshBusy { opacity: 1; animation: tm_mindmap-spin 1s linear infinite; } @keyframes tm_mindmap-spin { to { transform: rotate(360deg); } } .tm_spawnPanel { position: absolute; right: 24px; top: 24px; z-index: 6; width: 420px; max-width: calc(100% - 48px); display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; background: var(--dsw-alias-bg-layer-1); box-shadow: 0 8px 30px var(--dsw-alias-bg-mask-2); } .tm_spawnHeading { font-size: calc(14px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); } .tm_spawnFrom { font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); } .tm_spawnModes { display: flex; gap: 6px; } .tm_spawnModeBtn { flex: 1; padding: 5px 0; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: calc(12px + var(--tm-font-step, 0px)); cursor: pointer; } .tm_spawnModeBtn:hover { background: var(--dsw-alias-interactive-bg-hover); } .tm_spawnModeActive { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary); background: var(--dsw-alias-interactive-bg-active); } .tm_spawnHint { font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); } .tm_spawnTextarea { width: 100%; resize: vertical; min-height: 140px; padding: 10px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); font-size: calc(13px + var(--tm-font-step, 0px)); line-height: 1.5; font-family: inherit; } .tm_spawnError { font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-state-error-primary); word-break: break-all; } .tm_spawnActions { display: flex; justify-content: flex-end; gap: 8px; } .tm_spawnBtnPrimary { padding: 6px 16px; border: none; border-radius: 8px; background: var(--dsw-alias-button-primary-fill); color: var(--dsw-alias-label-primary-foreground); font-size: calc(13px + var(--tm-font-step, 0px)); cursor: pointer; } .tm_spawnBtnPrimary:hover { background: var(--dsw-alias-button-primary-hover); } .tm_spawnBtnPrimary:disabled { background: var(--dsw-alias-button-primary-dimmed); cursor: default; } .tm_spawnBtnGhost { padding: 6px 16px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: calc(13px + var(--tm-font-step, 0px)); cursor: pointer; } .tm_spawnBtnGhost:hover { background: var(--dsw-alias-interactive-bg-hover); } .tm_wsFrame { position: relative; border: 1.5px dashed var(--dsw-alias-border-l2); border-radius: 16px; background: transparent; } .tm_wsFrameBlocked { border-color: rgb(242, 78, 78) !important; box-shadow: 0 0 0 1px rgba(242, 78, 78, 0.45) inset; } .tm_wsFrameSelected { border-style: solid; border-color: var(--dsw-alias-brand-primary); } .tm_wsFrameLabel { position: absolute; top: -12px; left: 14px; display: flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-1); font-size: calc(12px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-secondary); white-space: nowrap; pointer-events: auto; cursor: grab; z-index: 5; } .tm_wsFrameLabel:active { cursor: grabbing; } .tm_wsFrameEdge { position: absolute; pointer-events: auto; cursor: grab; } .tm_wsFrameEdge:active { cursor: grabbing; } .tm_wsFrameCount { font-weight: 400; color: var(--dsw-alias-label-tertiary); } .tm_menu { position: absolute; z-index: 60; min-width: 200px; max-width: 280px; max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; padding: 6px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 10px; background: var(--dsw-alias-bg-layer-1); box-shadow: 0 8px 30px var(--dsw-alias-bg-mask-2); } .tm_menuTitle { flex: none; padding: 4px 10px 6px; font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); } .tm_menuSearch { flex: none; box-sizing: border-box; width: calc(100% - 8px); margin: 2px 4px 6px; padding: 5px 8px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 7px; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); font-size: calc(12px + var(--tm-font-step, 0px)); font-family: inherit; } .tm_menuHint { font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-dimmed); } .tm_menuPreview { flex: none; padding: 0 10px 4px; font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); word-break: break-all; } .tm_menuError { flex: none; padding: 0 10px 4px; font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-state-error-primary); word-break: break-all; } .tm_menuEmpty { padding: 8px 10px; font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); } .tm_menuItem { flex: none; display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 6px 10px; border: none; border-radius: 7px; background: transparent; color: var(--dsw-alias-label-primary); font-size: calc(13px + var(--tm-font-step, 0px)); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .tm_menuIcon { flex: none; width: 14px; height: 14px; color: var(--dsw-alias-label-secondary); } .tm_menuItemDanger { color: rgb(242, 78, 78); } .tm_menuItemDanger .tm_menuIcon { color: rgb(242, 78, 78); } .tm_menuItem:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); } .tm_menuItem:disabled { color: var(--dsw-alias-label-dimmed); cursor: default; } .tm_wsFrameHidden { font-weight: 400; color: var(--dsw-alias-state-warn-primary); } .tm_emptyHint { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: calc(13px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); pointer-events: none; z-index: 4; } .tm_toast { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 8; max-width: 70%; padding: 7px 16px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 999px; background: var(--dsw-alias-bg-layer-1); box-shadow: 0 4px 16px var(--dsw-alias-bg-mask-2); font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-primary); pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .tm_stackCell { position: relative; width: 224px; height: 104px; cursor: pointer; } .tm_stackSheetBack, .tm_stackSheetMid { position: absolute; inset: 0; border-radius: 12px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1); } .tm_stackSheetBack { transform: translate(11px, 11px) scale(0.95); opacity: 0.35; } .tm_stackSheetMid { transform: translate(5px, 5px) scale(0.977); opacity: 0.6; } .tm_stackFace { position: absolute; inset: 0; box-sizing: border-box; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; background: var(--dsw-alias-bg-layer-1); transition: border-color 140ms ease, transform 140ms ease; } .tm_stackCell:hover .tm_stackFace { border-color: var(--dsw-alias-brand-primary); transform: translateY(-1px); } .tm_stackFaceTitle { font-size: calc(13px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; } .tm_stackBadge { flex: none; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--dsw-alias-border-l2); color: var(--dsw-alias-label-secondary); font-size: calc(11px + var(--tm-font-step, 0px)); font-variant-numeric: tabular-nums; } .tm_drawerBackdrop { position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: var(--dsw-alias-bg-mask-2); } .tm_drawer { width: min(1120px, 94%); max-height: 84%; box-sizing: border-box; display: flex; flex-direction: column; border: 1px solid var(--dsw-alias-border-l1); border-radius: 16px; background: var(--dsw-alias-bg-layer-1); box-shadow: 0 18px 48px var(--dsw-alias-bg-mask-2); overflow: hidden; } .tm_drawerHead { display: flex; align-items: center; gap: 10px; flex: none; padding: 12px 14px; border-bottom: 1px solid var(--dsw-alias-border-l1); } .tm_drawerTitle { font-size: calc(14px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); } .tm_drawerCount { font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); } .tm_drawerSpace { flex: 1; } .tm_drawerHint { font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); } .tm_drawerClose { flex: none; width: 30px; height: 30px; padding: 0; border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: calc(16px + var(--tm-font-step, 0px)); line-height: 1; cursor: pointer; } .tm_drawerClose:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); } .tm_drawerHits > .tm_drawerHit { animation: tm_tmPopIn 240ms cubic-bezier(0.16, 1, 0.3, 1) both; } .tm_drawerHits > .tm_drawerHit:nth-child(1) { animation-delay: 20ms; } .tm_drawerHits > .tm_drawerHit:nth-child(2) { animation-delay: 34ms; } .tm_drawerHits > .tm_drawerHit:nth-child(3) { animation-delay: 48ms; } .tm_drawerHits > .tm_drawerHit:nth-child(4) { animation-delay: 62ms; } .tm_drawerHits > .tm_drawerHit:nth-child(5) { animation-delay: 76ms; } .tm_drawerHits > .tm_drawerHit:nth-child(n+6) { animation-delay: 90ms; } .tm_searchLoading { display: flex; flex-direction: column; gap: 8px; padding: 6px 0 2px; } .tm_searchLoadingBar { position: relative; height: 2px; border-radius: 2px; overflow: hidden; background: rgba(255, 255, 255, 0.07); } .tm_searchLoadingBar > i { position: absolute; inset: 0 auto 0 0; width: 34%; border-radius: 2px; background: linear-gradient(90deg, transparent, var(--dsw-alias-brand-primary), transparent); animation: tm_tmSlideBar 1150ms cubic-bezier(0.4, 0, 0.2, 1) infinite; } @keyframes tm_tmSlideBar { 0% { transform: translateX(-100%); } 100% { transform: translateX(320%); } } .tm_searchSkeletonRow { display: flex; flex-direction: column; gap: 6px; padding: 9px 10px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 9px; } .tm_searchSkeletonTitle, .tm_searchSkeletonLine { display: block; height: 9px; border-radius: 4px; background: linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.12), rgba(255,255,255,0.05)); background-size: 220% 100%; animation: tm_tmShimmer 1300ms ease-in-out infinite; } .tm_searchSkeletonTitle { width: 38%; } .tm_searchSkeletonLine { width: 78%; } @keyframes tm_tmShimmer { 0% { background-position: 120% 0; } 100% { background-position: -60% 0; } } @media (prefers-reduced-motion: reduce) { .tm_drawerHits > .tm_drawerHit, .tm_searchLoadingBar > i, .tm_searchSkeletonTitle, .tm_searchSkeletonLine { animation: none; } } @keyframes tm_tmFadeIn { from { opacity: 0; } to { opacity: 1; } } @keyframes tm_tmFadeOut { from { opacity: 1; } to { opacity: 0; } } @keyframes tm_tmRiseIn { from { opacity: 0; transform: translateY(26px) scale(0.94); } 60% { opacity: 1; } to { opacity: 1; transform: none; } } @keyframes tm_tmRiseOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(10px) scale(0.985); } } @keyframes tm_tmPopIn { from { opacity: 0; transform: translateY(6px) scale(0.97); } to { opacity: 1; transform: none; } } @keyframes tm_tmCardIn { from { opacity: 0; transform: translateY(6px) scale(0.99); } to { opacity: 1; transform: none; } } .tm_drawerBackdrop { animation: tm_tmFadeIn 180ms cubic-bezier(0.16, 1, 0.3, 1) both; } .tm_drawerBackdropOut { animation: tm_tmFadeOut 130ms ease-in both; } .tm_drawer { animation: tm_tmRiseIn 260ms cubic-bezier(0.16, 1, 0.3, 1) both; will-change: transform, opacity; } .tm_drawerOut { animation: tm_tmRiseOut 150ms cubic-bezier(0.4, 0, 0.7, 0.2) both; } .tm_globalSearchBackdrop { animation: tm_tmFadeIn 130ms ease-out both; } .tm_globalSearchPanel { animation: tm_tmRiseIn 240ms cubic-bezier(0.16, 1, 0.3, 1) both; will-change: transform, opacity; } .tm_menu { animation: tm_tmPopIn 120ms cubic-bezier(0.2, 0.9, 0.25, 1) both; } .tm_card { transition: transform 120ms ease-out, box-shadow 160ms ease-out, opacity 160ms ease-out; } .tm_card:hover { transform: translateY(-1px); } .tm_reactFlowNodeEnter { animation: tm_tmCardIn 170ms cubic-bezier(0.2, 0.9, 0.25, 1) both; } .tm_stackCell { transition: transform 120ms ease-out, box-shadow 160ms ease-out; } .tm_stackCell:hover { transform: translateY(-2px); } .tm_wsFrameLabel { transition: color 120ms ease-out, background 120ms ease-out, box-shadow 120ms ease-out; } .tm_wsFrameLabel:hover { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35); } .tm_toast { animation: tm_tmRiseIn 160ms cubic-bezier(0.2, 0.9, 0.25, 1) both; } .tm_snippetCode { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.94em; padding: 0 3px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); } .tm_snippetLink { color: var(--dsw-alias-brand-primary); } @media (prefers-reduced-motion: reduce) { .tm_drawerBackdrop, .tm_drawerBackdropOut, .tm_drawer, .tm_drawerOut, .tm_globalSearchBackdrop, .tm_globalSearchPanel, .tm_menu, .tm_toast, .tm_reactFlowNodeEnter { animation: none; } .tm_card, .tm_stackCell, .tm_wsFrameLabel { transition: none; } .tm_card:hover, .tm_stackCell:hover { transform: none; } } .tm_drawerSearchRow { display: flex; align-items: center; gap: 8px; padding: 0 14px 8px; } .tm_drawerSearch { flex: 1; min-width: 0; font: inherit; font-size: calc(12.5px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-layer-2, rgba(255, 255, 255, 0.06)); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 6px 10px; outline: none; } .tm_drawerSearch:focus { border-color: var(--dsw-alias-border-l3, rgba(255, 255, 255, 0.3)); } .tm_drawerSearchGo { flex: none; font: inherit; font-size: calc(11.5px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); background: transparent; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 5px 10px; cursor: pointer; } .tm_drawerSearchGo:hover { color: var(--dsw-alias-label-primary); } .tm_drawerSearchState { font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); flex: none; } .tm_drawerSearchError { flex: none; max-width: 52%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: calc(11px + var(--tm-font-step, 0px)); color: rgb(242, 78, 78); } .tm_drawerEmpty { grid-column: 1 / -1; padding: 10px 4px; font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); } .tm_drawerHits { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--dsw-alias-border-l2); } .tm_drawerHitsHead { font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); letter-spacing: 0.04em; } .tm_drawerHit { display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 8px 10px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 9px; background: transparent; color: var(--dsw-alias-label-primary); font: inherit; cursor: pointer; } .tm_drawerHit:hover { border-color: var(--dsw-alias-border-l3, rgba(255, 255, 255, 0.3)); } .tm_drawerRoleChip { flex: none; margin-right: 6px; padding: 0 5px; border-radius: 4px; font-size: calc(9.5px + var(--tm-font-step, 0px)); line-height: 1.6; color: var(--dsw-alias-label-secondary); background: rgba(255, 255, 255, 0.07); } .tm_drawerRoleChip[data-mindmap-role="user"] { color: rgba(160, 210, 255, 0.95); background: rgba(90, 160, 255, 0.14); } .tm_hitMark { color: #0b0b0c; background: rgb(255, 214, 106); border-radius: 3px; padding: 0 2px; } .tm_drawerHitHead { display: flex; align-items: center; gap: 6px; min-width: 0; } .tm_drawerAgentChip { flex: none; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--dsw-alias-border-l2); font-size: calc(10px + var(--tm-font-step, 0px)); line-height: 1.5; color: var(--dsw-alias-label-secondary); letter-spacing: 0.02em; } .tm_drawerAgentChipSub { color: rgb(255, 214, 106); border-color: rgba(255, 214, 106, 0.5); background: rgba(255, 214, 106, 0.1); } .tm_drawerHitTitle { display: block; width: 100%; text-align: left; font: inherit; font-size: calc(12.5px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); background: transparent; border: none; padding: 0 0 2px; cursor: pointer; } .tm_drawerHitTitle:hover { color: var(--dsw-alias-brand-primary); } .tm_peek { position: fixed; z-index: 80; width: min(500px, 88vw); max-height: 42vh; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55); } .tm_peekTitle { font-size: calc(11.5px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-secondary); padding-bottom: 4px; margin-bottom: 2px; border-bottom: 1px solid var(--dsw-alias-border-l2); } .tm_peekLine { font-size: calc(12px + var(--tm-font-step, 0px)); line-height: 1.55; color: var(--dsw-alias-label-primary); white-space: pre-wrap; word-break: break-word; } .tm_peekHint { margin-top: 6px; font-size: calc(10.5px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); opacity: 0.7; } .tm_drawerHitMore { align-self: flex-start; margin-top: 2px; font: inherit; font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); background: transparent; border: none; padding: 2px 0 2px 10px; cursor: pointer; } .tm_drawerHitMore:hover { color: var(--dsw-alias-brand-primary); } .tm_drawerHitBlock { display: flex; flex-direction: column; gap: 1px; margin-top: 4px; padding-left: 2px; } .tm_drawerHitLine { display: block; width: 100%; text-align: left; font: inherit; font-size: calc(11.5px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); background: transparent; border: none; padding: 2px 0 2px 10px; border-left: 2px solid var(--dsw-alias-border-l2); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .tm_drawerHitLine:hover { color: var(--dsw-alias-label-primary); border-left-color: var(--dsw-alias-brand-primary); } .tm_drawerScroll { overscroll-behavior: contain; scroll-behavior: auto; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; grid-template-columns: repeat(auto-fill, 224px); justify-content: center; align-content: start; gap: 12px; padding: 16px; } .tm_drawerCard[draggable="true"] { cursor: grab; } .tm_drawerCard[data-mindmap-drag="1"] { cursor: grabbing; opacity: 0.55; transform: scale(0.98); } .tm_cardLinks { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 4px; } .tm_cardLinkChip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 6px; border-radius: 4px; font-size: calc(9.5px + var(--tm-font-step, 0px)); line-height: 1.7; color: var(--dsw-alias-label-secondary); background: rgba(255, 255, 255, 0.06); } .tm_cardLinkChip[data-mindmap-link="out"] { color: rgba(255, 214, 106, 0.9); background: rgba(255, 214, 106, 0.12); } .tm_drawerCard { width: 224px; box-sizing: border-box; text-align: left; font: inherit; cursor: pointer; background: var(--dsw-alias-bg-layer-1); } .tm_drawerCard:hover { border-color: var(--dsw-alias-brand-primary); } .tm_wsFrameResize { position: absolute; z-index: 2; pointer-events: auto; opacity: 0.5; } .tm_wsFrameResize:hover { opacity: 1; border-color: var(--dsw-alias-brand-primary); } .tm_wsFrameResizeN { cursor: ns-resize; border-top: 3px solid var(--dsw-alias-border-l3); border-radius: 14px 14px 0 0; } .tm_wsFrameResizeS { cursor: ns-resize; border-bottom: 3px solid var(--dsw-alias-border-l3); border-radius: 0 0 14px 14px; } .tm_wsFrameResizeW { cursor: ew-resize; border-left: 3px solid var(--dsw-alias-border-l3); border-radius: 14px 0 0 14px; } .tm_wsFrameResizeE { cursor: ew-resize; border-right: 3px solid var(--dsw-alias-border-l3); border-radius: 0 14px 14px 0; } .tm_wsFrameResizeNw, .tm_wsFrameResizeNe, .tm_wsFrameResizeSw, .tm_wsFrameResizeSe { width: 26px; height: 26px; z-index: 3; } .tm_wsFrameResizeNw { cursor: nwse-resize; border-left: 3px solid var(--dsw-alias-border-l3); border-top: 3px solid var(--dsw-alias-border-l3); border-top-left-radius: 14px; } .tm_wsFrameResizeNe { cursor: nesw-resize; border-right: 3px solid var(--dsw-alias-border-l3); border-top: 3px solid var(--dsw-alias-border-l3); border-top-right-radius: 14px; } .tm_wsFrameResizeSw { cursor: nesw-resize; border-left: 3px solid var(--dsw-alias-border-l3); border-bottom: 3px solid var(--dsw-alias-border-l3); border-bottom-left-radius: 14px; } .tm_wsFrameResizeSe { cursor: nwse-resize; border-right: 3px solid var(--dsw-alias-border-l3); border-bottom: 3px solid var(--dsw-alias-border-l3); border-bottom-right-radius: 14px; } .tm_batchBar { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 20; display: flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 999px; background: var(--dsw-alias-bg-layer-1); box-shadow: 0 8px 24px var(--dsw-alias-bg-mask-2); } .tm_batchCount { font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-secondary); white-space: nowrap; } .tm_batchSpace { width: 6px; } .tm_batchAction { padding: 5px 14px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: transparent; color: var(--dsw-alias-label-primary); font-size: calc(12px + var(--tm-font-step, 0px)); cursor: pointer; white-space: nowrap; } .tm_batchAction:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); } .tm_batchAction:disabled { opacity: 0.5; cursor: default; } .tm_batchDanger { color: var(--dsw-alias-state-error-primary); } .tm_pickBox { position: absolute; top: 6px; right: 6px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border: 1.5px solid var(--dsw-alias-border-l3); border-radius: 4px; background: var(--dsw-alias-bg-base); color: transparent; font-size: calc(11px + var(--tm-font-step, 0px)); line-height: 1; pointer-events: none; } .tm_pickBoxChecked { border-color: var(--dsw-alias-brand-primary); background: var(--dsw-alias-brand-primary); color: #fff; } .tm_colorToolbar { position: absolute; top: 12px; left: 12px; z-index: 20; display: flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 999px; background: var(--dsw-alias-bg-layer-1); box-shadow: 0 6px 20px var(--dsw-alias-bg-mask-2); } .tm_colorToolbarLabel { font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); margin-right: 2px; white-space: nowrap; } .tm_colorSwatch { width: 16px; height: 16px; padding: 0; border: 1px solid var(--dsw-alias-border-l2); border-radius: 50%; cursor: pointer; } .tm_colorSwatch:hover { transform: scale(1.15); } .tm_colorSwatchClear { display: flex; align-items: center; justify-content: center; background: transparent; color: var(--dsw-alias-label-secondary); font-size: calc(12px + var(--tm-font-step, 0px)); line-height: 1; } .tm_colorSwatchClear:hover { color: var(--dsw-alias-label-primary); background: var(--dsw-alias-interactive-bg-hover); } .tm_drawerWires { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: visible; } .tm_drawerScroll { position: relative; } .tm_drawerScroll > .tm_card, .tm_drawerScroll > [data-stack-card] { position: relative; z-index: 1; } .tm_canvas .react-flow__edges { z-index: 0 !important; } .tm_canvas .react-flow__nodes { z-index: 1 !important; } .tm_statusRail { position: absolute; left: 0; top: 0; bottom: 0; z-index: 6; pointer-events: none; --rail-card-w: 224px; --rail-pad: 10px; --rail-card-outer: calc(var(--rail-card-w) + 26px); --rail-w: calc(var(--rail-card-outer) + var(--rail-pad) * 2 + 2px); } .tm_statusRailPanel { position: absolute; left: 0; top: 0; bottom: 0; width: var(--rail-w); box-sizing: border-box; padding: var(--rail-pad); display: flex; flex-direction: column; gap: 8px; background: var(--dsw-alias-bg-elevated, rgba(18, 20, 26, 0.94)); border-right: 1px solid var(--dsw-alias-border-secondary); box-shadow: 6px 0 26px rgba(0, 0, 0, 0.32); backdrop-filter: blur(10px); transform: translateX(-101%); transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1), box-shadow 320ms ease; pointer-events: none; } .tm_statusRail[data-open="1"] .tm_statusRailPanel { transform: translateX(0); pointer-events: auto; } .tm_statusRailHead { display: flex; align-items: baseline; gap: 8px; padding: 2px 4px 0; } .tm_statusRailTitle { flex: 1; font-size: 12px; letter-spacing: 0.02em; color: var(--dsw-alias-label-secondary); } .tm_statusRailCount { font-size: 11px; color: var(--dsw-alias-label-tertiary, #6b7280); font-variant-numeric: tabular-nums; } .tm_statusRailList { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 2px 0 14px; } .tm_statusRailEmpty { padding: 8px 4px; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-secondary); } .tm_statusRailSlot { position: relative; } .tm_statusRailSlot[draggable="true"] { cursor: grab; } .tm_statusRailSlot[draggable="true"]:active { cursor: grabbing; } .tm_statusRailCard { width: var(--rail-card-w); min-height: 84px; cursor: grab; transition: transform 120ms ease, box-shadow 120ms ease; } .tm_statusRailCard:active { cursor: grabbing; } .tm_statusRailSlotFloating { pointer-events: none; } .tm_statusRailCardDragging { cursor: grabbing; transform: scale(1.02) rotate(-0.3deg); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55); opacity: 0.97; } .tm_statusRailCard:hover { transform: translateY(-1px); } .tm_statusRailTab { position: absolute; top: 50%; left: 0; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 30px; padding: 13px 7px; border: 1px solid rgba(255, 255, 255, 0.16); border-left: none; border-radius: 0 11px 11px 0; background: rgba(38, 42, 52, 0.42); backdrop-filter: blur(16px) saturate(1.5); -webkit-backdrop-filter: blur(16px) saturate(1.5); box-shadow: 3px 0 14px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08); color: var(--dsw-alias-label-primary); cursor: pointer; font: inherit; pointer-events: auto; transition: left 320ms cubic-bezier(0.22, 0.61, 0.36, 1), color 140ms ease, background 140ms ease; } .tm_statusRail[data-open="1"] .tm_statusRailTab { left: calc(var(--rail-w) - 1px); } .tm_statusRailTab:hover { color: #ffffff; background: rgba(58, 64, 78, 0.55); } .tm_statusRailTabCount { font-size: 10px; line-height: 1; padding: 2px 4px; border-radius: 999px; background: var(--dsw-alias-brand-primary); color: #0b0d12; font-variant-numeric: tabular-nums; } .tm_dangerBackdrop { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(8, 10, 14, 0.55); backdrop-filter: blur(2px); } .tm_dangerDialog { width: min(420px, calc(100% - 48px)); padding: 18px 18px 14px; border: 1px solid var(--dsw-alias-border-secondary); border-radius: 14px; background: var(--dsw-alias-bg-elevated, #16181f); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55); } .tm_dangerTitle { font-size: 14px; font-weight: 600; color: var(--dsw-alias-label-primary); } .tm_dangerBody { margin-top: 8px; font-size: 12.5px; line-height: 1.6; color: var(--dsw-alias-label-secondary); } .tm_dangerActions { margin-top: 16px; display: flex; justify-content: flex-end; gap: 8px; } .tm_dangerCancel, .tm_dangerOk { padding: 6px 14px; border-radius: 8px; font: inherit; font-size: 12.5px; cursor: pointer; } .tm_dangerCancel { border: 1px solid var(--dsw-alias-border-secondary); background: transparent; color: var(--dsw-alias-label-secondary); } .tm_dangerCancel:hover { color: var(--dsw-alias-label-primary); background: var(--dsw-alias-interactive-bg-hover); } .tm_dangerOk { border: 1px solid rgba(242, 78, 78, 0.55); background: rgba(242, 78, 78, 0.16); color: #ff6b6b; } .tm_dangerOk:hover { background: rgba(242, 78, 78, 0.28); color: #ff8a8a; } .tm_statusRailGhost { visibility: hidden; } .tm_statusRailFloating { position: fixed; z-index: 20; pointer-events: none; } .tm_graphBar { position: absolute; top: 12px; right: 12px; z-index: 25; display: flex; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 999px; background: var(--dsw-alias-bg-layer-1); box-shadow: 0 8px 24px var(--dsw-alias-bg-mask-2); } .tm_graphBtn { padding: 4px 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: calc(12px + var(--tm-font-step, 0px)); cursor: pointer; white-space: nowrap; } .tm_graphBtn:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); } .tm_graphBtn:disabled { opacity: 0.5; cursor: default; } .tm_graphBtnActive { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary); background: var(--dsw-alias-interactive-bg-active); } .tm_graphHint { padding: 0 4px; font-size: calc(11px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); white-space: nowrap; } .tm_cardTags { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 4px; } .tm_tagChip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 6px; border-radius: 4px; font-size: calc(9.5px + var(--tm-font-step, 0px)); line-height: 1.7; color: rgba(140, 200, 255, 0.92); background: rgba(90, 160, 255, 0.14); } .tm_canvas[data-lod="far"] .tm_cardSummary, .tm_canvas[data-lod="far"] .tm_cardTags, .tm_canvas[data-lod="far"] .tm_cardFooter, .tm_canvas[data-lod="far"] .tm_cardNext, .tm_canvas[data-lod="far"] .tm_cardHandle, .tm_canvas[data-lod="far"] .tm_cardReticle { display: none !important; } .tm_canvas[data-lod="far"] .tm_card { box-shadow: none; border-color: var(--dsw-alias-border-l1); } .tm_canvas[data-lod="far"] .tm_cardTitle { -webkit-line-clamp: 1; font-size: calc(12px + var(--tm-font-step, 0px)); } .tm_canvas[data-lod="far"] .react-flow__edge path { stroke-width: 0.8; } .tm_canvas[data-lod="far"] .react-flow__node { transition: none; } .tm_canvas[data-lod="far"] .tm_cardLampRunning, .tm_canvas[data-lod="far"] .tm_cardLampDone, .tm_canvas[data-lod="far"] .tm_cardLampError, .tm_canvas[data-lod="far"] .tm_cardLampWaiting, .tm_canvas[data-lod="far"] .tm_cardPin { animation: none; } .tm_canvas[data-lod="far"] .tm_cardLampRunning::after { display: none; } .tm_dot { width: 16px; height: 16px; border-radius: 50%; background: rgba(198, 206, 220, 0.6); border: 2px solid var(--dsw-alias-bg-layer-1); box-shadow: 0 0 0 1px rgba(198, 206, 220, 0.22); transition: transform 120ms ease, background 120ms ease; cursor: pointer; } .tm_dot:hover { transform: scale(1.55); background: var(--dsw-alias-brand-primary); } .tm_dotRunning { background: #ffffff; animation: tm_mindmap-pulse 1.6s ease-in-out infinite; } .tm_dotWaiting { background: rgb(245, 178, 46); } .tm_dotDone { background: rgb(52, 199, 89); } .tm_dotHandle { width: 1px !important; height: 1px !important; min-width: 1px; min-height: 1px; opacity: 0; border: none; background: transparent; } .tm_dotPeek { position: fixed; z-index: 90; width: 272px; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1); box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5); pointer-events: none; display: flex; flex-direction: column; gap: 5px; } .tm_dotPeekTitle { font-size: calc(12.5px + var(--tm-font-step, 0px)); font-weight: 600; line-height: 1.35; color: var(--dsw-alias-label-primary); word-break: break-word; } .tm_dotPeekBody { font-size: calc(11.5px + var(--tm-font-step, 0px)); line-height: 1.5; color: var(--dsw-alias-label-secondary); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; } .tm_dotPeekTags { display: flex; flex-wrap: wrap; gap: 4px; } .tm_graphSurface { position: absolute; inset: 0; overflow: hidden; } .tm_graphCanvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; } .tm_graphSurface:active .tm_graphCanvas { cursor: grabbing; } .tm_canvasCtl { position: absolute; left: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 4px; z-index: 5; } .tm_canvasCtl button { width: 30px; height: 30px; padding: 0; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-secondary); font: inherit; font-size: 15px; line-height: 1; cursor: pointer; } .tm_canvasCtl button:hover { color: var(--dsw-alias-label-primary); background: var(--dsw-alias-interactive-bg-hover); } .tm_sbPanel { display: flex; flex-direction: column; height: 100%; min-height: 0; gap: 6px; } .tm_sbPanel > :last-child { flex: 1 1 0; min-height: 0; } .tm_sbBar { display: flex; align-items: center; gap: 8px; padding: 2px 2px 6px; } .tm_sbTitle { font-size: calc(12px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); } .tm_sbBar .tm_sbFull { margin-left: auto; } .tm_sbNote { display: flex; align-items: center; justify-content: center; height: 100%; padding: 16px; font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); text-align: center; }
+ .tm_toggleWrap { display: inline-flex; align-items: center; gap: 4px; } .tm_toggleWrapWide { width: 100%; } .tm_toggleWrapWide .tm_toggleRow { flex: 1; min-width: 0; } .tm_backToCurrent { display: flex; align-items: center; justify-content: center; flex: none; width: 20px; height: 20px; padding: 0; border: none; border-radius: 6px; background: transparent; color: var(--dsw-alias-label-secondary); cursor: pointer; opacity: 0.75; transition: opacity 120ms ease, color 120ms ease, background 120ms ease; } .tm_toggleWrapWide .tm_backToCurrent { width: 24px; height: 24px; } .tm_backToCurrent:hover { opacity: 1; color: var(--dsw-alias-brand-primary); background: var(--dsw-alias-interactive-bg-hover); } .tm_backToCurrent:active { background: var(--dsw-alias-interactive-bg-active); } .tm_backToCurrentIcon { width: 14px; height: 14px; flex: none; } .tm_toggleWrapWide .tm_backToCurrentIcon { width: 15px; height: 15px; }`;
 if (typeof document !== "undefined") {
   const __selector = "style[data-plugin-css=" + JSON.stringify(__tagId) + "]";
   if (document.querySelector(__selector) === null) {
     const __tag = document.createElement("style");
-    __tag.dataset.plugin = "dsh-talk-map";
+    __tag.dataset.plugin = "mind_map";
     __tag.dataset.pluginCss = __tagId;
     __tag.textContent = __css;
     document.head.appendChild(__tag);
   }
 }
-var talk_map_default = { "backButton": "tm_backButton", "backToCurrent": "tm_backToCurrent", "backToCurrentIcon": "tm_backToCurrentIcon", "batchAction": "tm_batchAction", "batchBar": "tm_batchBar", "batchCount": "tm_batchCount", "batchDanger": "tm_batchDanger", "batchSpace": "tm_batchSpace", "canvas": "tm_canvas", "canvasConnecting": "tm_canvasConnecting", "card": "tm_card", "cardBadgeDone": "tm_cardBadgeDone", "cardBadgeWaiting": "tm_cardBadgeWaiting", "cardChip": "tm_cardChip", "cardChipDone": "tm_cardChipDone", "cardChipDraft": "tm_cardChipDraft", "cardChipError": "tm_cardChipError", "cardChipInterrupted": "tm_cardChipInterrupted", "cardChipRunning": "tm_cardChipRunning", "cardChipWaiting": "tm_cardChipWaiting", "cardFooter": "tm_cardFooter", "cardGhost": "tm_cardGhost", "cardHandle": "tm_cardHandle", "cardLampDone": "tm_cardLampDone", "cardLampError": "tm_cardLampError", "cardLampRunning": "tm_cardLampRunning", "cardLampWaiting": "tm_cardLampWaiting", "cardLinkChip": "tm_cardLinkChip", "cardLinks": "tm_cardLinks", "cardNext": "tm_cardNext", "cardNextLabel": "tm_cardNextLabel", "cardNextText": "tm_cardNextText", "cardPin": "tm_cardPin", "cardQuiet": "tm_cardQuiet", "cardRefresh": "tm_cardRefresh", "cardRefreshBusy": "tm_cardRefreshBusy", "cardRemove": "tm_cardRemove", "cardReticle": "tm_cardReticle", "cardSelected": "tm_cardSelected", "cardStale": "tm_cardStale", "cardSummary": "tm_cardSummary", "cardTime": "tm_cardTime", "cardTitle": "tm_cardTitle", "cardTop": "tm_cardTop", "closeButton": "tm_closeButton", "colorSwatch": "tm_colorSwatch", "colorSwatchClear": "tm_colorSwatchClear", "colorToolbar": "tm_colorToolbar", "colorToolbarLabel": "tm_colorToolbarLabel", "dangerActions": "tm_dangerActions", "dangerBackdrop": "tm_dangerBackdrop", "dangerBody": "tm_dangerBody", "dangerCancel": "tm_dangerCancel", "dangerDialog": "tm_dangerDialog", "dangerOk": "tm_dangerOk", "dangerTitle": "tm_dangerTitle", "dialogBackdrop": "tm_dialogBackdrop", "digestActions": "tm_digestActions", "digestDialog": "tm_digestDialog", "digestDialogFrom": "tm_digestDialogFrom", "digestDialogHead": "tm_digestDialogHead", "digestDialogTitle": "tm_digestDialogTitle", "digestEmpty": "tm_digestEmpty", "digestLabel": "tm_digestLabel", "digestText": "tm_digestText", "drawer": "tm_drawer", "drawerAgentChip": "tm_drawerAgentChip", "drawerAgentChipSub": "tm_drawerAgentChipSub", "drawerBackdrop": "tm_drawerBackdrop", "drawerBackdropOut": "tm_drawerBackdropOut", "drawerCard": "tm_drawerCard", "drawerClose": "tm_drawerClose", "drawerCount": "tm_drawerCount", "drawerEmpty": "tm_drawerEmpty", "drawerHead": "tm_drawerHead", "drawerHint": "tm_drawerHint", "drawerHit": "tm_drawerHit", "drawerHitBlock": "tm_drawerHitBlock", "drawerHitHead": "tm_drawerHitHead", "drawerHitLine": "tm_drawerHitLine", "drawerHitMore": "tm_drawerHitMore", "drawerHitTitle": "tm_drawerHitTitle", "drawerHits": "tm_drawerHits", "drawerHitsHead": "tm_drawerHitsHead", "drawerOut": "tm_drawerOut", "drawerRoleChip": "tm_drawerRoleChip", "drawerScroll": "tm_drawerScroll", "drawerScrollSensor": "tm_drawerScrollSensor", "drawerSearch": "tm_drawerSearch", "drawerSearchError": "tm_drawerSearchError", "drawerSearchGo": "tm_drawerSearchGo", "drawerSearchRow": "tm_drawerSearchRow", "drawerSearchState": "tm_drawerSearchState", "drawerSpace": "tm_drawerSpace", "drawerTitle": "tm_drawerTitle", "drawerWires": "tm_drawerWires", "emptyHint": "tm_emptyHint", "fontButton": "tm_fontButton", "fontGlyphLarge": "tm_fontGlyphLarge", "fontGlyphSmall": "tm_fontGlyphSmall", "fontGroup": "tm_fontGroup", "fontReset": "tm_fontReset", "fontSign": "tm_fontSign", "globalSearch": "tm_globalSearch", "globalSearchBackdrop": "tm_globalSearchBackdrop", "globalSearchBody": "tm_globalSearchBody", "globalSearchButton": "tm_globalSearchButton", "globalSearchHead": "tm_globalSearchHead", "globalSearchInput": "tm_globalSearchInput", "globalSearchPanel": "tm_globalSearchPanel", "globalSearchTitle": "tm_globalSearchTitle", "header": "tm_header", "headerSpace": "tm_headerSpace", "hitMark": "tm_hitMark", "langButton": "tm_langButton", "menu": "tm_menu", "menuEmpty": "tm_menuEmpty", "menuError": "tm_menuError", "menuHint": "tm_menuHint", "menuIcon": "tm_menuIcon", "menuItem": "tm_menuItem", "menuItemDanger": "tm_menuItemDanger", "menuPreview": "tm_menuPreview", "menuSearch": "tm_menuSearch", "menuTitle": "tm_menuTitle", "panel": "tm_panel", "peek": "tm_peek", "peekHint": "tm_peekHint", "peekLine": "tm_peekLine", "peekTitle": "tm_peekTitle", "pickBox": "tm_pickBox", "pickBoxChecked": "tm_pickBoxChecked", "reactFlowNodeEnter": "tm_reactFlowNodeEnter", "renameActions": "tm_renameActions", "renameBackdrop": "tm_renameBackdrop", "renameButton": "tm_renameButton", "renameDialog": "tm_renameDialog", "renameError": "tm_renameError", "renameHeading": "tm_renameHeading", "renameInput": "tm_renameInput", "renamePrimary": "tm_renamePrimary", "runningDot": "tm_runningDot", "searchInlineLoading": "tm_searchInlineLoading", "searchLoading": "tm_searchLoading", "searchLoadingBar": "tm_searchLoadingBar", "searchSkeletonLine": "tm_searchSkeletonLine", "searchSkeletonRow": "tm_searchSkeletonRow", "searchSkeletonTitle": "tm_searchSkeletonTitle", "snippetCode": "tm_snippetCode", "snippetLink": "tm_snippetLink", "spawnActions": "tm_spawnActions", "spawnBtnGhost": "tm_spawnBtnGhost", "spawnBtnPrimary": "tm_spawnBtnPrimary", "spawnError": "tm_spawnError", "spawnFrom": "tm_spawnFrom", "spawnHeading": "tm_spawnHeading", "spawnHint": "tm_spawnHint", "spawnModeActive": "tm_spawnModeActive", "spawnModeBtn": "tm_spawnModeBtn", "spawnModes": "tm_spawnModes", "spawnPanel": "tm_spawnPanel", "spawnTextarea": "tm_spawnTextarea", "stackBadge": "tm_stackBadge", "stackBadgeBusy": "tm_stackBadgeBusy", "stackCell": "tm_stackCell", "stackFace": "tm_stackFace", "stackFaceTitle": "tm_stackFaceTitle", "stackSheetBack": "tm_stackSheetBack", "stackSheetMid": "tm_stackSheetMid", "statusRail": "tm_statusRail", "statusRailCard": "tm_statusRailCard", "statusRailCardDragging": "tm_statusRailCardDragging", "statusRailCount": "tm_statusRailCount", "statusRailEmpty": "tm_statusRailEmpty", "statusRailFloating": "tm_statusRailFloating", "statusRailGhost": "tm_statusRailGhost", "statusRailHead": "tm_statusRailHead", "statusRailList": "tm_statusRailList", "statusRailPanel": "tm_statusRailPanel", "statusRailSlot": "tm_statusRailSlot", "statusRailSlotFloating": "tm_statusRailSlotFloating", "statusRailTab": "tm_statusRailTab", "statusRailTabCount": "tm_statusRailTabCount", "statusRailTitle": "tm_statusRailTitle", "toast": "tm_toast", "toggleButton": "tm_toggleButton", "toggleButtonActive": "tm_toggleButtonActive", "toggleIcon": "tm_toggleIcon", "toggleLabel": "tm_toggleLabel", "toggleRow": "tm_toggleRow", "toggleWrap": "tm_toggleWrap", "toggleWrapWide": "tm_toggleWrapWide", "wsFrame": "tm_wsFrame", "wsFrameBlocked": "tm_wsFrameBlocked", "wsFrameCount": "tm_wsFrameCount", "wsFrameEdge": "tm_wsFrameEdge", "wsFrameHidden": "tm_wsFrameHidden", "wsFrameLabel": "tm_wsFrameLabel", "wsFrameResize": "tm_wsFrameResize", "wsFrameResizeE": "tm_wsFrameResizeE", "wsFrameResizeN": "tm_wsFrameResizeN", "wsFrameResizeNe": "tm_wsFrameResizeNe", "wsFrameResizeNw": "tm_wsFrameResizeNw", "wsFrameResizeS": "tm_wsFrameResizeS", "wsFrameResizeSe": "tm_wsFrameResizeSe", "wsFrameResizeSw": "tm_wsFrameResizeSw", "wsFrameResizeW": "tm_wsFrameResizeW", "wsFrameSelected": "tm_wsFrameSelected", "zoomResetLabel": "tm_zoomResetLabel" };
+var mind_map_default = { "backButton": "tm_backButton", "backToCurrent": "tm_backToCurrent", "backToCurrentIcon": "tm_backToCurrentIcon", "batchAction": "tm_batchAction", "batchBar": "tm_batchBar", "batchCount": "tm_batchCount", "batchDanger": "tm_batchDanger", "batchSpace": "tm_batchSpace", "canvas": "tm_canvas", "canvasConnecting": "tm_canvasConnecting", "card": "tm_card", "cardBadgeDone": "tm_cardBadgeDone", "cardBadgeWaiting": "tm_cardBadgeWaiting", "cardChip": "tm_cardChip", "cardChipDone": "tm_cardChipDone", "cardChipDraft": "tm_cardChipDraft", "cardChipError": "tm_cardChipError", "cardChipInterrupted": "tm_cardChipInterrupted", "cardChipRunning": "tm_cardChipRunning", "cardChipWaiting": "tm_cardChipWaiting", "cardFooter": "tm_cardFooter", "cardGhost": "tm_cardGhost", "cardHandle": "tm_cardHandle", "cardLampDone": "tm_cardLampDone", "cardLampError": "tm_cardLampError", "cardLampRunning": "tm_cardLampRunning", "cardLampWaiting": "tm_cardLampWaiting", "cardLinkChip": "tm_cardLinkChip", "cardLinks": "tm_cardLinks", "cardNext": "tm_cardNext", "cardNextLabel": "tm_cardNextLabel", "cardNextText": "tm_cardNextText", "cardPin": "tm_cardPin", "cardQuiet": "tm_cardQuiet", "cardRefresh": "tm_cardRefresh", "cardRefreshBusy": "tm_cardRefreshBusy", "cardRemove": "tm_cardRemove", "cardReticle": "tm_cardReticle", "cardSelected": "tm_cardSelected", "cardStale": "tm_cardStale", "cardSummary": "tm_cardSummary", "cardTime": "tm_cardTime", "cardTitle": "tm_cardTitle", "cardTop": "tm_cardTop", "closeButton": "tm_closeButton", "colorSwatch": "tm_colorSwatch", "colorSwatchClear": "tm_colorSwatchClear", "colorToolbar": "tm_colorToolbar", "colorToolbarLabel": "tm_colorToolbarLabel", "dangerActions": "tm_dangerActions", "dangerBackdrop": "tm_dangerBackdrop", "dangerBody": "tm_dangerBody", "dangerCancel": "tm_dangerCancel", "dangerDialog": "tm_dangerDialog", "dangerOk": "tm_dangerOk", "dangerTitle": "tm_dangerTitle", "dialogBackdrop": "tm_dialogBackdrop", "digestActions": "tm_digestActions", "digestDialog": "tm_digestDialog", "digestDialogFrom": "tm_digestDialogFrom", "digestDialogHead": "tm_digestDialogHead", "digestDialogTitle": "tm_digestDialogTitle", "digestEmpty": "tm_digestEmpty", "digestLabel": "tm_digestLabel", "digestText": "tm_digestText", "drawer": "tm_drawer", "drawerAgentChip": "tm_drawerAgentChip", "drawerAgentChipSub": "tm_drawerAgentChipSub", "drawerBackdrop": "tm_drawerBackdrop", "drawerBackdropOut": "tm_drawerBackdropOut", "drawerCard": "tm_drawerCard", "drawerClose": "tm_drawerClose", "drawerCount": "tm_drawerCount", "drawerEmpty": "tm_drawerEmpty", "drawerHead": "tm_drawerHead", "drawerHint": "tm_drawerHint", "drawerHit": "tm_drawerHit", "drawerHitBlock": "tm_drawerHitBlock", "drawerHitHead": "tm_drawerHitHead", "drawerHitLine": "tm_drawerHitLine", "drawerHitMore": "tm_drawerHitMore", "drawerHitTitle": "tm_drawerHitTitle", "drawerHits": "tm_drawerHits", "drawerHitsHead": "tm_drawerHitsHead", "drawerOut": "tm_drawerOut", "drawerRoleChip": "tm_drawerRoleChip", "drawerScroll": "tm_drawerScroll", "drawerScrollSensor": "tm_drawerScrollSensor", "drawerSearch": "tm_drawerSearch", "drawerSearchError": "tm_drawerSearchError", "drawerSearchGo": "tm_drawerSearchGo", "drawerSearchRow": "tm_drawerSearchRow", "drawerSearchState": "tm_drawerSearchState", "drawerSpace": "tm_drawerSpace", "drawerTitle": "tm_drawerTitle", "drawerWires": "tm_drawerWires", "emptyHint": "tm_emptyHint", "fontButton": "tm_fontButton", "fontGlyphLarge": "tm_fontGlyphLarge", "fontGlyphSmall": "tm_fontGlyphSmall", "fontGroup": "tm_fontGroup", "fontReset": "tm_fontReset", "fontSign": "tm_fontSign", "globalSearch": "tm_globalSearch", "globalSearchBackdrop": "tm_globalSearchBackdrop", "globalSearchBody": "tm_globalSearchBody", "globalSearchButton": "tm_globalSearchButton", "globalSearchHead": "tm_globalSearchHead", "globalSearchInput": "tm_globalSearchInput", "globalSearchPanel": "tm_globalSearchPanel", "globalSearchTitle": "tm_globalSearchTitle", "header": "tm_header", "headerSpace": "tm_headerSpace", "hitMark": "tm_hitMark", "langButton": "tm_langButton", "menu": "tm_menu", "menuEmpty": "tm_menuEmpty", "menuError": "tm_menuError", "menuHint": "tm_menuHint", "menuIcon": "tm_menuIcon", "menuItem": "tm_menuItem", "menuItemDanger": "tm_menuItemDanger", "menuPreview": "tm_menuPreview", "menuSearch": "tm_menuSearch", "menuTitle": "tm_menuTitle", "panel": "tm_panel", "peek": "tm_peek", "peekHint": "tm_peekHint", "peekLine": "tm_peekLine", "peekTitle": "tm_peekTitle", "pickBox": "tm_pickBox", "pickBoxChecked": "tm_pickBoxChecked", "reactFlowNodeEnter": "tm_reactFlowNodeEnter", "renameActions": "tm_renameActions", "renameBackdrop": "tm_renameBackdrop", "renameButton": "tm_renameButton", "renameDialog": "tm_renameDialog", "renameError": "tm_renameError", "renameHeading": "tm_renameHeading", "renameInput": "tm_renameInput", "renamePrimary": "tm_renamePrimary", "runningDot": "tm_runningDot", "searchInlineLoading": "tm_searchInlineLoading", "searchLoading": "tm_searchLoading", "searchLoadingBar": "tm_searchLoadingBar", "searchSkeletonLine": "tm_searchSkeletonLine", "searchSkeletonRow": "tm_searchSkeletonRow", "searchSkeletonTitle": "tm_searchSkeletonTitle", "snippetCode": "tm_snippetCode", "snippetLink": "tm_snippetLink", "spawnActions": "tm_spawnActions", "spawnBtnGhost": "tm_spawnBtnGhost", "spawnBtnPrimary": "tm_spawnBtnPrimary", "spawnError": "tm_spawnError", "spawnFrom": "tm_spawnFrom", "spawnHeading": "tm_spawnHeading", "spawnHint": "tm_spawnHint", "spawnModeActive": "tm_spawnModeActive", "spawnModeBtn": "tm_spawnModeBtn", "spawnModes": "tm_spawnModes", "spawnPanel": "tm_spawnPanel", "spawnTextarea": "tm_spawnTextarea", "stackBadge": "tm_stackBadge", "stackBadgeBusy": "tm_stackBadgeBusy", "stackCell": "tm_stackCell", "stackFace": "tm_stackFace", "stackFaceTitle": "tm_stackFaceTitle", "stackSheetBack": "tm_stackSheetBack", "stackSheetMid": "tm_stackSheetMid", "statusRail": "tm_statusRail", "statusRailCard": "tm_statusRailCard", "statusRailCardDragging": "tm_statusRailCardDragging", "statusRailCount": "tm_statusRailCount", "statusRailEmpty": "tm_statusRailEmpty", "statusRailFloating": "tm_statusRailFloating", "statusRailGhost": "tm_statusRailGhost", "statusRailHead": "tm_statusRailHead", "statusRailList": "tm_statusRailList", "statusRailPanel": "tm_statusRailPanel", "statusRailSlot": "tm_statusRailSlot", "statusRailSlotFloating": "tm_statusRailSlotFloating", "statusRailTab": "tm_statusRailTab", "statusRailTabCount": "tm_statusRailTabCount", "statusRailTitle": "tm_statusRailTitle", "toast": "tm_toast", "toggleButton": "tm_toggleButton", "toggleButtonActive": "tm_toggleButtonActive", "toggleIcon": "tm_toggleIcon", "toggleLabel": "tm_toggleLabel", "toggleRow": "tm_toggleRow", "toggleWrap": "tm_toggleWrap", "toggleWrapWide": "tm_toggleWrapWide", "wsFrame": "tm_wsFrame", "wsFrameBlocked": "tm_wsFrameBlocked", "wsFrameCount": "tm_wsFrameCount", "wsFrameEdge": "tm_wsFrameEdge", "wsFrameHidden": "tm_wsFrameHidden", "wsFrameLabel": "tm_wsFrameLabel", "wsFrameResize": "tm_wsFrameResize", "wsFrameResizeE": "tm_wsFrameResizeE", "wsFrameResizeN": "tm_wsFrameResizeN", "wsFrameResizeNe": "tm_wsFrameResizeNe", "wsFrameResizeNw": "tm_wsFrameResizeNw", "wsFrameResizeS": "tm_wsFrameResizeS", "wsFrameResizeSe": "tm_wsFrameResizeSe", "wsFrameResizeSw": "tm_wsFrameResizeSw", "wsFrameResizeW": "tm_wsFrameResizeW", "wsFrameSelected": "tm_wsFrameSelected", "zoomResetLabel": "tm_zoomResetLabel" };
 
 // src/client/markdown-inline.tsx
 var import_jsx_runtime = require("react/jsx-runtime");
@@ -1430,7 +1431,7 @@ function highlight(text, query, keyPrefix) {
     }
     if (at > cursor) parts.push(text.slice(cursor, at));
     parts.push(
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("mark", { className: talk_map_default["hitMark"], children: text.slice(at, at + needle.length) }, `${keyPrefix}-m${index2++}`)
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("mark", { className: mind_map_default["hitMark"], children: text.slice(at, at + needle.length) }, `${keyPrefix}-m${index2++}`)
     );
     cursor = at + needle.length;
   }
@@ -1456,7 +1457,7 @@ function renderMarkdownInline(raw, query) {
     const [whole] = match;
     if (whole.startsWith("`")) {
       const body = whole.slice(1, -1);
-      push(/* @__PURE__ */ (0, import_jsx_runtime.jsx)("code", { className: talk_map_default["snippetCode"], children: highlight(body, query, `c${token}`) }, `c${token++}`), body);
+      push(/* @__PURE__ */ (0, import_jsx_runtime.jsx)("code", { className: mind_map_default["snippetCode"], children: highlight(body, query, `c${token}`) }, `c${token++}`), body);
     } else if (whole.startsWith("**") || whole.startsWith("__")) {
       const body = whole.slice(2, -2);
       push(/* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: highlight(body, query, `s${token}`) }, `s${token++}`), body);
@@ -1465,7 +1466,7 @@ function renderMarkdownInline(raw, query) {
       push(/* @__PURE__ */ (0, import_jsx_runtime.jsx)("s", { children: highlight(body, query, `d${token}`) }, `d${token++}`), body);
     } else if (whole.startsWith("[")) {
       const label = whole.replace(/^\[([^\]]+)\].*$/, "$1");
-      push(/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: talk_map_default["snippetLink"], children: highlight(label, query, `l${token}`) }, `l${token++}`), label);
+      push(/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: mind_map_default["snippetLink"], children: highlight(label, query, `l${token}`) }, `l${token++}`), label);
     } else {
       const body = whole.slice(1, -1);
       push(/* @__PURE__ */ (0, import_jsx_runtime.jsx)("em", { children: highlight(body, query, `e${token}`) }, `e${token++}`), body);
@@ -1482,14 +1483,14 @@ function renderMarkdownInline(raw, query) {
 // src/client/SearchResults.tsx
 var import_jsx_runtime2 = require("react/jsx-runtime");
 function SearchResults(props) {
-  return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: talk_map_default["drawerHits"], "data-talkmap-local-results": "", children: [
-    props.hits.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: talk_map_default["drawerEmpty"], children: props.empty }) : null,
-    props.hits.map((hit) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: talk_map_default["drawerHit"], "data-talkmap-search-hit": hit.sessionId, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: talk_map_default["drawerHitHead"], children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: mind_map_default["drawerHits"], "data-mindmap-local-results": "", children: [
+    props.hits.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: mind_map_default["drawerEmpty"], children: props.empty }) : null,
+    props.hits.map((hit) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: mind_map_default["drawerHit"], "data-mindmap-search-hit": hit.sessionId, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: mind_map_default["drawerHitHead"], children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
         "button",
         {
           type: "button",
-          className: talk_map_default["drawerHitTitle"],
+          className: mind_map_default["drawerHitTitle"],
           onClick: () => {
             props.onOpenSession(hit.sessionId);
           },
@@ -1503,8 +1504,8 @@ function SearchResults(props) {
           "button",
           {
             type: "button",
-            className: talk_map_default["drawerHitLine"],
-            "data-talkmap-search-line": hit.sessionId,
+            className: mind_map_default["drawerHitLine"],
+            "data-mindmap-search-line": hit.sessionId,
             onClick: () => {
               props.onOpenSession(hit.sessionId);
             },
@@ -1520,7 +1521,7 @@ function SearchResults(props) {
 // src/client/search-store.ts
 var TTL_MS = 12 * 60 * 60 * 1e3;
 function keyFor(scope) {
-  return `dsh.talk-map.search.${scope}.v1`;
+  return `dsh.mind_map.search.${scope}.v1`;
 }
 function saveSearch(scope, value) {
   try {
@@ -1606,15 +1607,15 @@ function GlobalSearch(props) {
     setHits(views);
     saveSearch(GLOBAL_SCOPE, { query: value.trim(), hits: views });
   };
-  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: talk_map_default["globalSearch"], children: [
+  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: mind_map_default["globalSearch"], children: [
     /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
       "input",
       {
-        className: talk_map_default["globalSearchInput"],
+        className: mind_map_default["globalSearchInput"],
         value: query,
         placeholder: t("global.searchPlaceholder"),
         "aria-label": t("global.searchPlaceholder"),
-        "data-talkmap-global-search": "",
+        "data-mindmap-global-search": "",
         onChange: (event) => {
           setQuery(event.target.value);
         },
@@ -1629,10 +1630,10 @@ function GlobalSearch(props) {
       "button",
       {
         type: "button",
-        className: talk_map_default["globalSearchButton"],
+        className: mind_map_default["globalSearchButton"],
         title: t("global.searchRun"),
         "aria-label": t("global.searchRun"),
-        "data-talkmap-global-search-run": "",
+        "data-mindmap-global-search-run": "",
         onClick: () => {
           run(query);
         },
@@ -1642,24 +1643,24 @@ function GlobalSearch(props) {
     submitted !== "" || hits.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
       "div",
       {
-        className: talk_map_default["globalSearchBackdrop"],
+        className: mind_map_default["globalSearchBackdrop"],
         onMouseDown: (event) => {
           if (event.target === event.currentTarget) dismiss();
         },
-        children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: talk_map_default["globalSearchPanel"], role: "dialog", "aria-label": t("global.searchTitle"), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: talk_map_default["globalSearchHead"], children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { className: talk_map_default["globalSearchTitle"], children: [
+        children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: mind_map_default["globalSearchPanel"], role: "dialog", "aria-label": t("global.searchTitle"), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: mind_map_default["globalSearchHead"], children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { className: mind_map_default["globalSearchTitle"], children: [
               t("global.searchTitle"),
               "「",
               submitted,
               "」"
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: talk_map_default["drawerSpace"] }),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: mind_map_default["drawerSpace"] }),
             /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
               "button",
               {
                 type: "button",
-                className: talk_map_default["drawerClose"],
+                className: mind_map_default["drawerClose"],
                 title: t("stack.close"),
                 "aria-label": t("stack.close"),
                 onClick: dismiss,
@@ -1667,7 +1668,7 @@ function GlobalSearch(props) {
               }
             )
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: talk_map_default["globalSearchBody"], children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: mind_map_default["globalSearchBody"], children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
             SearchResults,
             {
               query: submitted === "" ? query : submitted,
@@ -10748,13 +10749,13 @@ function ResizeControl({ nodeId, position, variant = ResizeControlVariant.Handle
 var NodeResizeControl = (0, import_react3.memo)(ResizeControl);
 
 // dsh-css: dsh-css:node_modules/@xyflow/react/dist/style.css
-var __tagId2 = "dsh-talk-map/style.css";
+var __tagId2 = "mind_map/style.css";
 var __css2 = "/* this gets exported as style.css and can be used for the default theming */ /* these are the necessary styles for React/Svelte Flow, they get used by base.css and style.css */ .react-flow { direction: ltr; --xy-edge-stroke-default: #b1b1b7; --xy-edge-stroke-width-default: 1; --xy-edge-stroke-selected-default: #555; --xy-connectionline-stroke-default: #b1b1b7; --xy-connectionline-stroke-width-default: 1; --xy-attribution-background-color-default: rgba(255, 255, 255, 0.5); --xy-minimap-background-color-default: #fff; --xy-minimap-mask-background-color-default: rgba(240, 240, 240, 0.6); --xy-minimap-mask-stroke-color-default: transparent; --xy-minimap-mask-stroke-width-default: 1; --xy-minimap-node-background-color-default: #e2e2e2; --xy-minimap-node-stroke-color-default: transparent; --xy-minimap-node-stroke-width-default: 2; --xy-background-color-default: transparent; --xy-background-pattern-dots-color-default: #91919a; --xy-background-pattern-lines-color-default: #eee; --xy-background-pattern-cross-color-default: #e2e2e2; background-color: var(--xy-background-color, var(--xy-background-color-default)); --xy-node-color-default: inherit; --xy-node-border-default: 1px solid #1a192b; --xy-node-background-color-default: #fff; --xy-node-group-background-color-default: rgba(240, 240, 240, 0.25); --xy-node-boxshadow-hover-default: 0 1px 4px 1px rgba(0, 0, 0, 0.08); --xy-node-boxshadow-selected-default: 0 0 0 0.5px #1a192b; --xy-node-border-radius-default: 3px; --xy-handle-background-color-default: #1a192b; --xy-handle-border-color-default: #fff; --xy-selection-background-color-default: rgba(0, 89, 220, 0.08); --xy-selection-border-default: 1px dotted rgba(0, 89, 220, 0.8); --xy-controls-button-background-color-default: #fefefe; --xy-controls-button-background-color-hover-default: #f4f4f4; --xy-controls-button-color-default: inherit; --xy-controls-button-color-hover-default: inherit; --xy-controls-button-border-color-default: #eee; --xy-controls-box-shadow-default: 0 0 2px 1px rgba(0, 0, 0, 0.08); --xy-edge-label-background-color-default: #ffffff; --xy-edge-label-color-default: inherit; --xy-resize-background-color-default: #3367d9; } .react-flow.dark { --xy-edge-stroke-default: #3e3e3e; --xy-edge-stroke-width-default: 1; --xy-edge-stroke-selected-default: #727272; --xy-connectionline-stroke-default: #b1b1b7; --xy-connectionline-stroke-width-default: 1; --xy-attribution-background-color-default: rgba(150, 150, 150, 0.25); --xy-minimap-background-color-default: #141414; --xy-minimap-mask-background-color-default: rgba(60, 60, 60, 0.6); --xy-minimap-mask-stroke-color-default: transparent; --xy-minimap-mask-stroke-width-default: 1; --xy-minimap-node-background-color-default: #2b2b2b; --xy-minimap-node-stroke-color-default: transparent; --xy-minimap-node-stroke-width-default: 2; --xy-background-color-default: #141414; --xy-background-pattern-dots-color-default: #555; --xy-background-pattern-lines-color-default: #333; --xy-background-pattern-cross-color-default: #333; --xy-node-color-default: #f8f8f8; --xy-node-border-default: 1px solid #3c3c3c; --xy-node-background-color-default: #1e1e1e; --xy-node-group-background-color-default: rgba(240, 240, 240, 0.25); --xy-node-boxshadow-hover-default: 0 1px 4px 1px rgba(255, 255, 255, 0.08); --xy-node-boxshadow-selected-default: 0 0 0 0.5px #999; --xy-handle-background-color-default: #bebebe; --xy-handle-border-color-default: #1e1e1e; --xy-selection-background-color-default: rgba(200, 200, 220, 0.08); --xy-selection-border-default: 1px dotted rgba(200, 200, 220, 0.8); --xy-controls-button-background-color-default: #2b2b2b; --xy-controls-button-background-color-hover-default: #3e3e3e; --xy-controls-button-color-default: #f8f8f8; --xy-controls-button-color-hover-default: #fff; --xy-controls-button-border-color-default: #5b5b5b; --xy-controls-box-shadow-default: 0 0 2px 1px rgba(0, 0, 0, 0.08); --xy-edge-label-background-color-default: #141414; --xy-edge-label-color-default: #f8f8f8; } .react-flow__background { background-color: var(--xy-background-color-props, var(--xy-background-color, var(--xy-background-color-default))); pointer-events: none; z-index: -1; } .react-flow__container { position: absolute; width: 100%; height: 100%; top: 0; left: 0; } .react-flow__pane { z-index: 1; touch-action: none; } .react-flow__pane.draggable { cursor: grab; } .react-flow__pane.dragging { cursor: grabbing; } .react-flow__pane.selection { cursor: pointer; } .react-flow__viewport { transform-origin: 0 0; z-index: 2; pointer-events: none; } .react-flow__renderer { z-index: 4; } .react-flow__selection { z-index: 6; } .react-flow__nodesselection-rect:focus, .react-flow__nodesselection-rect:focus-visible { outline: none; } .react-flow__edge-path { stroke: var(--xy-edge-stroke, var(--xy-edge-stroke-default)); stroke-width: var(--xy-edge-stroke-width, var(--xy-edge-stroke-width-default)); fill: none; } .react-flow__connection-path { stroke: var(--xy-connectionline-stroke, var(--xy-connectionline-stroke-default)); stroke-width: var(--xy-connectionline-stroke-width, var(--xy-connectionline-stroke-width-default)); fill: none; } .react-flow .react-flow__edges { position: absolute; } .react-flow .react-flow__edges svg { overflow: visible; position: absolute; pointer-events: none; } .react-flow__edge { pointer-events: visibleStroke; } .react-flow__edge.selectable { cursor: pointer; } .react-flow__edge.animated path { stroke-dasharray: 5; animation: dashdraw 0.5s linear infinite; } .react-flow__edge.animated path.react-flow__edge-interaction { stroke-dasharray: none; animation: none; } .react-flow__edge.inactive { pointer-events: none; } .react-flow__edge.selected, .react-flow__edge:focus, .react-flow__edge:focus-visible { outline: none; } .react-flow__edge.selected .react-flow__edge-path, .react-flow__edge.selectable:focus .react-flow__edge-path, .react-flow__edge.selectable:focus-visible .react-flow__edge-path { stroke: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default)); } .react-flow__edge-textwrapper { pointer-events: all; } .react-flow__edge .react-flow__edge-text { pointer-events: none; -webkit-user-select: none; -moz-user-select: none; user-select: none; } /* Arrowhead marker styles - use CSS custom properties as default */ .react-flow__arrowhead polyline { stroke: var(--xy-edge-stroke, var(--xy-edge-stroke-default)); } .react-flow__arrowhead polyline.arrowclosed { fill: var(--xy-edge-stroke, var(--xy-edge-stroke-default)); } .react-flow__connection { pointer-events: none; } .react-flow__connection .animated { stroke-dasharray: 5; animation: dashdraw 0.5s linear infinite; } svg.react-flow__connectionline { z-index: 1001; overflow: visible; position: absolute; } .react-flow__nodes { pointer-events: none; transform-origin: 0 0; } .react-flow__node { position: absolute; -webkit-user-select: none; -moz-user-select: none; user-select: none; pointer-events: all; transform-origin: 0 0; box-sizing: border-box; cursor: default; } .react-flow__node.selectable { cursor: pointer; } .react-flow__node.draggable { cursor: grab; pointer-events: all; } .react-flow__node.draggable.dragging { cursor: grabbing; } .react-flow__nodesselection { z-index: 3; transform-origin: left top; pointer-events: none; } .react-flow__nodesselection-rect { position: absolute; pointer-events: all; cursor: grab; } .react-flow__handle { position: absolute; pointer-events: none; min-width: 5px; min-height: 5px; width: 6px; height: 6px; background-color: var(--xy-handle-background-color, var(--xy-handle-background-color-default)); border: 1px solid var(--xy-handle-border-color, var(--xy-handle-border-color-default)); border-radius: 100%; } .react-flow__handle.connectingfrom { pointer-events: all; } .react-flow__handle.connectionindicator { pointer-events: all; cursor: crosshair; } .react-flow__handle-bottom { top: auto; left: 50%; bottom: 0; transform: translate(-50%, 50%); } .react-flow__handle-top { top: 0; left: 50%; transform: translate(-50%, -50%); } .react-flow__handle-left { top: 50%; left: 0; transform: translate(-50%, -50%); } .react-flow__handle-right { top: 50%; right: 0; transform: translate(50%, -50%); } .react-flow__edgeupdater { cursor: move; pointer-events: all; } .react-flow__pane.selection .react-flow__panel { pointer-events: none; } .react-flow__panel { position: absolute; z-index: 5; margin: 15px; } .react-flow__panel.top { top: 0; } .react-flow__panel.bottom { bottom: 0; } .react-flow__panel.top.center, .react-flow__panel.bottom.center { left: 50%; transform: translateX(-15px) translateX(-50%); } .react-flow__panel.left { left: 0; } .react-flow__panel.right { right: 0; } .react-flow__panel.left.center, .react-flow__panel.right.center { top: 50%; transform: translateY(-15px) translateY(-50%); } .react-flow__attribution { font-size: 10px; background: var(--xy-attribution-background-color, var(--xy-attribution-background-color-default)); padding: 2px 3px; margin: 0; } .react-flow__attribution a { text-decoration: none; color: #999; } @keyframes dashdraw { from { stroke-dashoffset: 10; } } .react-flow__edgelabel-renderer { position: absolute; width: 100%; height: 100%; pointer-events: none; -webkit-user-select: none; -moz-user-select: none; user-select: none; left: 0; top: 0; } .react-flow__viewport-portal { position: absolute; width: 100%; height: 100%; left: 0; top: 0; -webkit-user-select: none; -moz-user-select: none; user-select: none; } .react-flow__minimap { background: var( --xy-minimap-background-color-props, var(--xy-minimap-background-color, var(--xy-minimap-background-color-default)) ); } .react-flow__minimap-svg { display: block; } .react-flow__minimap-mask { fill: var( --xy-minimap-mask-background-color-props, var(--xy-minimap-mask-background-color, var(--xy-minimap-mask-background-color-default)) ); stroke: var( --xy-minimap-mask-stroke-color-props, var(--xy-minimap-mask-stroke-color, var(--xy-minimap-mask-stroke-color-default)) ); stroke-width: var( --xy-minimap-mask-stroke-width-props, var(--xy-minimap-mask-stroke-width, var(--xy-minimap-mask-stroke-width-default)) ); } .react-flow__minimap-node { fill: var( --xy-minimap-node-background-color-props, var(--xy-minimap-node-background-color, var(--xy-minimap-node-background-color-default)) ); stroke: var( --xy-minimap-node-stroke-color-props, var(--xy-minimap-node-stroke-color, var(--xy-minimap-node-stroke-color-default)) ); stroke-width: var( --xy-minimap-node-stroke-width-props, var(--xy-minimap-node-stroke-width, var(--xy-minimap-node-stroke-width-default)) ); } .react-flow__background-pattern.dots { fill: var( --xy-background-pattern-color-props, var(--xy-background-pattern-color, var(--xy-background-pattern-dots-color-default)) ); } .react-flow__background-pattern.lines { stroke: var( --xy-background-pattern-color-props, var(--xy-background-pattern-color, var(--xy-background-pattern-lines-color-default)) ); } .react-flow__background-pattern.cross { stroke: var( --xy-background-pattern-color-props, var(--xy-background-pattern-color, var(--xy-background-pattern-cross-color-default)) ); } .react-flow__controls { display: flex; flex-direction: column; box-shadow: var(--xy-controls-box-shadow, var(--xy-controls-box-shadow-default)); } .react-flow__controls.horizontal { flex-direction: row; } .react-flow__controls-button { display: flex; justify-content: center; align-items: center; height: 26px; width: 26px; padding: 4px; border: none; background: var(--xy-controls-button-background-color, var(--xy-controls-button-background-color-default)); border-bottom: 1px solid var( --xy-controls-button-border-color-props, var(--xy-controls-button-border-color, var(--xy-controls-button-border-color-default)) ); color: var( --xy-controls-button-color-props, var(--xy-controls-button-color, var(--xy-controls-button-color-default)) ); cursor: pointer; -webkit-user-select: none; -moz-user-select: none; user-select: none; } .react-flow__controls-button svg { width: 100%; max-width: 12px; max-height: 12px; fill: currentColor; } .react-flow__edge.updating .react-flow__edge-path { stroke: #777; } .react-flow__edge-text { font-size: 10px; } .react-flow__node.selectable:focus, .react-flow__node.selectable:focus-visible { outline: none; } .react-flow__node-input, .react-flow__node-default, .react-flow__node-output, .react-flow__node-group { padding: 10px; border-radius: var(--xy-node-border-radius, var(--xy-node-border-radius-default)); width: 150px; font-size: 12px; color: var(--xy-node-color, var(--xy-node-color-default)); text-align: center; border: var(--xy-node-border, var(--xy-node-border-default)); background-color: var(--xy-node-background-color, var(--xy-node-background-color-default)); } .react-flow__node-input.selectable:hover, .react-flow__node-default.selectable:hover, .react-flow__node-output.selectable:hover, .react-flow__node-group.selectable:hover { box-shadow: var(--xy-node-boxshadow-hover, var(--xy-node-boxshadow-hover-default)); } .react-flow__node-input.selectable.selected, .react-flow__node-input.selectable:focus, .react-flow__node-input.selectable:focus-visible, .react-flow__node-default.selectable.selected, .react-flow__node-default.selectable:focus, .react-flow__node-default.selectable:focus-visible, .react-flow__node-output.selectable.selected, .react-flow__node-output.selectable:focus, .react-flow__node-output.selectable:focus-visible, .react-flow__node-group.selectable.selected, .react-flow__node-group.selectable:focus, .react-flow__node-group.selectable:focus-visible { box-shadow: var(--xy-node-boxshadow-selected, var(--xy-node-boxshadow-selected-default)); } .react-flow__node-group { background-color: var(--xy-node-group-background-color, var(--xy-node-group-background-color-default)); } .react-flow__nodesselection-rect, .react-flow__selection { background: var(--xy-selection-background-color, var(--xy-selection-background-color-default)); border: var(--xy-selection-border, var(--xy-selection-border-default)); } .react-flow__nodesselection-rect:focus, .react-flow__nodesselection-rect:focus-visible, .react-flow__selection:focus, .react-flow__selection:focus-visible { outline: none; } .react-flow__controls-button:hover { background: var( --xy-controls-button-background-color-hover-props, var(--xy-controls-button-background-color-hover, var(--xy-controls-button-background-color-hover-default)) ); color: var( --xy-controls-button-color-hover-props, var(--xy-controls-button-color-hover, var(--xy-controls-button-color-hover-default)) ); } .react-flow__controls-button:disabled { pointer-events: none; } .react-flow__controls-button:disabled svg { fill-opacity: 0.4; } .react-flow__controls-button:last-child { border-bottom: none; } .react-flow__controls.horizontal .react-flow__controls-button { border-bottom: none; border-right: 1px solid var( --xy-controls-button-border-color-props, var(--xy-controls-button-border-color, var(--xy-controls-button-border-color-default)) ); } .react-flow__controls.horizontal .react-flow__controls-button:last-child { border-right: none; } .react-flow__resize-control { position: absolute; } .react-flow__resize-control.left, .react-flow__resize-control.right { cursor: ew-resize; } .react-flow__resize-control.top, .react-flow__resize-control.bottom { cursor: ns-resize; } .react-flow__resize-control.top.left, .react-flow__resize-control.bottom.right { cursor: nwse-resize; } .react-flow__resize-control.bottom.left, .react-flow__resize-control.top.right { cursor: nesw-resize; } /* handle styles */ .react-flow__resize-control.handle { width: 5px; height: 5px; border: 1px solid #fff; border-radius: 1px; background-color: var(--xy-resize-background-color, var(--xy-resize-background-color-default)); translate: -50% -50%; } .react-flow__resize-control.handle.left { left: 0; top: 50%; } .react-flow__resize-control.handle.right { left: 100%; top: 50%; } .react-flow__resize-control.handle.top { left: 50%; top: 0; } .react-flow__resize-control.handle.bottom { left: 50%; top: 100%; } .react-flow__resize-control.handle.top.left { left: 0; } .react-flow__resize-control.handle.bottom.left { left: 0; } .react-flow__resize-control.handle.top.right { left: 100%; } .react-flow__resize-control.handle.bottom.right { left: 100%; } /* line styles */ .react-flow__resize-control.line { border-color: var(--xy-resize-background-color, var(--xy-resize-background-color-default)); border-width: 0; border-style: solid; } .react-flow__resize-control.line.left, .react-flow__resize-control.line.right { width: 1px; transform: translate(-50%, 0); top: 0; height: 100%; } .react-flow__resize-control.line.left { left: 0; border-left-width: 1px; } .react-flow__resize-control.line.right { left: 100%; border-right-width: 1px; } .react-flow__resize-control.line.top, .react-flow__resize-control.line.bottom { height: 1px; transform: translate(0, -50%); left: 0; width: 100%; } .react-flow__resize-control.line.top { top: 0; border-top-width: 1px; } .react-flow__resize-control.line.bottom { border-bottom-width: 1px; top: 100%; } .react-flow__edge-textbg { fill: var(--xy-edge-label-background-color, var(--xy-edge-label-background-color-default)); } .react-flow__edge-text { fill: var(--xy-edge-label-color, var(--xy-edge-label-color-default)); }";
 if (typeof document !== "undefined") {
   const __selector = "style[data-plugin-css=" + JSON.stringify(__tagId2) + "]";
   if (document.querySelector(__selector) === null) {
     const __tag = document.createElement("style");
-    __tag.dataset.plugin = "dsh-talk-map";
+    __tag.dataset.plugin = "mind_map";
     __tag.dataset.pluginCss = __tagId2;
     __tag.textContent = __css2;
     document.head.appendChild(__tag);
@@ -10858,7 +10859,7 @@ function pickFaces(from, to, obstacles, options) {
 }
 
 // src/client/push-log.ts
-var KEY = "dsh.talk-map.push-log.v1";
+var KEY = "dsh.mind_map.push-log.v1";
 function pairKey(fromCardId, toCardId) {
   return `${fromCardId}>${toCardId}`;
 }
@@ -10912,25 +10913,25 @@ function DigestDialog(props) {
   return /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
     "div",
     {
-      className: talk_map_default["dialogBackdrop"],
-      "data-talkmap-digest-dialog": "",
+      className: mind_map_default["dialogBackdrop"],
+      "data-mindmap-digest-dialog": "",
       onMouseDown: (event) => {
         if (event.target === event.currentTarget) props.onClose();
       },
-      children: /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: talk_map_default["digestDialog"], onMouseDown: (event) => {
+      children: /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: mind_map_default["digestDialog"], onMouseDown: (event) => {
         event.stopPropagation();
       }, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: talk_map_default["digestDialogHead"], children: [
-          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: talk_map_default["digestDialogTitle"], children: t("digest.title") }),
-          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: talk_map_default["digestDialogFrom"], children: props.title })
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: mind_map_default["digestDialogHead"], children: [
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: mind_map_default["digestDialogTitle"], children: t("digest.title") }),
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: mind_map_default["digestDialogFrom"], children: props.title })
         ] }),
-        empty2 ? /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: talk_map_default["digestEmpty"], children: t("digest.empty") }) : /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: talk_map_default["digestLabel"], children: t("digest.pushLabel") }),
+        empty2 ? /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: mind_map_default["digestEmpty"], children: t("digest.empty") }) : /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: mind_map_default["digestLabel"], children: t("digest.pushLabel") }),
           /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
             "textarea",
             {
               ref: textRef,
-              className: talk_map_default["digestText"],
+              className: mind_map_default["digestText"],
               readOnly: true,
               value: pushText,
               spellCheck: false,
@@ -10939,11 +10940,11 @@ function DigestDialog(props) {
               }
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: talk_map_default["digestLabel"], children: t("digest.injectLabel") }),
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: mind_map_default["digestLabel"], children: t("digest.injectLabel") }),
           /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
             "textarea",
             {
-              className: talk_map_default["digestText"],
+              className: mind_map_default["digestText"],
               readOnly: true,
               value: injectText,
               spellCheck: false,
@@ -10953,12 +10954,12 @@ function DigestDialog(props) {
             }
           )
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: talk_map_default["digestActions"], children: [
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: mind_map_default["digestActions"], children: [
           empty2 ? null : /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
             "button",
             {
               type: "button",
-              className: talk_map_default["spawnBtnPrimary"],
+              className: mind_map_default["spawnBtnPrimary"],
               onClick: () => {
                 const value = pushText;
                 void navigator.clipboard?.writeText(value).catch(() => {
@@ -10967,7 +10968,7 @@ function DigestDialog(props) {
               children: t("digest.copy")
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", className: talk_map_default["spawnBtnGhost"], onClick: props.onClose, children: t("digest.close") })
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", className: mind_map_default["spawnBtnGhost"], onClick: props.onClose, children: t("digest.close") })
         ] })
       ] })
     }
@@ -11086,8 +11087,8 @@ async function deleteWorkspaceRegistration(workspaceId) {
 }
 
 // src/client/drawer-state.ts
-var GROUP_KEY = "dsh.talk-map.drawer.v1";
-var SCROLL_KEY = "dsh.talk-map.drawer-scroll.v1";
+var GROUP_KEY = "dsh.mind_map.drawer.v1";
+var SCROLL_KEY = "dsh.mind_map.drawer-scroll.v1";
 function safeRead(key) {
   try {
     return typeof localStorage === "undefined" ? null : localStorage.getItem(key);
@@ -11141,7 +11142,7 @@ async function callRpc2(endpoint, request = {}) {
 }
 function reportToHost(payload) {
   try {
-    void fetch("/talk-map/client-boot", {
+    void fetch("/mind_map/client-boot", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ at: (/* @__PURE__ */ new Date()).toISOString(), ...payload })
@@ -11152,7 +11153,7 @@ function reportToHost(payload) {
 }
 async function fetchSearchContext(sessionId, seq, query) {
   try {
-    const page = await talkMapApi.searchContext(sessionId, seq, query);
+    const page = await mindMapApi.searchContext(sessionId, seq, query);
     return Array.isArray(page.lines) ? page.lines.filter((line) => typeof line === "string" && line !== "") : [];
   } catch (error) {
     reportToHost({ phase: "search-context-failed", sessionId, seq, message: String(error?.message ?? error) });
@@ -11161,7 +11162,7 @@ async function fetchSearchContext(sessionId, seq, query) {
 }
 async function fetchSessionHits(sessionId, query) {
   try {
-    const page = await talkMapApi.searchSessionHits(sessionId, query);
+    const page = await mindMapApi.searchSessionHits(sessionId, query);
     const blocks = (page.blocks ?? []).filter((block) => Array.isArray(block) && block.length > 0);
     return { blocks, seqs: blocks.map((_, index2) => typeof page.seqs?.[index2] === "number" ? page.seqs[index2] : null) };
   } catch (error) {
@@ -11171,7 +11172,7 @@ async function fetchSessionHits(sessionId, query) {
 }
 
 // src/client/state-persist.ts
-var STORAGE_KEY2 = "dsh.talk-map.lamp-state.v1";
+var STORAGE_KEY2 = "dsh.mind_map.lamp-state.v1";
 var MAX_AGE_MS = 14 * 24 * 60 * 60 * 1e3;
 var EMPTY = { version: 1, finished: {}, errors: {}, interrupted: {} };
 function prune(record, now2) {
@@ -11284,7 +11285,7 @@ function attachAlertSource(remote, list) {
       disposers.push(remote.$on("api-session/error", onError));
       disposers.push(remote.$on("api-session/status", onStatus));
     } catch (error) {
-      console.error("[dsh-talk-map] session alert source unavailable:", error);
+      console.error("[mind_map] session alert source unavailable:", error);
     }
   }
   const reconcile = () => {
@@ -11305,7 +11306,7 @@ function attachAlertSource(remote, list) {
     disposers.push(list.subscribe(reconcile));
     reconcile();
   } catch (error) {
-    console.error("[dsh-talk-map] session alert list subscription failed:", error);
+    console.error("[mind_map] session alert list subscription failed:", error);
   }
   return () => {
     for (const dispose of disposers) {
@@ -11554,7 +11555,7 @@ function cleanPreviewText(text) {
 }
 
 // src/client/preview-cache.ts
-var STORAGE_KEY3 = "dsh.talk-map.previews.v1";
+var STORAGE_KEY3 = "dsh.mind_map.previews.v1";
 var MAX_RAW = 600;
 var MAX_ENTRIES = 300;
 var cache2 = null;
@@ -11651,7 +11652,7 @@ var PATHS = {
   ] })
 };
 function MenuIcon(props) {
-  return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("svg", { className: talk_map_default["menuIcon"], viewBox: "0 0 24 24", width: "14", height: "14", "aria-hidden": "true", children: PATHS[props.name] });
+  return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("svg", { className: mind_map_default["menuIcon"], viewBox: "0 0 24 24", width: "14", height: "14", "aria-hidden": "true", children: PATHS[props.name] });
 }
 
 // src/client/ContextMenu.tsx
@@ -11696,7 +11697,7 @@ function ContextMenu(props) {
   return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(
     "div",
     {
-      className: talk_map_default["menu"],
+      className: mind_map_default["menu"],
       style: { left: menu.left, top: menu.top },
       role: "menu",
       onClick: (event) => {
@@ -11709,13 +11710,13 @@ function ContextMenu(props) {
         event.preventDefault();
       },
       children: [
-        menu.title !== void 0 ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: talk_map_default["menuTitle"], children: menu.title }) : null,
+        menu.title !== void 0 ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: mind_map_default["menuTitle"], children: menu.title }) : null,
         menu.prompt !== void 0 ? /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(import_jsx_runtime7.Fragment, { children: [
           /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
             "input",
             {
               ref: inputRef,
-              className: talk_map_default["menuSearch"],
+              className: mind_map_default["menuSearch"],
               placeholder: menu.prompt.placeholder,
               value: query,
               onChange: (event) => {
@@ -11729,13 +11730,13 @@ function ContextMenu(props) {
               }
             }
           ),
-          menu.prompt.preview !== void 0 && query.trim() !== "" ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: talk_map_default["menuPreview"], children: menu.prompt.preview(query.trim()) }) : null,
-          error !== void 0 ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: talk_map_default["menuError"], children: error }) : null,
+          menu.prompt.preview !== void 0 && query.trim() !== "" ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: mind_map_default["menuPreview"], children: menu.prompt.preview(query.trim()) }) : null,
+          error !== void 0 ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: mind_map_default["menuError"], children: error }) : null,
           /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
             "button",
             {
               type: "button",
-              className: talk_map_default["menuItem"],
+              className: mind_map_default["menuItem"],
               disabled: busy || query.trim() === "",
               onClick: () => {
                 void submitPrompt();
@@ -11748,7 +11749,7 @@ function ContextMenu(props) {
           "input",
           {
             ref: inputRef,
-            className: talk_map_default["menuSearch"],
+            className: mind_map_default["menuSearch"],
             placeholder: t("menu.search"),
             value: query,
             onChange: (event) => {
@@ -11756,20 +11757,20 @@ function ContextMenu(props) {
             }
           }
         ) : null,
-        menu.prompt !== void 0 ? null : visible.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: talk_map_default["menuEmpty"], children: t("menu.empty") }) : visible.map((item) => /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(
+        menu.prompt !== void 0 ? null : visible.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: mind_map_default["menuEmpty"], children: t("menu.empty") }) : visible.map((item) => /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(
           "button",
           {
             type: "button",
             role: "menuitem",
-            className: `${talk_map_default["menuItem"]}${item.danger === true ? ` ${talk_map_default["menuItemDanger"] ?? ""}` : ""}`,
+            className: `${mind_map_default["menuItem"]}${item.danger === true ? ` ${mind_map_default["menuItemDanger"] ?? ""}` : ""}`,
             disabled: item.disabled === true,
             onClick: () => {
               item.onPick();
             },
             children: [
-              item.icon !== void 0 ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(MenuIcon, { name: item.icon }) : /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: talk_map_default["menuIcon"] }),
+              item.icon !== void 0 ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(MenuIcon, { name: item.icon }) : /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: mind_map_default["menuIcon"] }),
               item.label,
-              item.hint !== void 0 ? /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("span", { className: talk_map_default["menuHint"], children: [
+              item.hint !== void 0 ? /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("span", { className: mind_map_default["menuHint"], children: [
                 " ",
                 item.hint
               ] }) : null
@@ -12290,7 +12291,7 @@ function routeBetween(ends, from, to, obstacles, options = {}) {
   return bestHits === 0 && best !== void 0 ? best : raw;
 }
 
-// src/client/TalkMapEdge.tsx
+// src/client/MindMapEdge.tsx
 var import_jsx_runtime8 = require("react/jsx-runtime");
 var boardCache = { at: 0, boxes: [] };
 function boardBoxes() {
@@ -12300,7 +12301,7 @@ function boardBoxes() {
   const viewport = document.querySelector(".react-flow__viewport");
   if (viewport === null) return boardCache.boxes;
   const boxes = [];
-  for (const element of document.querySelectorAll("[data-talkmap-session]")) {
+  for (const element of document.querySelectorAll("[data-mindmap-session]")) {
     const node = element;
     let x = 0;
     let y = 0;
@@ -12320,7 +12321,7 @@ function boardBoxes() {
   }
   return boxes;
 }
-function TalkMapEdge(props) {
+function MindMapEdge(props) {
   const data = props.data ?? {};
   const synced = data.sync === "synced";
   const hidden = synced && data.structural !== true || data.ready === false;
@@ -12479,7 +12480,7 @@ function TalkMapEdge(props) {
     )
   ] });
 }
-var edgeTypes = { talkMap: TalkMapEdge };
+var edgeTypes = { mindMap: MindMapEdge, graphLine: GraphLineEdge };
 
 // src/client/RenameDialog.tsx
 var import_react7 = require("react");
@@ -12525,36 +12526,36 @@ function RenameDialog(props) {
       const request = props.target.kind === "workspace" ? { workspaceId: props.target.id, title } : { sessionId: props.target.id, title };
       const result = await rpc.call("/api", endpoint, { args: { request } });
       if (result.ok !== true) {
-        console.error("[dsh-talk-map] rename rejected:", result.error);
+        console.error("[mind_map] rename rejected:", result.error);
         setError(result.error?.message ?? t("rename.failed"));
         setBusy(false);
         return;
       }
       props.onDone(title);
     } catch (cause) {
-      console.error("[dsh-talk-map] rename failed:", cause);
+      console.error("[mind_map] rename failed:", cause);
       setError(t("rename.failed"));
       setBusy(false);
     }
   };
-  return /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: talk_map_default["renameBackdrop"], onClick: () => {
+  return /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: mind_map_default["renameBackdrop"], onClick: () => {
     props.onDone(null);
   }, children: /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
     "div",
     {
-      className: talk_map_default["renameDialog"],
+      className: mind_map_default["renameDialog"],
       onClick: (event) => {
         event.stopPropagation();
       },
       role: "dialog",
       "aria-label": t("rename.title"),
       children: [
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: talk_map_default["renameHeading"], children: t("rename.title") }),
+        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: mind_map_default["renameHeading"], children: t("rename.title") }),
         /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
           "input",
           {
             ref: inputRef,
-            className: talk_map_default["renameInput"],
+            className: mind_map_default["renameInput"],
             value,
             maxLength: 120,
             placeholder: t("rename.placeholder"),
@@ -12568,16 +12569,16 @@ function RenameDialog(props) {
             }
           }
         ),
-        error !== null ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: talk_map_default["renameError"], children: error }) : null,
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: talk_map_default["renameActions"], children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { type: "button", className: talk_map_default["renameButton"], onClick: () => {
+        error !== null ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: mind_map_default["renameError"], children: error }) : null,
+        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: mind_map_default["renameActions"], children: [
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { type: "button", className: mind_map_default["renameButton"], onClick: () => {
             props.onDone(null);
           }, children: t("rename.cancel") }),
           /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
             "button",
             {
               type: "button",
-              className: `${talk_map_default["renameButton"]} ${talk_map_default["renamePrimary"]}`,
+              className: `${mind_map_default["renameButton"]} ${mind_map_default["renamePrimary"]}`,
               disabled: busy || value.trim() === "",
               onClick: () => {
                 void submit();
@@ -12611,10 +12612,10 @@ function statusChip(glow, running) {
   return /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(
     "span",
     {
-      className: `${talk_map_default["cardChip"]} ${talk_map_default[spec.className]}`,
-      "data-talkmap-chip": glow ?? "running",
+      className: `${mind_map_default["cardChip"]} ${mind_map_default[spec.className]}`,
+      "data-mindmap-chip": glow ?? "running",
       children: [
-        spec.dot ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: talk_map_default["runningDot"] }) : null,
+        spec.dot ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: mind_map_default["runningDot"] }) : null,
         t(spec.key)
       ]
     }
@@ -12633,12 +12634,12 @@ function relativeTime(timestamp) {
 }
 function SessionCardNode(props) {
   const { data, selected: selected2 } = props;
-  const classNames = [talk_map_default["card"]];
-  if (data.ghost) classNames.push(talk_map_default["cardGhost"]);
-  if (selected2 === true) classNames.push(talk_map_default["cardSelected"]);
-  if (data.glow !== void 0) classNames.push(talk_map_default[LAMP_CLASS[data.glow]] ?? "");
+  const classNames = [mind_map_default["card"]];
+  if (data.ghost) classNames.push(mind_map_default["cardGhost"]);
+  if (selected2 === true) classNames.push(mind_map_default["cardSelected"]);
+  if (data.glow !== void 0) classNames.push(mind_map_default[LAMP_CLASS[data.glow]] ?? "");
   const quiet = data.current !== true && data.pinned !== true && data.glow === void 0 && data.pendingDraft !== true && data.interrupted !== true;
-  if (quiet) classNames.push(talk_map_default["cardQuiet"] ?? "");
+  if (quiet) classNames.push(mind_map_default["cardQuiet"] ?? "");
   return /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(
     "div",
     {
@@ -12649,66 +12650,67 @@ function SessionCardNode(props) {
         data.onPick();
       },
       style: data.onPick !== void 0 ? { cursor: "pointer" } : void 0,
-      "data-talkmap-session": data.sessionId,
+      "data-mindmap-session": data.sessionId,
       children: [
-        data.current === true ? /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { className: talk_map_default["cardReticle"], "aria-hidden": "true", children: [
+        data.current === true ? /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { className: mind_map_default["cardReticle"], "aria-hidden": "true", children: [
           /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("i", {}),
           /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("i", {}),
           /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("i", {}),
           /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("i", {})
         ] }) : null,
         "      ",
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(Handle, { id: "t", type: "source", position: Position.Top, className: talk_map_default["cardHandle"] ?? "" }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(Handle, { id: "l", type: "source", position: Position.Left, className: talk_map_default["cardHandle"] ?? "" }),
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(Handle, { id: "t", type: "source", position: Position.Top, className: mind_map_default["cardHandle"] ?? "" }),
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(Handle, { id: "l", type: "source", position: Position.Left, className: mind_map_default["cardHandle"] ?? "" }),
         data.onPick !== void 0 ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
           "span",
           {
-            className: `${talk_map_default["pickBox"]}${selected2 === true ? ` ${talk_map_default["pickBoxChecked"]}` : ""}`,
+            className: `${mind_map_default["pickBox"]}${selected2 === true ? ` ${mind_map_default["pickBoxChecked"]}` : ""}`,
             role: "checkbox",
             "aria-checked": selected2 === true,
-            "data-talkmap-pick": "",
+            "data-mindmap-pick": "",
             children: selected2 === true ? "✓" : ""
           }
         ) : null,
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: talk_map_default["cardTop"], children: [
-          data.pinned === true ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: talk_map_default["cardPin"], title: t("card.pinned"), "aria-label": t("card.pinned"), "data-talkmap-pin": "1", children: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("svg", { viewBox: "0 0 24 24", width: "13", height: "13", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("path", { fill: "currentColor", d: "M16 8.6V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v4.6c0 1.66-1.34 3-3 3v2h5.1v7.9l.9 1 .9-1V13.6H19v-2c-1.66 0-3-1.34-3-3z" }) }) }) : null,
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: talk_map_default["cardTitle"], children: data.ghost ? t("card.ghostTitle") : data.title })
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: mind_map_default["cardTop"], children: [
+          data.pinned === true ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: mind_map_default["cardPin"], title: t("card.pinned"), "aria-label": t("card.pinned"), "data-mindmap-pin": "1", children: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("svg", { viewBox: "0 0 24 24", width: "13", height: "13", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("path", { fill: "currentColor", d: "M16 8.6V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v4.6c0 1.66-1.34 3-3 3v2h5.1v7.9l.9 1 .9-1V13.6H19v-2c-1.66 0-3-1.34-3-3z" }) }) }) : null,
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: mind_map_default["cardTitle"], children: data.ghost ? t("card.ghostTitle") : data.title })
         ] }),
         data.ghost ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
           "button",
           {
             type: "button",
-            className: `${talk_map_default["cardRemove"]} nodrag`,
+            className: `${mind_map_default["cardRemove"]} nodrag`,
             onClick: () => {
               canvas.removeCard(data.cardId);
             },
             children: t("card.remove")
           }
-        ) : /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(import_jsx_runtime10.Fragment, { children: data.preview !== void 0 && data.preview !== "" ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: talk_map_default["cardSummary"], children: data.preview }) : null }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: talk_map_default["cardFooter"], children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: talk_map_default["cardTime"], children: relativeTime(data.updatedAt) }),
+        ) : /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(import_jsx_runtime10.Fragment, { children: data.preview !== void 0 && data.preview !== "" ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: mind_map_default["cardSummary"], children: data.preview }) : null }),
+        data.tags !== void 0 && data.tags.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "tm_cardTags", children: data.tags.map((tag) => /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "tm_tagChip", children: tag }, tag)) }) : null,
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: mind_map_default["cardFooter"], children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: mind_map_default["cardTime"], children: relativeTime(data.updatedAt) }),
           data.pendingDraft === true ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
             "span",
             {
-              className: `${talk_map_default["cardChip"]} ${talk_map_default["cardChipDraft"]}`,
+              className: `${mind_map_default["cardChip"]} ${mind_map_default["cardChipDraft"]}`,
               title: t("card.draftHint"),
-              "data-talkmap-draft": "1",
+              "data-mindmap-draft": "1",
               children: t("card.draft")
             }
           ) : null,
           data.interrupted === true ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
             "span",
             {
-              className: `${talk_map_default["cardChip"]} ${talk_map_default["cardChipInterrupted"]}`,
+              className: `${mind_map_default["cardChip"]} ${mind_map_default["cardChipInterrupted"]}`,
               title: t("card.interruptedHint"),
-              "data-talkmap-interrupted": "1",
+              "data-mindmap-interrupted": "1",
               children: t("card.interrupted")
             }
           ) : null,
           statusChip(data.glow, data.running === true)
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(Handle, { id: "r", type: "source", position: Position.Right, className: talk_map_default["cardHandle"] ?? "" }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(Handle, { id: "b", type: "source", position: Position.Bottom, className: talk_map_default["cardHandle"] ?? "" })
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(Handle, { id: "r", type: "source", position: Position.Right, className: mind_map_default["cardHandle"] ?? "" }),
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(Handle, { id: "b", type: "source", position: Position.Bottom, className: mind_map_default["cardHandle"] ?? "" })
       ]
     }
   );
@@ -12780,13 +12782,13 @@ function SpawnPreview(props) {
         const created2 = await createSession();
         let injected = text;
         try {
-          const fresh = await talkMapApi.ensureDigest(pending.parent.sessionId);
+          const fresh = await mindMapApi.ensureDigest(pending.parent.sessionId);
           if (fresh.digest !== void 0 && !digestIsEmpty(fresh.digest)) {
             injected = buildInjectionText(pending.parent.title, fresh.digest);
           }
         } catch {
         }
-        await talkMapApi.injectContext(created2.sessionId, [
+        await mindMapApi.injectContext(created2.sessionId, [
           { sessionId: pending.parent.sessionId, text: injected }
         ]);
         addCardAndEdge(created2.sessionId, "digest", text);
@@ -12818,19 +12820,19 @@ function SpawnPreview(props) {
     { id: "digest", label: t("spawn.mode.digest") },
     { id: "full", label: t("spawn.mode.full") }
   ];
-  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: talk_map_default["spawnPanel"], role: "dialog", "aria-label": t("spawn.heading"), children: [
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: talk_map_default["spawnHeading"], children: t("spawn.heading") }),
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: talk_map_default["spawnFrom"], children: [
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: mind_map_default["spawnPanel"], role: "dialog", "aria-label": t("spawn.heading"), children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: mind_map_default["spawnHeading"], children: t("spawn.heading") }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: mind_map_default["spawnFrom"], children: [
       t("spawn.from"),
       "「",
       pending.parent.title,
       "」"
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: talk_map_default["spawnModes"], children: modes.map((entry) => /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: mind_map_default["spawnModes"], children: modes.map((entry) => /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
       "button",
       {
         type: "button",
-        className: `${talk_map_default["spawnModeBtn"]}${mode === entry.id ? ` ${talk_map_default["spawnModeActive"]}` : ""}`,
+        className: `${mind_map_default["spawnModeBtn"]}${mode === entry.id ? ` ${mind_map_default["spawnModeActive"]}` : ""}`,
         onClick: () => {
           setMode(entry.id);
         },
@@ -12839,11 +12841,11 @@ function SpawnPreview(props) {
       entry.id
     )) }),
     mode === "digest" ? /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(import_jsx_runtime11.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: talk_map_default["spawnHint"], children: t("spawn.hint") }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: mind_map_default["spawnHint"], children: t("spawn.hint") }),
       /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
         "textarea",
         {
-          className: `${talk_map_default["spawnTextarea"]} nodrag nowheel`,
+          className: `${mind_map_default["spawnTextarea"]} nodrag nowheel`,
           value: text,
           rows: 9,
           onChange: (event) => {
@@ -12852,11 +12854,11 @@ function SpawnPreview(props) {
         }
       )
     ] }) : mode === "none" ? /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(import_jsx_runtime11.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: talk_map_default["spawnHint"], children: t("spawn.noneHint") }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: mind_map_default["spawnHint"], children: t("spawn.noneHint") }),
       /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
         "textarea",
         {
-          className: `${talk_map_default["spawnTextarea"]} nodrag nowheel`,
+          className: `${mind_map_default["spawnTextarea"]} nodrag nowheel`,
           placeholder: t("draft.placeholder"),
           value: firstMessage,
           rows: 5,
@@ -12871,14 +12873,14 @@ function SpawnPreview(props) {
           }
         }
       )
-    ] }) : /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: talk_map_default["spawnHint"], children: t("spawn.fullHint") }),
-    error !== void 0 ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: talk_map_default["spawnError"], children: error }) : null,
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: talk_map_default["spawnActions"], children: [
+    ] }) : /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: mind_map_default["spawnHint"], children: t("spawn.fullHint") }),
+    error !== void 0 ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: mind_map_default["spawnError"], children: error }) : null,
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: mind_map_default["spawnActions"], children: [
       /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
         "button",
         {
           type: "button",
-          className: talk_map_default["spawnBtnGhost"],
+          className: mind_map_default["spawnBtnGhost"],
           onClick: props.onClose,
           disabled: busy,
           children: t("spawn.cancel")
@@ -12888,7 +12890,7 @@ function SpawnPreview(props) {
         "button",
         {
           type: "button",
-          className: talk_map_default["spawnBtnPrimary"],
+          className: mind_map_default["spawnBtnPrimary"],
           onClick: () => {
             void confirm();
           },
@@ -12943,7 +12945,7 @@ function WsFrameNode(props) {
   return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(
     "div",
     {
-      className: `${talk_map_default["wsFrame"]}${selected2 === true ? ` ${talk_map_default["wsFrameSelected"]}` : ""}${data.blocked === true ? ` ${talk_map_default["wsFrameBlocked"]}` : ""}`,
+      className: `${mind_map_default["wsFrame"]}${selected2 === true ? ` ${mind_map_default["wsFrameSelected"]}` : ""}${data.blocked === true ? ` ${mind_map_default["wsFrameBlocked"]}` : ""}`,
       style: {
         width: data.width,
         height: data.height,
@@ -12951,32 +12953,32 @@ function WsFrameNode(props) {
         // so the colour never washes over the cards.
         ...color2 !== void 0 ? { borderColor: color2.border } : {}
       },
-      "data-talkmap-frame": "",
-      "data-talkmap-workspace": data.workspaceId,
+      "data-mindmap-frame": "",
+      "data-mindmap-workspace": data.workspaceId,
       children: [
         /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(
           "div",
           {
-            className: talk_map_default["wsFrameLabel"],
+            className: mind_map_default["wsFrameLabel"],
             style: color2 !== void 0 ? { borderColor: color2.border, backgroundImage: `linear-gradient(${color2.fill}, ${color2.fill})` } : {},
             children: [
               data.title,
-              /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: talk_map_default["wsFrameCount"], children: data.count })
+              /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: mind_map_default["wsFrameCount"], children: data.count })
             ]
           }
         ),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: talk_map_default["wsFrameEdge"], style: { top: 0, left: 0, right: 0, height: EDGE } }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: talk_map_default["wsFrameEdge"], style: { bottom: 0, left: 0, right: 0, height: EDGE } }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: talk_map_default["wsFrameEdge"], style: { top: 0, bottom: 0, left: 0, width: EDGE } }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: talk_map_default["wsFrameEdge"], style: { top: 0, bottom: 0, right: 0, width: EDGE } }),
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: mind_map_default["wsFrameEdge"], style: { top: 0, left: 0, right: 0, height: EDGE } }),
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: mind_map_default["wsFrameEdge"], style: { bottom: 0, left: 0, right: 0, height: EDGE } }),
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: mind_map_default["wsFrameEdge"], style: { top: 0, bottom: 0, left: 0, width: EDGE } }),
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: mind_map_default["wsFrameEdge"], style: { top: 0, bottom: 0, right: 0, width: EDGE } }),
         [...EDGE_HANDLES, ...CORNER_HANDLES].map((handle) => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
           "div",
           {
-            className: `${talk_map_default["wsFrameResize"]} ${talk_map_default[handle.className] ?? ""}`,
+            className: `${mind_map_default["wsFrameResize"]} ${mind_map_default[handle.className] ?? ""}`,
             style: handle.style,
             onPointerDown: start2(handle.axis),
             title: handle.title,
-            "data-talkmap-resize": handle.axis
+            "data-mindmap-resize": handle.axis
           },
           handle.axis
         ))
@@ -13084,7 +13086,7 @@ function StackDrawer(props) {
       saveSearch("drawer:" + props.groupId, { query: trimmed, hits: found });
       setSearchError(null);
     } catch (cause) {
-      console.warn("[dsh-talk-map] content search failed:", cause);
+      console.warn("[mind_map] content search failed:", cause);
       setHits([]);
       setSearchError(String(cause?.message ?? cause));
     } finally {
@@ -13431,7 +13433,7 @@ function StackDrawer(props) {
   return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
     "div",
     {
-      className: `${talk_map_default["drawerBackdrop"]}${leaving ? ` ${talk_map_default["drawerBackdropOut"]}` : ""}`,
+      className: `${mind_map_default["drawerBackdrop"]}${leaving ? ` ${mind_map_default["drawerBackdropOut"]}` : ""}`,
       onMouseDown: (event) => {
         if (event.target === event.currentTarget) requestClose();
       },
@@ -13441,20 +13443,20 @@ function StackDrawer(props) {
       children: /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(
         "div",
         {
-          className: `${talk_map_default["drawer"]}${leaving ? ` ${talk_map_default["drawerOut"]}` : ""}`,
+          className: `${mind_map_default["drawer"]}${leaving ? ` ${mind_map_default["drawerOut"]}` : ""}`,
           role: "dialog",
           "aria-label": props.workspaceTitle,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: talk_map_default["drawerHead"], children: [
-              /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: talk_map_default["drawerTitle"], children: props.workspaceTitle }),
-              /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: talk_map_default["drawerCount"], children: t("stack.total", { n: String(props.items.length) }) }),
-              /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: talk_map_default["drawerSpace"] }),
-              /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: talk_map_default["drawerHint"], children: t("stack.hint") }),
+            /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: mind_map_default["drawerHead"], children: [
+              /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: mind_map_default["drawerTitle"], children: props.workspaceTitle }),
+              /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: mind_map_default["drawerCount"], children: t("stack.total", { n: String(props.items.length) }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: mind_map_default["drawerSpace"] }),
+              /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: mind_map_default["drawerHint"], children: t("stack.hint") }),
               /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
                 "button",
                 {
                   type: "button",
-                  className: talk_map_default["drawerClose"],
+                  className: mind_map_default["drawerClose"],
                   title: t("stack.close"),
                   "aria-label": t("stack.close"),
                   onClick: requestClose,
@@ -13462,15 +13464,15 @@ function StackDrawer(props) {
                 }
               )
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: talk_map_default["drawerSearchRow"], children: [
+            /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: mind_map_default["drawerSearchRow"], children: [
               /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
                 "input",
                 {
-                  className: talk_map_default["drawerSearch"],
+                  className: mind_map_default["drawerSearch"],
                   value: query,
                   placeholder: t("stack.searchPlaceholder"),
                   "aria-label": t("stack.searchPlaceholder"),
-                  "data-talkmap-drawer-search": "",
+                  "data-mindmap-drawer-search": "",
                   onChange: (event) => {
                     setQuery(event.target.value);
                     if (event.target.value.trim() === "") {
@@ -13493,21 +13495,21 @@ function StackDrawer(props) {
                 "button",
                 {
                   type: "button",
-                  className: talk_map_default["drawerSearchGo"],
-                  "data-talkmap-drawer-search-run": "",
+                  className: mind_map_default["drawerSearchGo"],
+                  "data-mindmap-drawer-search-run": "",
                   onClick: () => {
                     void runSearch();
                   },
                   children: t("global.searchRun")
                 }
               ),
-              searching ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: talk_map_default["drawerSearchState"], children: t("stack.searching") }) : null,
-              searchError !== null ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: talk_map_default["drawerSearchError"], title: searchError, children: isIndexDisabled(searchError) ? t("stack.searchDisabled") : t("stack.searchFailed") + "：" + (searchError.length > 70 ? searchError.slice(0, 70) + "…" : searchError) }) : null
+              searching ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: mind_map_default["drawerSearchState"], children: t("stack.searching") }) : null,
+              searchError !== null ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: mind_map_default["drawerSearchError"], title: searchError, children: isIndexDisabled(searchError) ? t("stack.searchDisabled") : t("stack.searchFailed") + "：" + (searchError.length > 70 ? searchError.slice(0, 70) + "…" : searchError) }) : null
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(
               "div",
               {
-                className: talk_map_default["drawerScroll"],
+                className: mind_map_default["drawerScroll"],
                 ref: scrollerRef,
                 onScroll: (event) => {
                   lastScrollAt.current = Date.now();
@@ -13522,7 +13524,7 @@ function StackDrawer(props) {
                   wires.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
                     "svg",
                     {
-                      className: talk_map_default["drawerWires"],
+                      className: mind_map_default["drawerWires"],
                       width: Math.max(1, wireSize.width),
                       height: Math.max(1, wireSize.height),
                       "aria-hidden": "true",
@@ -13552,21 +13554,21 @@ function StackDrawer(props) {
                     }
                   ) : null,
                   visibleItems.map((item) => {
-                    const classNames = [talk_map_default["card"], talk_map_default["drawerCard"]];
-                    if (item.glow !== void 0) classNames.push(talk_map_default[LAMP_CLASS2[item.glow]] ?? "");
+                    const classNames = [mind_map_default["card"], mind_map_default["drawerCard"]];
+                    if (item.glow !== void 0) classNames.push(mind_map_default[LAMP_CLASS2[item.glow]] ?? "");
                     const quiet = item.glow === void 0 && item.pendingDraft !== true && item.interrupted !== true && item.pinned !== true;
-                    if (quiet) classNames.push(talk_map_default["cardQuiet"] ?? "");
-                    if (item.selected === true) classNames.push(talk_map_default["cardSelected"] ?? "");
+                    if (quiet) classNames.push(mind_map_default["cardQuiet"] ?? "");
+                    if (item.selected === true) classNames.push(mind_map_default["cardSelected"] ?? "");
                     return /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(
                       "button",
                       {
                         type: "button",
                         "data-stack-card": "",
                         "data-card-id": item.cardId,
-                        "data-talkmap-session": item.sessionId,
+                        "data-mindmap-session": item.sessionId,
                         className: classNames.filter(Boolean).join(" "),
                         draggable: true,
-                        "data-talkmap-drag": dragId === item.cardId ? "1" : void 0,
+                        "data-mindmap-drag": dragId === item.cardId ? "1" : void 0,
                         onDragStart: (event) => {
                           setDragId(item.cardId);
                           event.dataTransfer.effectAllowed = "move";
@@ -13597,22 +13599,22 @@ function StackDrawer(props) {
                           props.onCardMenu?.(item.cardId, event);
                         },
                         children: [
-                          item.current === true ? /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("span", { className: talk_map_default["cardReticle"], children: [
+                          item.current === true ? /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("span", { className: mind_map_default["cardReticle"], children: [
                             /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("i", {}),
                             /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("i", {}),
                             /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("i", {}),
                             /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("i", {})
                           ] }) : null,
-                          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: talk_map_default["cardTop"], children: [
-                            item.pinned === true ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: talk_map_default["cardPin"], title: t("card.pinned"), "data-talkmap-pin": "1", children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("svg", { viewBox: "0 0 24 24", width: "13", height: "13", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("path", { fill: "currentColor", d: "M16 8.6V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v4.6c0 1.66-1.34 3-3 3v2h5.1v7.9l.9 1 .9-1V13.6H19v-2c-1.66 0-3-1.34-3-3z" }) }) }) : null,
-                            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: talk_map_default["cardTitle"], children: item.title })
+                          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: mind_map_default["cardTop"], children: [
+                            item.pinned === true ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: mind_map_default["cardPin"], title: t("card.pinned"), "data-mindmap-pin": "1", children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("svg", { viewBox: "0 0 24 24", width: "13", height: "13", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("path", { fill: "currentColor", d: "M16 8.6V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v4.6c0 1.66-1.34 3-3 3v2h5.1v7.9l.9 1 .9-1V13.6H19v-2c-1.66 0-3-1.34-3-3z" }) }) }) : null,
+                            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: mind_map_default["cardTitle"], children: item.title })
                           ] }),
-                          item.preview !== void 0 && item.preview !== "" ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: talk_map_default["cardSummary"], children: item.preview }) : null,
-                          item.links !== void 0 && item.links.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: talk_map_default["cardLinks"], "data-talkmap-card-links": item.links.length, children: item.links.slice(0, 3).map((link2) => /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(
+                          item.preview !== void 0 && item.preview !== "" ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: mind_map_default["cardSummary"], children: item.preview }) : null,
+                          item.links !== void 0 && item.links.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: mind_map_default["cardLinks"], "data-mindmap-card-links": item.links.length, children: item.links.slice(0, 3).map((link2) => /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(
                             "span",
                             {
-                              className: talk_map_default["cardLinkChip"],
-                              "data-talkmap-link": link2.outgoing ? "out" : "in",
+                              className: mind_map_default["cardLinkChip"],
+                              "data-mindmap-link": link2.outgoing ? "out" : "in",
                               title: link2.kind,
                               children: [
                                 link2.outgoing ? "→ " : "← ",
@@ -13621,33 +13623,33 @@ function StackDrawer(props) {
                             },
                             (link2.outgoing ? "out-" : "in-") + link2.toCardId
                           )) }) : null,
-                          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: talk_map_default["cardFooter"], children: [
-                            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: talk_map_default["cardTime"], children: relativeTime(item.updatedAt) }),
+                          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: mind_map_default["cardFooter"], children: [
+                            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: mind_map_default["cardTime"], children: relativeTime(item.updatedAt) }),
                             item.pendingDraft === true ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
                               "span",
                               {
-                                className: `${talk_map_default["cardChip"]} ${talk_map_default["cardChipDraft"]}`,
+                                className: `${mind_map_default["cardChip"]} ${mind_map_default["cardChipDraft"]}`,
                                 title: t("card.draftHint"),
-                                "data-talkmap-draft": "1",
+                                "data-mindmap-draft": "1",
                                 children: t("card.draft")
                               }
                             ) : null,
                             item.interrupted === true ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
                               "span",
                               {
-                                className: `${talk_map_default["cardChip"]} ${talk_map_default["cardChipInterrupted"]}`,
+                                className: `${mind_map_default["cardChip"]} ${mind_map_default["cardChipInterrupted"]}`,
                                 title: t("card.interruptedHint"),
-                                "data-talkmap-interrupted": "1",
+                                "data-mindmap-interrupted": "1",
                                 children: t("card.interrupted")
                               }
                             ) : null,
                             item.glow === void 0 ? null : /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(
                               "span",
                               {
-                                className: `${talk_map_default["cardChip"]} ${talk_map_default[LAMP_CHIP[item.glow].className]}`,
-                                "data-talkmap-chip": item.glow,
+                                className: `${mind_map_default["cardChip"]} ${mind_map_default[LAMP_CHIP[item.glow].className]}`,
+                                "data-mindmap-chip": item.glow,
                                 children: [
-                                  item.glow === "running" ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: talk_map_default["runningDot"] }) : null,
+                                  item.glow === "running" ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: mind_map_default["runningDot"] }) : null,
                                   t(LAMP_CHIP[item.glow].key)
                                 ]
                               }
@@ -13669,7 +13671,7 @@ function StackDrawer(props) {
                       }
                     }
                   ) : null,
-                  needle !== "" && visibleItems.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: talk_map_default["drawerEmpty"], children: t("stack.noTitleMatch") }) : null
+                  needle !== "" && visibleItems.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: mind_map_default["drawerEmpty"], children: t("stack.noTitleMatch") }) : null
                 ]
               }
             )
@@ -13690,7 +13692,7 @@ function StackNode(props) {
   return /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)(
     "div",
     {
-      className: [talk_map_default["stackCell"], talk_map_default["cardQuiet"] ?? ""].filter(Boolean).join(" "),
+      className: [mind_map_default["stackCell"], mind_map_default["cardQuiet"] ?? ""].filter(Boolean).join(" "),
       role: "button",
       tabIndex: 0,
       title: t("stack.open"),
@@ -13705,11 +13707,11 @@ function StackNode(props) {
         open();
       },
       children: [
-        /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { className: talk_map_default["stackSheetBack"] }),
-        /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { className: talk_map_default["stackSheetMid"] }),
-        /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("div", { className: talk_map_default["stackFace"], children: [
-          /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { className: talk_map_default["stackFaceTitle"], children: data.topTitle ?? t("frame.unknown") }),
-          /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("span", { className: [talk_map_default["stackBadge"], data.busy === true ? talk_map_default["stackBadgeBusy"] ?? "" : ""].filter(Boolean).join(" "), children: [
+        /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { className: mind_map_default["stackSheetBack"] }),
+        /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { className: mind_map_default["stackSheetMid"] }),
+        /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("div", { className: mind_map_default["stackFace"], children: [
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { className: mind_map_default["stackFaceTitle"], children: data.topTitle ?? t("frame.unknown") }),
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("span", { className: [mind_map_default["stackBadge"], data.busy === true ? mind_map_default["stackBadgeBusy"] ?? "" : ""].filter(Boolean).join(" "), children: [
             "+",
             data.count
           ] })
@@ -13722,8 +13724,8 @@ function StackNode(props) {
 // src/client/StatusRail.tsx
 var import_react11 = require("react");
 var import_jsx_runtime15 = require("react/jsx-runtime");
-var OPEN_KEY = "dsh.talk-map.status-rail.open.v1";
-var ORDER_KEY = "dsh.talk-map.status-rail.order.v1";
+var OPEN_KEY = "dsh.mind_map.status-rail.open.v1";
+var ORDER_KEY = "dsh.mind_map.status-rail.order.v1";
 var FLIP_MS = 180;
 var LAMP_CLASS3 = {
   running: "cardLampRunning",
@@ -13930,7 +13932,7 @@ function StatusRail(props) {
   const renderCard = (entry, floating) => /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)(
     "div",
     {
-      className: `${talk_map_default["card"]} ${talk_map_default[LAMP_CLASS3[entry.lamp]] ?? ""} ${talk_map_default["statusRailCard"]}${floating ? ` ${talk_map_default["statusRailCardDragging"]}` : ""}`,
+      className: `${mind_map_default["card"]} ${mind_map_default[LAMP_CLASS3[entry.lamp]] ?? ""} ${mind_map_default["statusRailCard"]}${floating ? ` ${mind_map_default["statusRailCardDragging"]}` : ""}`,
       onPointerDown: floating ? void 0 : (event) => {
         beginDrag(event, entry.cardId);
       },
@@ -13939,12 +13941,12 @@ function StatusRail(props) {
       },
       title: entry.title,
       children: [
-        /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("div", { className: talk_map_default["cardTop"], children: /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: talk_map_default["cardTitle"], children: entry.title }) }),
-        entry.preview !== void 0 && entry.preview !== "" ? /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("div", { className: talk_map_default["cardSummary"], children: entry.preview }) : null,
-        /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: talk_map_default["cardFooter"], children: [
-          /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: talk_map_default["cardTime"], children: relativeTime(entry.updatedAt) }),
-          /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("span", { className: `${talk_map_default["cardChip"]} ${talk_map_default[LAMP_CHIP[entry.lamp].className]}`, children: [
-            LAMP_CHIP[entry.lamp].dot ? /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: talk_map_default["runningDot"] }) : null,
+        /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("div", { className: mind_map_default["cardTop"], children: /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: mind_map_default["cardTitle"], children: entry.title }) }),
+        entry.preview !== void 0 && entry.preview !== "" ? /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("div", { className: mind_map_default["cardSummary"], children: entry.preview }) : null,
+        /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: mind_map_default["cardFooter"], children: [
+          /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: mind_map_default["cardTime"], children: relativeTime(entry.updatedAt) }),
+          /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("span", { className: `${mind_map_default["cardChip"]} ${mind_map_default[LAMP_CHIP[entry.lamp].className]}`, children: [
+            LAMP_CHIP[entry.lamp].dot ? /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: mind_map_default["runningDot"] }) : null,
             t(LAMP_CHIP[entry.lamp].key)
           ] })
         ] })
@@ -13955,17 +13957,17 @@ function StatusRail(props) {
   return /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)(
     "div",
     {
-      className: talk_map_default["statusRail"],
+      className: mind_map_default["statusRail"],
       "data-open": open ? "1" : "0",
       style: { ["--rail-card-w"]: `${props.cardWidth}px` },
       children: [
-        /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: talk_map_default["statusRailPanel"], "aria-hidden": !open, ref: panelRef, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: talk_map_default["statusRailHead"], children: [
-            /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: talk_map_default["statusRailTitle"], children: t("statusRail.title") }),
-            /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: talk_map_default["statusRailCount"], children: props.entries.length })
+        /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: mind_map_default["statusRailPanel"], "aria-hidden": !open, ref: panelRef, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: mind_map_default["statusRailHead"], children: [
+            /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: mind_map_default["statusRailTitle"], children: t("statusRail.title") }),
+            /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: mind_map_default["statusRailCount"], children: props.entries.length })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: talk_map_default["statusRailList"], role: "list", children: [
-            ordered.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("div", { className: talk_map_default["statusRailEmpty"], children: t("statusRail.empty") }) : null,
+          /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: mind_map_default["statusRailList"], role: "list", children: [
+            ordered.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("div", { className: mind_map_default["statusRailEmpty"], children: t("statusRail.empty") }) : null,
             ordered.map((entry, index2) => {
               const dragging = drag !== null && drag.cardId === entry.cardId;
               let moved = 0;
@@ -13982,9 +13984,9 @@ function StatusRail(props) {
                     if (element === null) slotsRef.current.delete(entry.cardId);
                     else slotsRef.current.set(entry.cardId, element);
                   },
-                  className: talk_map_default["statusRailSlot"],
+                  className: mind_map_default["statusRailSlot"],
                   style: style2,
-                  children: dragging ? /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("div", { className: talk_map_default["statusRailGhost"], children: renderCard(entry, false) }) : renderCard(entry, false)
+                  children: dragging ? /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("div", { className: mind_map_default["statusRailGhost"], children: renderCard(entry, false) }) : renderCard(entry, false)
                 },
                 entry.cardId
               );
@@ -13994,7 +13996,7 @@ function StatusRail(props) {
         drag !== null && floatingEntry !== void 0 ? /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(
           "div",
           {
-            className: talk_map_default["statusRailFloating"],
+            className: mind_map_default["statusRailFloating"],
             style: {
               left: drag.left,
               width: drag.width,
@@ -14007,7 +14009,7 @@ function StatusRail(props) {
           "button",
           {
             type: "button",
-            className: talk_map_default["statusRailTab"],
+            className: mind_map_default["statusRailTab"],
             "aria-expanded": open,
             "aria-label": open ? t("statusRail.close") : t("statusRail.open"),
             title: open ? t("statusRail.close") : t("statusRail.open"),
@@ -14019,7 +14021,7 @@ function StatusRail(props) {
                 /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("circle", { cx: "2.4", cy: "25", r: "1.5", fill: "currentColor" }),
                 /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("circle", { cx: "9.6", cy: "25", r: "1.5", fill: "currentColor" })
               ] }),
-              props.entries.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: talk_map_default["statusRailTabCount"], children: props.entries.length }) : null
+              props.entries.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: mind_map_default["statusRailTabCount"], children: props.entries.length }) : null
             ]
           }
         )
@@ -14050,11 +14052,12 @@ function useDsDarkTheme() {
 
 // src/client/MapCanvas.tsx
 var import_jsx_runtime16 = require("react/jsx-runtime");
-var TALK_MAP_EDGE_TYPE = "talkMap";
+var MIND_MAP_EDGE_TYPE = "mindMap";
 var nodeTypes = {
   sessionCard: SessionCardNode,
   wsFrame: WsFrameNode,
-  stackCell: StackNode
+  stackCell: StackNode,
+  sessionDot: GraphDotNode
 };
 var GRID = 16;
 var COLS = 3;
@@ -14067,7 +14070,7 @@ function snap(value) {
 function placeableSessionIds(sessions) {
   return sessions.ids.filter((id2) => {
     const summary = sessions.byId[id2];
-    return summary !== void 0 && !summary.blank && summary.origin !== "subagent";
+    return summary !== void 0 && !summary.blank;
   });
 }
 function sessionWorkspaceIndex(workspaces) {
@@ -14161,8 +14164,8 @@ function CanvasInner(props) {
   };
   const [digestTarget, setDigestTarget] = (0, import_react13.useState)(null);
   const [pushEpoch, setPushEpoch] = (0, import_react13.useState)(0);
-  const LINEAGE_KEY = "dsh.talk-map.lineage-hidden.v1";
-  const LINEAGE_CUT_KEY = "dsh.talk-map.lineage-cut.v1";
+  const LINEAGE_KEY = "dsh.mind_map.lineage-hidden.v1";
+  const LINEAGE_CUT_KEY = "dsh.mind_map.lineage-cut.v1";
   const [lineageCut, setLineageCut] = (0, import_react13.useState)(() => {
     try {
       const raw = window.localStorage.getItem(LINEAGE_CUT_KEY);
@@ -14186,7 +14189,7 @@ function CanvasInner(props) {
   };
   const [lineageHidden, setLineageHiddenState] = (0, import_react13.useState)(() => {
     try {
-      return localStorage.getItem("dsh.talk-map.lineage-hidden.v1") === "1";
+      return localStorage.getItem("dsh.mind_map.lineage-hidden.v1") === "1";
     } catch {
       return false;
     }
@@ -14194,7 +14197,7 @@ function CanvasInner(props) {
   const setLineageHidden = (next) => {
     setLineageHiddenState(next);
     try {
-      localStorage.setItem("dsh.talk-map.lineage-hidden.v1", next ? "1" : "0");
+      localStorage.setItem("dsh.mind_map.lineage-hidden.v1", next ? "1" : "0");
     } catch {
     }
   };
@@ -14206,13 +14209,31 @@ function CanvasInner(props) {
   const [batchBusy, setBatchBusy] = (0, import_react13.useState)(false);
   const wrapperRef = (0, import_react13.useRef)(null);
   const [draggingCardId, setDraggingCardId] = (0, import_react13.useState)(null);
+  const dragPosRef = (0, import_react13.useRef)(null);
+  const dragTickRef = (0, import_react13.useRef)(0);
+  const tapRef = (0, import_react13.useRef)(null);
+  const pushedRef = (0, import_react13.useRef)({});
   const [liveFrame, setLiveFrame] = (0, import_react13.useState)(null);
   const [blockedFrame, setBlockedFrame] = (0, import_react13.useState)(null);
   const [dragCenter, setDragCenter] = (0, import_react13.useState)(null);
   const [isSelecting, setIsSelecting] = (0, import_react13.useState)(false);
   const frozenRef = (0, import_react13.useRef)(null);
   const locale = (0, import_react13.useSyncExternalStore)(subscribeLocale, activeLocale, activeLocale);
-  const sessionWs = (0, import_react13.useMemo)(() => sessionWorkspaceIndex(workspaces), [workspaces]);
+  const graphOn = (0, import_react13.useSyncExternalStore)(graphModeSubscribe, graphModeGet, graphModeGet);
+  const focusOn = (0, import_react13.useSyncExternalStore)(focusModeSubscribe, focusModeGet, focusModeGet);
+  const focusAnchorRef = (0, import_react13.useRef)(null);
+  const nodeCacheRef = (0, import_react13.useRef)(/* @__PURE__ */ new Map());
+  const [tagBusy, setTagBusy] = (0, import_react13.useState)(false);
+  const sessionWs = (0, import_react13.useMemo)(() => {
+    const index = sessionWorkspaceIndex(workspaces);
+    for (const childId of Object.keys(sessions.byId)) {
+      const row = sessions.byId[childId];
+      if (row === void 0 || row.origin !== "subagent" || index.has(childId)) continue;
+      const parentWs = row.parentId === void 0 ? void 0 : index.get(row.parentId);
+      if (parentWs !== void 0) index.set(childId, parentWs);
+    }
+    return index;
+  }, [workspaces, sessions]);
   const wsTitles = (0, import_react13.useMemo)(
     () => new Map(workspaces.items.map((item) => [item.workspaceId, item.title])),
     [workspaces]
@@ -14252,6 +14273,61 @@ function CanvasInner(props) {
     }
     return out;
   }, [canvasState.cards, sessions]);
+  // Archived cards: session summaries carry no archived flag, the workspace
+  // store does (archived sessions stay in sessions.byId, the sidebar only
+  // filters them out). Declared first: the tag groups, the card data, the node
+  // list and the edge builder all read it.
+  const archivedSessionSet = (0, import_react13.useMemo)(() => new Set(workspaces.archivedSessionIds ?? []), [workspaces]);
+  const hideArchivedOn = (0, import_react13.useSyncExternalStore)(hideArchivedSubscribe, hideArchivedGet, hideArchivedGet);
+  const archivedCardCount = (0, import_react13.useMemo)(() => {
+    let count = 0;
+    for (const cardId of Object.keys(visibleCards)) {
+      const row = sessions.byId[visibleCards[cardId].sessionId];
+      if (archivedSessionSet.has(visibleCards[cardId].sessionId)) { count += 1; continue; }
+      // 已跑完的子代理和归档一样会被这个开关藏起来，所以一起计数。
+      if (row !== void 0 && row.origin === "subagent" && row.running !== true) count += 1;
+    }
+    return count;
+  }, [visibleCards, archivedSessionSet, sessions]);
+  const graphTagIndex = (0, import_react13.useMemo)(() => {
+    const derived = graphDeriveTags(canvasState.digests);
+    const out = {};
+    for (const sessionId of Object.keys(canvasState.digests || {})) {
+      const digest = canvasState.digests[sessionId];
+      const explicit = digest !== void 0 && Array.isArray(digest.tags) ? digest.tags.filter(function (tag) { return typeof tag === "string" && tag.trim() !== ""; }) : [];
+      out[sessionId] = explicit.length > 0 ? explicit.slice(0, 6) : (derived[sessionId] || []);
+    }
+    return out;
+  }, [canvasState.digests]);
+  const graphTagGroups = (0, import_react13.useMemo)(() => {
+    const groups = new Map();
+    for (const entry of Object.entries(visibleCards)) {
+      // A hidden archived card takes no part in the graph at all — leaving it in
+      // would chain its neighbours to something nobody can see.
+      if (hideArchivedOn && archivedSessionSet.has(entry[1].sessionId)) continue;
+      var tagRow = sessions.byId[entry[1].sessionId];
+      if (hideArchivedOn && tagRow !== void 0 && tagRow.origin === "subagent" && tagRow.running !== true) continue;
+      const tags = graphTagIndex[entry[1].sessionId];
+      if (tags === void 0 || tags.length === 0) continue;
+      for (const tag of tags) {
+        if (!groups.has(tag)) groups.set(tag, []);
+        groups.get(tag).push(entry[0]);
+      }
+    }
+    for (const members of groups.values()) {
+      members.sort(function (left, right) {
+        const leftSession = sessions.byId[visibleCards[left] === void 0 ? "" : visibleCards[left].sessionId];
+        const rightSession = sessions.byId[visibleCards[right] === void 0 ? "" : visibleCards[right].sessionId];
+        return (leftSession === void 0 ? 0 : leftSession.updatedAt || 0) - (rightSession === void 0 ? 0 : rightSession.updatedAt || 0);
+      });
+    }
+    return groups;
+  }, [visibleCards, graphTagIndex, sessions, hideArchivedOn, archivedSessionSet]);
+  const graphTagCount = (0, import_react13.useMemo)(() => {
+    let count = 0;
+    for (const members of graphTagGroups.values()) if (members.length > 1) count += 1;
+    return count;
+  }, [graphTagGroups]);
   const previewInputs = (0, import_react13.useRef)({ cards: visibleCards, sessions });
   previewInputs.current = { cards: visibleCards, sessions };
   const previewTick = (0, import_react13.useRef)(() => {
@@ -14269,7 +14345,7 @@ function CanvasInner(props) {
       }
       if (pending.length === 0) return;
       for (const [sessionId, stamp] of stamps) previewStamp.current.set(sessionId, stamp);
-      void talkMapApi.lastUserMessages(pending).then(({ texts }) => {
+      void mindMapApi.lastUserMessages(pending).then(({ texts }) => {
         const cleaned = {};
         for (const [sessionId, text] of Object.entries(texts)) {
           const value = cleanPreviewText(text).slice(0, 240);
@@ -14310,6 +14386,7 @@ function CanvasInner(props) {
   }, [wsFrames, liveFrame]);
   const folderLayouts = (0, import_react13.useMemo)(() => {
     const out = {};
+    if (graphOn) return out;
     for (const [groupId, rect] of Object.entries(frameRects)) {
       const members = (membersByGroup.get(groupId) ?? []).map((cardId) => {
         const card = visibleCards[cardId];
@@ -14330,7 +14407,7 @@ function CanvasInner(props) {
         const insertAt = Math.min(Math.max(0, wanted), Math.max(0, Math.min(slots, others.length) - 1));
         preview = [...others.slice(0, insertAt), draggingCardId, ...others.slice(insertAt)];
       }
-      const visibleSlots = visibleCount(capacity, preview.length);
+      const visibleSlots = graphOn ? preview.length : visibleCount(capacity, preview.length);
       out[groupId] = {
         rect,
         ordered: preview,
@@ -14339,7 +14416,7 @@ function CanvasInner(props) {
       };
     }
     return out;
-  }, [frameRects, membersByGroup, visibleCards, pinnedSessions, draggingCardId, dragCenter]);
+  }, [frameRects, membersByGroup, visibleCards, pinnedSessions, draggingCardId, dragCenter, graphOn]);
   const cardLayout = (0, import_react13.useMemo)(() => {
     const out = {};
     for (const layout of Object.values(folderLayouts)) {
@@ -14357,6 +14434,7 @@ function CanvasInner(props) {
   (0, import_react13.useEffect)(() => {
     if (canvasState.phase !== "ready") return;
     if (draggingCardId !== null || liveFrame !== null) return;
+    if (graphOn) return;
     const timer4 = window.setTimeout(() => {
       const stale = {};
       for (const [cardId, point] of Object.entries(cardLayout)) {
@@ -14373,6 +14451,7 @@ function CanvasInner(props) {
   (0, import_react13.useEffect)(() => {
     if (canvasState.phase !== "ready") return;
     if (draggingCardId !== null || liveFrame !== null) return;
+    if (graphOn) return;
     const seen = lastActivitySeen;
     const stamps = /* @__PURE__ */ new Map();
     for (const card of Object.values(visibleCards)) {
@@ -14640,7 +14719,10 @@ function CanvasInner(props) {
     if (alertById.has(sessionId)) return "error";
     if (status !== void 0 && status.pendingInteraction !== void 0) return "waiting";
     if (status?.running === true || summary?.running === true) return "running";
-    if (status?.completionUnread === true || finishedById.has(sessionId)) return "done";
+    if (status?.completionUnread === true || finishedById.has(sessionId)) {
+      if (summary !== void 0 && summary.origin === "subagent") return void 0;
+      return "done";
+    }
     return void 0;
   };
   const statusEntries = (0, import_react13.useMemo)(() => {
@@ -14666,14 +14748,14 @@ function CanvasInner(props) {
   const focusCard = (0, import_react13.useCallback)((cardId) => {
     const slot = cardLayout[cardId];
     const card = visibleCards[cardId];
-    const point = slot ?? (card === void 0 ? void 0 : { x: card.x, y: card.y });
+    const point = (graphOn ? void 0 : slot) ?? (card === void 0 ? void 0 : { x: card.x, y: card.y });
     setSelectedIds([cardId]);
     if (point === void 0) return;
     setCenter(point.x + CARD_W / 2, point.y + CARD_H / 2, { zoom: getZoom(), duration: 320 });
   }, [cardLayout, visibleCards, setCenter, getZoom, setSelectedIds]);
   const liveNodes = (0, import_react13.useMemo)(() => {
     const wsColors = canvasState.global?.wsColors ?? {};
-    const frameNodes = Object.entries(frameRects).map(([groupId, rect]) => {
+    const frameNodes = graphOn ? [] : Object.entries(frameRects).map(([groupId, rect]) => {
       const members = membersByGroup.get(groupId) ?? [];
       return {
         id: `frame-${groupId}`,
@@ -14722,19 +14804,22 @@ function CanvasInner(props) {
         updatedAt: summary?.updatedAt,
         ...previews[card.sessionId] !== void 0 ? { preview: previews[card.sessionId] } : {},
         waiting: status !== void 0 ? status.pendingInteraction !== void 0 : summary?.pendingInteraction !== void 0,
-        done: status?.completionUnread === true,
+        done: status?.completionUnread === true && !(summary !== void 0 && summary.origin === "subagent"),
         glow: glowOf(card.sessionId),
         ...draftSessions.has(card.sessionId) ? { pendingDraft: true } : {},
         ...interruptedById.has(card.sessionId) ? { interrupted: true } : {},
         ...currentSessionId() === card.sessionId ? { current: true } : {},
-        ...pinnedSessions.has(card.sessionId) ? { pinned: true } : {}
+        ...pinnedSessions.has(card.sessionId) ? { pinned: true } : {},
+        ...archivedSessionSet.has(card.sessionId) ? { archived: true } : {},
+        ...summary !== void 0 && summary.origin === "subagent" ? { subagent: true, subagentFinished: summary.running !== true } : {},
+        ...graphTagIndex[card.sessionId] !== void 0 && graphTagIndex[card.sessionId].length > 0 ? { tags: graphTagIndex[card.sessionId] } : {}
       };
-      return {
+      const node = {
         id: cardId,
         type: "sessionCard",
         // The dragged card follows the pointer; every other card sits on its
         // slot (and glides there — the CSS transition owns the animation).
-        position: dragging || slot === void 0 ? { x: card.x, y: card.y } : { x: slot.x, y: slot.y },
+        position: dragging && dragPosRef.current !== null ? dragPosRef.current : dragging || graphOn || slot === void 0 ? { x: card.x, y: card.y } : { x: slot.x, y: slot.y },
         // Batch mode shows the pick as the card's ring; otherwise it is the
         // canvas selection.
         selected: batchMode ? batchPicks.has(cardId) : liveSelectedIds.has(cardId),
@@ -14743,11 +14828,13 @@ function CanvasInner(props) {
         } } } : { data },
         // Cards folded into the stack cell stay in the model (their edges and
         // selection survive) but must not paint over the grid.
-        hidden: foldedSet.has(cardId),
+        hidden: foldedSet.has(cardId) || (graphOn && hideArchivedOn && (archivedSessionSet.has(card.sessionId) || (summary !== void 0 && summary.origin === "subagent" && summary.running !== true))),
         className: dragging ? "tmDragging" : ""
       };
+      return graphStableNode(nodeCacheRef.current, cardId, node);
     });
-    const stackNodes = Object.entries(foldedCards).map(([groupId, folded]) => {
+    for (const cachedId of nodeCacheRef.current.keys()) if (visibleCards[cachedId] === void 0) nodeCacheRef.current.delete(cachedId);
+    const stackNodes = graphOn ? [] : Object.entries(foldedCards).map(([groupId, folded]) => {
       const layout = folderLayouts[groupId];
       const rect = layout?.rect ?? frameRects[groupId];
       const index2 = layout?.shown.length ?? 0;
@@ -14781,7 +14868,7 @@ function CanvasInner(props) {
       };
     });
     return [...frameNodes, ...cardNodes, ...stackNodes];
-  }, [frameRects, folderLayouts, foldedCards, foldedSet, cardLayout, draggingCardId, membersByGroup, wsTitles, visibleCards, canvasState.digests, canvasState.global, sessions, statusById, alertById, finishedById, interruptedById, draftSessions, previews, pinnedSessions, renamedTitles, renamedWorkspaces, liveSelectedIds, batchMode, batchPicks, locale]);
+  }, [frameRects, folderLayouts, foldedCards, foldedSet, cardLayout, draggingCardId, membersByGroup, wsTitles, visibleCards, canvasState.digests, canvasState.global, sessions, statusById, alertById, finishedById, interruptedById, draftSessions, previews, pinnedSessions, renamedTitles, renamedWorkspaces, liveSelectedIds, batchMode, batchPicks, locale, graphOn, graphTagIndex, hideArchivedOn, archivedSessionSet]);
   const sessionIdToCardId = (0, import_react13.useMemo)(() => {
     const index2 = /* @__PURE__ */ new Map();
     for (const [cardId, card] of Object.entries(visibleCards)) {
@@ -14880,7 +14967,7 @@ function CanvasInner(props) {
         // *bottom* faces instead, and then had to loop back — the loop is what cut
         // through the cards. Only fall back to geometry when nothing was stored.
         ...edge.fromHandle !== void 0 && edge.toHandle !== void 0 ? { sourceHandle: edge.fromHandle, targetHandle: edge.toHandle } : computedHandles(edge.fromCardId, edge.toCardId),
-        type: TALK_MAP_EDGE_TYPE,
+        type: MIND_MAP_EDGE_TYPE,
         selected: liveSelectedEdgeIds.has(edgeId),
         // Endpoints ride along for the edge context menu (id parsing would
         // be ambiguous — card ids contain dashes); `sync` drives the look.
@@ -14938,7 +15025,7 @@ function CanvasInner(props) {
           // Derived lines route like any other: faces are recomputed from the
           // cards' current positions, so a 12px neighbour gap becomes a real loop.
           ...computedHandles(parentCardId, cardId),
-          type: TALK_MAP_EDGE_TYPE,
+          type: MIND_MAP_EDGE_TYPE,
           // Selectable on purpose: right-clicking it must answer "what is this",
           // and offer to hide it. It used to be un-clickable mystery wiring.
           // 血缘线就按“一条还没同步的普通连线”渲染：同样的虚线、同样的箭头、
@@ -14957,8 +15044,121 @@ function CanvasInner(props) {
         });
       }
     }
+    if (graphOn) {
+      // Hidden archived cards are out of the graph entirely, so the chains are
+      // rebuilt between the cards that are actually on screen: hiding a card
+      // must re-link its two neighbours, not cut the chain in half.
+      const graphCardIds = Object.keys(visibleCards).filter(function (cardId) {
+        if (foldedSet.has(cardId)) return false;
+        if (hideArchivedOn && archivedSessionSet.has(visibleCards[cardId].sessionId)) return false;
+        var chainRow = sessions.byId[visibleCards[cardId].sessionId];
+        if (hideArchivedOn && chainRow !== void 0 && chainRow.origin === "subagent" && chainRow.running !== true) return false;
+        return true;
+      });
+      // 不再去重：同一对卡片可能既是同工作区又是同标签，两种关系各画一条。
+      // 这样「链式」也不会再让中间的卡把两端的连线挡掉。
+      const pushGraphEdge = function (fromCardId, toCardId, tag, idTag) {
+        if (fromCardId === toCardId) return;
+        // id 里带上关系本身（标签名），两个标签共享同一对时是两条独立的边而不是重复 id。
+        out.push({
+          id: "graph-" + tag + "-" + (idTag === void 0 ? "" : idTag + "-") + fromCardId + "-" + toCardId,
+          source: fromCardId,
+          target: toCardId,
+          // No handles: the renderer intersects the centre line with each
+          // card's rectangle, so the line always leaves from the side that
+          // faces the other node and re-routes live while dragging.
+          type: "graphLine",
+          selectable: false,
+          data: {
+            fromCardId: fromCardId,
+            toCardId: toCardId,
+            sync: "idle",
+            structural: true,
+            graph: true,
+            graphKind: tag,
+            ready: boardTick > 0
+          },
+          style: { stroke: "rgba(198, 206, 220, 0.34)", strokeWidth: 1.1 }
+        });
+      };
+      const byWorkspace = new Map();
+      for (const cardId of graphCardIds) {
+        const card = visibleCards[cardId];
+        if (card === void 0) continue;
+        const groupId = sessionWs.get(card.sessionId);
+        if (groupId === void 0) continue;
+        if (!byWorkspace.has(groupId)) byWorkspace.set(groupId, []);
+        byWorkspace.get(groupId).push(cardId);
+      }
+      for (const members of byWorkspace.values()) {
+        members.sort(function (left, right) {
+          const leftSession = sessions.byId[visibleCards[left].sessionId];
+          const rightSession = sessions.byId[visibleCards[right].sessionId];
+          return (leftSession === void 0 ? 0 : leftSession.updatedAt || 0) - (rightSession === void 0 ? 0 : rightSession.updatedAt || 0);
+        });
+        // 同组任意两点都连（组内全连接），不是只连成一条链。
+        for (let left = 0; left < members.length; left += 1) {
+          for (let right = left + 1; right < members.length; right += 1) pushGraphEdge(members[left], members[right], "ws");
+        }
+      }
+      for (const group of graphTagGroups) {
+        const members = group[1].filter(function (cardId) { return !foldedSet.has(cardId); });
+        if (members.length < 2) continue;
+        for (let left = 0; left < members.length; left += 1) {
+          for (let right = left + 1; right < members.length; right += 1) pushGraphEdge(members[left], members[right], "tag", group[0]);
+        }
+      }
+    }
     return out;
-  }, [visibleCards, canvasState.edges, sessions, sessionIdToCardId, liveSelectedEdgeIds, foldedSet, locale, pushEpoch, lineageHidden, liveNodes, boardTick]);
+  }, [visibleCards, canvasState.edges, sessions, sessionIdToCardId, liveSelectedEdgeIds, foldedSet, locale, pushEpoch, lineageHidden, liveNodes, boardTick, graphOn, graphTagGroups, hideArchivedOn, archivedSessionSet]);
+  // Focus view: keep only the session you are working in plus everything linked
+  // to it (fork lineage, same workspace, shared tag, manual links) within
+  // FOCUS_DEPTH hops. Null means "no filtering".
+  const focusSet = (0, import_react13.useMemo)(() => {
+    if (!focusOn) { focusAnchorRef.current = null; return null; }
+    const anchorSession = currentSessionId();
+    let anchorCardId = anchorSession === void 0 ? void 0 : sessionIdToCardId.get(anchorSession);
+    if (anchorCardId === void 0) {
+      let newest;
+      for (const entry of Object.entries(visibleCards)) {
+        const stamp = sessions.byId[entry[1].sessionId]?.updatedAt ?? 0;
+        if (newest === void 0 || stamp > newest.stamp) newest = { cardId: entry[0], stamp: stamp };
+      }
+      anchorCardId = newest === void 0 ? void 0 : newest.cardId;
+    }
+    focusAnchorRef.current = anchorCardId === void 0 ? null : anchorCardId;
+    if (anchorCardId === void 0) return null;
+    const adjacency = new Map();
+    const connect = function (left, right) {
+      if (!adjacency.has(left)) adjacency.set(left, []);
+      adjacency.get(left).push(right);
+    };
+    for (const drawn of liveEdges) { connect(drawn.source, drawn.target); connect(drawn.target, drawn.source); }
+    const keep = new Map([[anchorCardId, 0]]);
+    let frontier = [anchorCardId];
+    for (let depth = 0; depth < FOCUS_DEPTH; depth += 1) {
+      const next = [];
+      for (const cardId of frontier) {
+        for (const neighbour of adjacency.get(cardId) ?? []) {
+          if (keep.has(neighbour)) continue;
+          keep.set(neighbour, depth + 1);
+          next.push(neighbour);
+        }
+      }
+      frontier = next;
+    }
+    return keep;
+  }, [focusOn, liveEdges, visibleCards, sessions, sessionIdToCardId]);
+  const focusEdges = focusSet === null ? liveEdges : liveEdges.filter(function (drawn) { return focusSet.has(drawn.source) && focusSet.has(drawn.target); });
+  // First ring stays a readable card; everything further out collapses to a dot
+  // you can hover for the details (hundreds of full cards at once is what made
+  // the graph heavy in the first place).
+  const focusNodes = focusSet === null ? liveNodes : liveNodes.map(function (node) {
+    if (node.type !== "sessionCard") return node;
+    if (!focusSet.has(node.id)) return { ...node, hidden: true };
+    return node;
+  });
+  const focusCount = focusSet === null ? 0 : focusSet.size;
   const drawerWireLinks = (0, import_react13.useMemo)(() => {
     if (drawer === null) return [];
     const layout = folderLayouts[drawer.groupId];
@@ -14970,8 +15170,8 @@ function CanvasInner(props) {
       return { from: edge.source, to: edge.target, visible };
     });
   }, [drawer, folderLayouts, liveEdges, visibleCards, foldedSet]);
-  const nodes = isSelecting && frozenRef.current !== null ? frozenRef.current.nodes : liveNodes;
-  const edges = isSelecting && frozenRef.current !== null ? frozenRef.current.edges : liveEdges;
+  const nodes = isSelecting && frozenRef.current !== null ? frozenRef.current.nodes : focusNodes;
+  const edges = isSelecting && frozenRef.current !== null ? frozenRef.current.edges : focusEdges;
   const onSelectionStart = () => {
     frozenRef.current = { nodes: liveNodes, edges: liveEdges };
     setIsSelecting(true);
@@ -15014,10 +15214,14 @@ function CanvasInner(props) {
         } else if (change.dragging === false) {
           setDraggingCardId(null);
           setDragCenter(null);
+          dragPosRef.current = null;
+          if (Object.keys(pushedRef.current).length > 0) { canvas.moveCards(pushedRef.current); pushedRef.current = {}; }
           const droppedGroupId = sessionWs.get(visibleCards[change.id]?.sessionId ?? "");
           const droppedLayout = droppedGroupId === void 0 ? void 0 : folderLayouts[droppedGroupId];
           const droppedRect = droppedGroupId === void 0 ? void 0 : frameRects[droppedGroupId] ?? wsFrames[droppedGroupId];
-          if (droppedLayout !== void 0 && droppedRect !== void 0) {
+          if (graphOn) {
+            canvas.moveCard(change.id, change.position.x, change.position.y);
+          } else if (droppedLayout !== void 0 && droppedRect !== void 0) {
             const cols = colsForWidth(droppedRect.width);
             droppedLayout.ordered.forEach((cardId, index2) => {
               const point = slotPoint(droppedRect, index2, cols);
@@ -15025,9 +15229,18 @@ function CanvasInner(props) {
             });
           }
         } else if (change.dragging === true) {
-          setDraggingCardId(change.id);
-          setDragCenter({ x: change.position.x + CARD_W / 2, y: change.position.y + CARD_H / 2 });
-          canvas.moveCard(change.id, change.position.x, change.position.y);
+          // Drag frames: React Flow already moves the node in its own store at
+          // pointer speed. Writing the plugin store here re-rendered all 63
+          // cards + 88 edges on every pointermove (measured: p95 100 ms/frame,
+          // 134 long tasks while dragging one card). Keep the live position in
+          // a ref, persist once on drop.
+          if (draggingCardId !== change.id) setDraggingCardId(change.id);
+          dragPosRef.current = { x: change.position.x, y: change.position.y };
+          const dragNow = typeof performance !== "undefined" ? performance.now() : Date.now();
+          if (!graphOn && dragNow - dragTickRef.current > 90) {
+            dragTickRef.current = dragNow;
+            setDragCenter({ x: change.position.x + CARD_W / 2, y: change.position.y + CARD_H / 2 });
+          }
         }
       } else if (change.type === "select") {
         setSelectedIds((previous) => {
@@ -15162,13 +15375,13 @@ function CanvasInner(props) {
     const fromTitle = sessions.byId[fromCard.sessionId]?.displayTitle ?? fromCard.sessionId;
     const toTitle = sessions.byId[toCard.sessionId]?.displayTitle ?? toCard.sessionId;
     try {
-      const fresh = await talkMapApi.ensureDigest(fromCard.sessionId);
+      const fresh = await mindMapApi.ensureDigest(fromCard.sessionId);
       const digest = fresh.digest ?? canvasState.digests[fromCard.sessionId];
       if (digest === void 0 || digestIsEmpty2(digest)) {
         showToast(t("digest.empty"));
         return;
       }
-      await talkMapApi.injectContext(toCard.sessionId, [
+      await mindMapApi.injectContext(toCard.sessionId, [
         { sessionId: fromCard.sessionId, text: buildPushText(fromTitle, digest) }
       ]);
       const pushedAt = stampPush(fromCardId, toCardId);
@@ -15511,7 +15724,7 @@ function CanvasInner(props) {
     const wrapper = wrapperRef.current;
     if (wrapper === null) return;
     const bounds = wrapper.getBoundingClientRect();
-    const flow = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+    const flow = mindMapCanvasToFlow.fn !== null ? mindMapCanvasToFlow.fn(event.clientX, event.clientY) : screenToFlowPosition({ x: event.clientX, y: event.clientY });
     setMenu({
       left: event.clientX - bounds.left,
       top: event.clientY - bounds.top,
@@ -15549,7 +15762,7 @@ function CanvasInner(props) {
             const services2 = getServices();
             if (services2 === void 0 || parentDir === "") throw new Error("no workspace root available");
             const path = `${parentDir}/${value}`;
-            await talkMapApi.ensureDir(path);
+            await mindMapApi.ensureDir(path);
             const created = await callRpc2("workspace/create", { path });
             importWorkspace(created.workspace.workspaceId, menu.flowX, menu.flowY);
             close();
@@ -15796,13 +16009,217 @@ function CanvasInner(props) {
       items
     };
   }, [menu, workspaces.items, sessions, boardSessionIds, wsFrames, wsTitles, canvasState.cards, canvasState.edges, canvasState.digests, pinnedSessions, locale]);
+  (0, import_react13.useEffect)(() => {
+    const apply = () => {
+      const root = wrapperRef.current;
+      if (root === null) return;
+      const level = getZoom() < 0.4 ? "far" : "near";
+      if (root.dataset.lod !== level) root.dataset.lod = level;
+    };
+    apply();
+    const timer = window.setTimeout(apply, 420);
+    return function () { window.clearTimeout(timer); };
+  }, [graphOn, getZoom]);
+  const graphCardIds = Object.keys(visibleCards).sort();
+  const graphCardSig = graphCardIds.join(",");
+  const relayoutGraph = () => {
+    const entries = Object.entries(visibleCards).filter(function (entry) { return focusSet === null || focusSet.has(entry[0]); }).map(function (entry) { return { id: entry[0], x: entry[1].x, y: entry[1].y }; });
+    if (entries.length === 0) return;
+    const links = [];
+    for (const drawn of focusEdges) links.push([drawn.source, drawn.target]);
+    const placed = graphLayoutForce(entries, links, { width: CARD_W, height: CARD_H });
+    const points = {};
+    for (const cardId of Object.keys(placed)) points[cardId] = { x: snap(placed[cardId].x), y: snap(placed[cardId].y) };
+    canvas.moveCards(points);
+    // The canvas keeps its own simulation: hand the new coordinates over and
+    // heat it back up, otherwise the button would only move the cards on paper.
+    if (mindMapSimKick !== null && typeof mindMapSimKick.fn === "function") mindMapSimKick.fn();
+  };
+  // New cards only: keep every card the user has already placed exactly where it
+  // is, and drop the newcomer next to its workspace peers in the first free spot.
+  const placeNewGraphCards = (newIds) => {
+    const fresh = new Set(newIds);
+    const occupied = [];
+    let anchorSumX = 0;
+    let anchorSumY = 0;
+    for (const entry of Object.entries(visibleCards)) {
+      if (fresh.has(entry[0])) continue;
+      occupied.push({ x: entry[1].x, y: entry[1].y });
+      anchorSumX += entry[1].x;
+      anchorSumY += entry[1].y;
+    }
+    let globalX = occupied.length === 0 ? 0 : anchorSumX / occupied.length;
+    let globalY = occupied.length === 0 ? 0 : anchorSumY / occupied.length;
+    const points = {};
+    for (const cardId of newIds) {
+      const card = visibleCards[cardId];
+      if (card === void 0) continue;
+      const groupId = sessionWs.get(card.sessionId);
+      let groupX = 0;
+      let groupY = 0;
+      let groupCount = 0;
+      for (const entry of Object.entries(visibleCards)) {
+        if (fresh.has(entry[0])) continue;
+        if (groupId !== void 0 && sessionWs.get(entry[1].sessionId) !== groupId) continue;
+        groupX += entry[1].x;
+        groupY += entry[1].y;
+        groupCount += 1;
+      }
+      const centerX = groupCount === 0 ? globalX : groupX / groupCount;
+      const centerY = groupCount === 0 ? globalY : groupY / groupCount;
+      let spot;
+      for (let step = 0; step < 700; step += 1) {
+        const radius = step === 0 ? 0 : 48 + step * 13;
+        const angle = step * 0.55;
+        const pointX = Math.round(centerX + Math.cos(angle) * radius);
+        const pointY = Math.round(centerY + Math.sin(angle) * radius);
+        let free = true;
+        for (const box of occupied) {
+          if (Math.abs(box.x - pointX) < CARD_W + 32 && Math.abs(box.y - pointY) < CARD_H + 28) { free = false; break; }
+        }
+        if (free) { spot = { x: pointX, y: pointY }; break; }
+      }
+      if (spot === void 0) spot = { x: Math.round(centerX), y: Math.round(centerY) };
+      points[cardId] = spot;
+      occupied.push(spot);
+    }
+    if (Object.keys(points).length > 0) canvas.moveCards(points);
+  };
+  const graphAutoRef = (0, import_react13.useRef)({ full: function () { }, place: function () { } });
+  graphAutoRef.current.full = relayoutGraph;
+  graphAutoRef.current.place = placeNewGraphCards;
+  (0, import_react13.useEffect)(() => {
+    if (!graphOn || canvasState.phase !== "ready") return;
+    let stored = [];
+    try { stored = JSON.parse(window.localStorage.getItem(GRAPH_LAID_KEY) || "[]"); } catch (error) { stored = []; }
+    if (!Array.isArray(stored)) stored = [];
+    if (stored.length === graphCardIds.length && stored.every(function (cardId, position) { return cardId === graphCardIds[position]; })) return;
+    const storedSet = new Set(stored);
+    const currentSet = new Set(graphCardIds);
+    const additions = graphCardIds.filter(function (cardId) { return !storedSet.has(cardId); });
+    const removals = stored.filter(function (cardId) { return !currentSet.has(cardId); });
+    const timer = window.setTimeout(function () {
+      if (stored.length === 0 || removals.length > 0) graphAutoRef.current.full();
+      else if (additions.length > 0) graphAutoRef.current.place(additions);
+      try { window.localStorage.setItem(GRAPH_LAID_KEY, JSON.stringify(graphCardIds)); } catch (error) { }
+    }, 320);
+    return function () { window.clearTimeout(timer); };
+  }, [graphOn, canvasState.phase, graphCardSig]);
+  const generateTags = async () => {
+    const missing = [];
+    for (const card of Object.values(visibleCards)) {
+      const digest = canvasState.digests[card.sessionId];
+      const hasTags = digest !== void 0 && Array.isArray(digest.tags) && digest.tags.length > 0;
+      if (!hasTags) missing.push(card.sessionId);
+    }
+    if (missing.length === 0) { showToast("所有卡片都已有模型标签"); return; }
+    setTagBusy(true);
+    try {
+      const batch = missing.slice(0, 24);
+      for (const sessionId of batch) {
+        try { await mindMapApi.refreshDigest(sessionId); } catch (error) { console.error("[mind_map] tag digest failed", sessionId, error); }
+      }
+      canvas.refresh();
+      showToast("标签已生成 " + batch.length + " 个" + (missing.length > batch.length ? "，还剩 " + (missing.length - batch.length) + " 个" : ""));
+    } finally {
+      setTagBusy(false);
+    }
+  };
+  (0, import_react13.useEffect)(() => {
+    if (!focusOn || focusSet === null) return;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const cardId of focusSet.keys()) {
+      const card = visibleCards[cardId];
+      if (card === void 0) continue;
+      minX = Math.min(minX, card.x);
+      minY = Math.min(minY, card.y);
+      maxX = Math.max(maxX, card.x + CARD_W);
+      maxY = Math.max(maxY, card.y + CARD_H);
+    }
+    if (!Number.isFinite(minX)) return;
+    const root = wrapperRef.current;
+    const viewWidth = root === null ? 900 : Math.max(240, root.clientWidth - 96);
+    const viewHeight = root === null ? 700 : Math.max(200, root.clientHeight - 150);
+    const spanX = Math.max(CARD_W, maxX - minX);
+    const spanY = Math.max(CARD_H, maxY - minY);
+    const zoom = Math.max(0.25, Math.min(0.92, Math.min(viewWidth / spanX, viewHeight / spanY)));
+    const timer = window.setTimeout(function () {
+      setCenter((minX + maxX) / 2, (minY + maxY) / 2, { zoom: zoom, duration: 320 });
+    }, 160);
+    return function () { window.clearTimeout(timer); };
+  }, [focusOn, focusSet]);
+  const subagentPlacedRef = (0, import_react13.useRef)(new Set());
+  (0, import_react13.useEffect)(() => {
+    if (canvasState.phase !== "ready") return;
+    const cardOfSession = (sessionId) => {
+      for (const entry of Object.entries(visibleCards)) {
+        if (entry[1].sessionId === sessionId) return entry[1];
+      }
+      return null;
+    };
+    let rightEdge = 0;
+    for (const entry of Object.entries(visibleCards)) {
+      const card = entry[1];
+      if (card.x + CARD_W > rightEdge) rightEdge = card.x + CARD_W;
+    }
+    let orphanIndex = 0;
+    const batch = {};
+    for (const sessionId of placeableSessionIds(sessions)) {
+      const row = sessions.byId[sessionId];
+      if (row === void 0 || row.origin !== "subagent") continue;
+      if (boardSessionIds.has(sessionId) || subagentPlacedRef.current.has(sessionId)) continue;
+      subagentPlacedRef.current.add(sessionId);
+      let cursor = row.parentId;
+      let hops = 0;
+      let anchor = null;
+      while (cursor !== void 0 && hops < 6) {
+        const hit = cardOfSession(cursor);
+        if (hit !== null) { anchor = hit; break; }
+        const up = sessions.byId[cursor];
+        cursor = up === void 0 ? void 0 : up.parentId;
+        hops += 1;
+      }
+      const column = orphanIndex % 3;
+      const rowIndex = (orphanIndex - column) / 3;
+      const spot = anchor === null
+        ? { x: snap(rightEdge + 90 + column * (CARD_W + 30)), y: snap(400 + rowIndex * (CARD_H + 30)) }
+        : { x: snap(anchor.x + CARD_W + 40), y: snap(anchor.y + (hops + 1) * 26) };
+      orphanIndex += 1;
+      batch[newCardId()] = { boardId: INBOX_BOARD_ID, sessionId: sessionId, x: spot.x, y: spot.y, createdAt: Date.now() };
+    }
+    if (Object.keys(batch).length > 0) canvas.addCards(batch);
+  }, [canvasState.phase, sessions, visibleCards, boardSessionIds]);
+  const startForkFrom = (forkCardId, flowX, flowY) => {
+    const forkCard = visibleCards[forkCardId];
+    if (forkCard === void 0) return;
+    const forkSummary = sessions.byId[forkCard.sessionId];
+    const forkWorkspaceId = sessionWs.get(forkCard.sessionId);
+    const forkPending = {
+      parent: { cardId: forkCardId, sessionId: forkCard.sessionId, title: forkSummary === void 0 ? forkCard.sessionId : forkSummary.displayTitle },
+      x: snap(flowX - CARD_W / 2),
+      y: snap(flowY - CARD_H / 2)
+    };
+    if (forkWorkspaceId !== void 0) forkPending.parentWorkspaceId = forkWorkspaceId;
+    setPendingSpawn(forkPending);
+  };
+  mindMapTapBridge.live = { sessions: sessions, batchMode: batchMode, open: openSession, commit: function (points) { canvas.moveCards(points); } };
+  mindMapCanvasBridge.current = {
+    startSessionAt: function (flowX, flowY) { startSessionIn(folderAt(flowX, flowY)); },
+    openCardMenu: function (fakeEvent, cardId) { openMenu(fakeEvent, "card", cardId); },
+    openPaneMenu: function (fakeEvent) { openMenu(fakeEvent, "pane"); },
+    forkFrom: function (cardId, flowX, flowY) { startForkFrom(cardId, flowX, flowY); }
+  };
+  (0, import_react13.useEffect)(() => () => { mindMapTapBridge.live = null; mindMapCanvasBridge.current = null; }, []);
   const savedCamera = canvas.savedCamera(INBOX_BOARD_ID);
   const hasContent = Object.keys(visibleCards).length > 0 || Object.keys(wsFrames).length > 0;
   return /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)(
     "div",
     {
       ref: wrapperRef,
-      className: `${talk_map_default["canvas"]}${connecting ? ` ${talk_map_default["canvasConnecting"]}` : ""}`,
+      className: `${mind_map_default["canvas"]}${connecting ? ` ${mind_map_default["canvasConnecting"]}` : ""}`,
       onDoubleClick: (event) => {
         const target = event.target;
         const nodeElement = target.closest(".react-flow__node");
@@ -15823,7 +16240,7 @@ function CanvasInner(props) {
       },
       children: [
         /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)(
-          index,
+          GraphSurface,
           {
             nodes,
             edges,
@@ -15842,7 +16259,7 @@ function CanvasInner(props) {
             onSelectionEnd,
             onNodeClick: (event, node) => {
               if (batchMode) return;
-              if (node.type === "sessionCard") {
+              if (node.type === "sessionCard" || node.type === "sessionDot") {
                 const data = node.data;
                 if (!data.ghost) openSession(data.sessionId);
                 return;
@@ -15863,7 +16280,7 @@ function CanvasInner(props) {
               openMenu(event, "pane");
             },
             onNodeContextMenu: (event, node) => {
-              if (node.type === "sessionCard") openMenu(event, "card", node.id);
+              if (node.type === "sessionCard" || node.type === "sessionDot") openMenu(event, "card", node.id);
               else if (node.type === "wsFrame") openMenu(event, "frame", node.id.slice("frame-".length));
               else event.preventDefault();
             },
@@ -15874,6 +16291,12 @@ function CanvasInner(props) {
               } else {
                 event.preventDefault();
               }
+            },
+            onMove: (_event, viewport) => {
+              const root = wrapperRef.current;
+              if (root === null) return;
+              const level = viewport.zoom < 0.4 ? "far" : "near";
+              if (root.dataset.lod !== level) root.dataset.lod = level;
             },
             onMoveEnd: (_event, viewport) => {
               canvas.setCamera(INBOX_BOARD_ID, viewport);
@@ -15888,16 +16311,22 @@ function CanvasInner(props) {
             deleteKeyCode: ["Backspace", "Delete"],
             minZoom: 0.1,
             proOptions: { hideAttribution: true },
+            onlyRenderVisibleElements: true,
+            // Without this React Flow treats any pointer movement as a drag and
+            // never fires onNodeClick: a normal mouse jitters 1-3px, so clicking
+            // a card silently did nothing.
+            nodeClickDistance: 6,
             ...savedCamera !== void 0 ? { defaultViewport: savedCamera } : { fitView: hasContent },
             children: [
               /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(Background, { variant: BackgroundVariant.Dots, gap: GRID, size: 1 }),
               /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(Controls, { showInteractive: false, children: /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(ControlButton, { title: t("map.zoom100"), onClick: () => {
                 void zoomTo(1, { duration: 200 });
-              }, children: /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("span", { className: talk_map_default["zoomResetLabel"], children: "1:1" }) }) })
+              }, children: /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("span", { className: mind_map_default["zoomResetLabel"], children: "1:1" }) }) })
             ]
           }
         ),
         /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(StatusRail, { entries: statusEntries, cardWidth: CARD_W, onFocus: focusCard }),
+        /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(GraphBar, { onRelayout: relayoutGraph, onGenerateTags: generateTags, tagBusy: tagBusy, tagCount: graphTagCount, focusOn: focusOn, focusCount: focusCount, onToggleFocus: function () { focusModeSet(!focusOn); }, hideArchived: hideArchivedOn, archivedCount: archivedCardCount, onToggleHideArchived: function () { hideArchivedSet(!hideArchivedOn); } }),
         batchMode ? /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(
           BatchBar,
           {
@@ -15915,7 +16344,7 @@ function CanvasInner(props) {
             }
           }
         ) : null,
-        hasContent ? null : /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("div", { className: talk_map_default["emptyHint"], children: t("map.empty") }),
+        hasContent ? null : /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("div", { className: mind_map_default["emptyHint"], children: t("map.empty") }),
         menuState !== null ? /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(ContextMenu, { menu: menuState, onClose: () => {
           setMenu(null);
         } }, menu?.view ?? "root") : null,
@@ -15974,20 +16403,20 @@ function CanvasInner(props) {
             onClose: closeDrawer
           }
         ) : null,
-        toast !== null ? /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("div", { className: talk_map_default["toast"], children: toast }) : null
+        toast !== null ? /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("div", { className: mind_map_default["toast"], children: toast }) : null
       ]
     }
   );
 }
 function BatchBar(props) {
-  return /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)("div", { className: talk_map_default["batchBar"], role: "toolbar", "aria-label": t("batch.title"), children: [
-    /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("span", { className: talk_map_default["batchCount"], children: t("batch.count", { n: String(props.count) }) }),
-    /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("span", { className: talk_map_default["batchSpace"] }),
+  return /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)("div", { className: mind_map_default["batchBar"], role: "toolbar", "aria-label": t("batch.title"), children: [
+    /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("span", { className: mind_map_default["batchCount"], children: t("batch.count", { n: String(props.count) }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("span", { className: mind_map_default["batchSpace"] }),
     /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(
       "button",
       {
         type: "button",
-        className: talk_map_default["batchAction"],
+        className: mind_map_default["batchAction"],
         disabled: props.busy || props.count === 0,
         onClick: props.onArchive,
         children: t("batch.archive")
@@ -15997,7 +16426,7 @@ function BatchBar(props) {
       "button",
       {
         type: "button",
-        className: `${talk_map_default["batchAction"]} ${talk_map_default["batchDanger"]}`,
+        className: `${mind_map_default["batchAction"]} ${mind_map_default["batchDanger"]}`,
         disabled: props.busy || props.count === 0,
         onClick: props.onDelete,
         children: t("batch.delete")
@@ -16007,7 +16436,7 @@ function BatchBar(props) {
       "button",
       {
         type: "button",
-        className: talk_map_default["batchAction"],
+        className: mind_map_default["batchAction"],
         disabled: props.busy,
         onClick: props.onCancel,
         children: t("batch.cancel")
@@ -16024,7 +16453,7 @@ function MapCanvas(props) {
     return canvas.connect();
   }, []);
   if (canvasState.phase === "error") {
-    return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("div", { className: talk_map_default["canvas"], children: /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)("div", { className: talk_map_default["emptyHint"], children: [
+    return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("div", { className: mind_map_default["canvas"], children: /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)("div", { className: mind_map_default["emptyHint"], children: [
       t("map.loadError"),
       " ",
       canvasState.error,
@@ -16032,7 +16461,7 @@ function MapCanvas(props) {
         "button",
         {
           type: "button",
-          className: talk_map_default["cardRemove"],
+          className: mind_map_default["cardRemove"],
           style: { marginLeft: 8 },
           onClick: () => {
             canvas.reload();
@@ -16043,7 +16472,7 @@ function MapCanvas(props) {
     ] }) });
   }
   if (canvasState.phase !== "ready") {
-    return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("div", { className: talk_map_default["canvas"], children: /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("div", { className: talk_map_default["emptyHint"], children: t("map.loading") }) });
+    return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("div", { className: mind_map_default["canvas"], children: /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("div", { className: mind_map_default["emptyHint"], children: t("map.loading") }) });
   }
   return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(ReactFlowProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(CanvasInner, { ...props }) });
 }
@@ -16052,12 +16481,12 @@ function MapCanvas(props) {
 var import_jsx_runtime17 = require("react/jsx-runtime");
 function FontSizeButtons() {
   const step2 = (0, import_react15.useSyncExternalStore)(fontScale.subscribe, fontScale.getSnapshot);
-  return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: talk_map_default["fontGroup"], role: "group", "aria-label": t("font.group"), children: [
+  return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: mind_map_default["fontGroup"], role: "group", "aria-label": t("font.group"), children: [
     /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(
       "button",
       {
         type: "button",
-        className: talk_map_default["fontButton"],
+        className: mind_map_default["fontButton"],
         title: t("font.decrease"),
         "aria-label": t("font.decrease"),
         disabled: !fontScale.canDecrease(),
@@ -16065,8 +16494,8 @@ function FontSizeButtons() {
           fontScale.decrease();
         },
         children: [
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: talk_map_default["fontGlyphSmall"], children: "A" }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: talk_map_default["fontSign"], children: "−" })
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: mind_map_default["fontGlyphSmall"], children: "A" }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: mind_map_default["fontSign"], children: "−" })
         ]
       }
     ),
@@ -16074,7 +16503,7 @@ function FontSizeButtons() {
       "button",
       {
         type: "button",
-        className: talk_map_default["fontButton"],
+        className: mind_map_default["fontButton"],
         title: t("font.increase"),
         "aria-label": t("font.increase"),
         disabled: !fontScale.canIncrease(),
@@ -16082,8 +16511,8 @@ function FontSizeButtons() {
           fontScale.increase();
         },
         children: [
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: talk_map_default["fontGlyphLarge"], children: "A" }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: talk_map_default["fontSign"], children: "+" })
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: mind_map_default["fontGlyphLarge"], children: "A" }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: mind_map_default["fontSign"], children: "+" })
         ]
       }
     ),
@@ -16091,7 +16520,7 @@ function FontSizeButtons() {
       "button",
       {
         type: "button",
-        className: `${talk_map_default["fontButton"]} ${talk_map_default["fontReset"]}`,
+        className: `${mind_map_default["fontButton"]} ${mind_map_default["fontReset"]}`,
         title: t("font.reset"),
         "aria-label": t("font.reset"),
         disabled: step2 === 0,
@@ -16135,18 +16564,18 @@ function MapOverlay(props) {
   return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(
     "div",
     {
-      className: talk_map_default["panel"],
+      className: mind_map_default["panel"],
       lang: activeLocale(),
       role: "dialog",
       "aria-label": t("map.title"),
       style: { "--tm-font-step": `${fontStep}px` },
       children: [
-        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: talk_map_default["header"], children: [
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: mind_map_default["header"], children: [
           /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(
             "button",
             {
               type: "button",
-              className: talk_map_default["backButton"],
+              className: mind_map_default["backButton"],
               title: t("map.back"),
               "aria-label": t("map.back"),
               onClick: closeMapPanel,
@@ -16156,7 +16585,7 @@ function MapOverlay(props) {
               ]
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: talk_map_default["headerSpace"] }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: mind_map_default["headerSpace"] }),
           /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(GlobalSearch, { onOpenSession: (sessionId) => {
             openSessionInUi(sessionId);
           } }),
@@ -16165,7 +16594,7 @@ function MapOverlay(props) {
             "button",
             {
               type: "button",
-              className: talk_map_default["closeButton"],
+              className: mind_map_default["closeButton"],
               title: t("map.close"),
               "aria-label": t("map.close"),
               onClick: closeMapPanel,
@@ -16183,14 +16612,14 @@ function MapOverlay(props) {
 var import_react16 = require("react");
 var import_jsx_runtime18 = require("react/jsx-runtime");
 function MapIcon() {
-  return /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("svg", { className: talk_map_default["toggleIcon"], viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", children: [
+  return /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("svg", { className: mind_map_default["toggleIcon"], viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", children: [
     /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("path", { d: "M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4Z" }),
     /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("path", { d: "M9 4v14" }),
     /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("path", { d: "M15 6v14" })
   ] });
 }
 function BackIcon2() {
-  return /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("svg", { className: talk_map_default["backToCurrentIcon"], viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.9", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", children: [
+  return /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("svg", { className: mind_map_default["backToCurrentIcon"], viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.9", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", children: [
     /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("circle", { cx: "12", cy: "12", r: "6.5" }),
     /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("circle", { cx: "12", cy: "12", r: "1.6", fill: "currentColor", stroke: "none" }),
     /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("path", { d: "M12 1.8v4.2M12 18v4.2M1.8 12h4.2M18 12h4.2" })
@@ -16203,10 +16632,10 @@ function MapToggleButton(props) {
   (0, import_react16.useEffect)(() => {
     reportSidebarWide(wide);
   }, [wide]);
-  const classNames = [wide ? talk_map_default["toggleRow"] : talk_map_default["toggleButton"]];
-  if (open) classNames.push(talk_map_default["toggleButtonActive"]);
+  const classNames = [wide ? mind_map_default["toggleRow"] : mind_map_default["toggleButton"]];
+  if (open) classNames.push(mind_map_default["toggleButtonActive"]);
   const backTitle = t("map.backToCurrent");
-  return /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: `${talk_map_default["toggleWrap"]}${wide ? ` ${talk_map_default["toggleWrapWide"]}` : ""}`, children: [
+  return /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: `${mind_map_default["toggleWrap"]}${wide ? ` ${mind_map_default["toggleWrapWide"]}` : ""}`, children: [
     /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(
       "button",
       {
@@ -16217,11 +16646,11 @@ function MapToggleButton(props) {
         "aria-label": t("map.toggle"),
         "aria-pressed": open,
         onClick: () => {
-          mapUi.toggle();
+          if (!openMindMapSidebar()) mapUi.toggle();
         },
         children: [
           /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(MapIcon, {}),
-          wide ? /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("span", { className: talk_map_default["toggleLabel"], children: t("map.toggle") }) : null
+          wide ? /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("span", { className: mind_map_default["toggleLabel"], children: t("map.toggle") }) : null
         ]
       }
     ),
@@ -16229,11 +16658,11 @@ function MapToggleButton(props) {
       "button",
       {
         type: "button",
-        className: talk_map_default["backToCurrent"],
+        className: mind_map_default["backToCurrent"],
         lang: locale,
         title: backTitle,
         "aria-label": backTitle,
-        "data-talkmap-back": "1",
+        "data-mindmap-back": "1",
         onClick: () => {
           const sessionId = currentSessionId();
           if (sessionId === void 0) return;
@@ -16286,28 +16715,89 @@ function resolveRemote(ctx) {
     return void 0;
   }
 }
-var name = "dsh-talk-map";
+var name = "mind_map";
 var inject = ["slots", "sessions", "workspaces", "connection"];
 function apply(ctx) {
   try {
+    window.__mindMapCtx = ctx;
     const registerSafely = (slot, factory, label) => {
       try {
         ctx.slots.inject(slot, factory);
       } catch (error) {
-        console.error(`[dsh-talk-map] ${label} registration skipped:`, error);
+        console.error(`[mind_map] ${label} registration skipped:`, error);
       }
     };
     registerSafely("sidebar.footer.action", () => ctx.slots.register({
       name: "sidebar.footer.action",
-      id: "talk-map",
+      id: "mind_map",
       order: 10,
       label: () => t("map.toggle")
     }, MapToggleButton), "sidebar.footer.action");
+    registerSafely("sidebar.panellist", () => ctx.slots.register({
+      name: "sidebar.panellist",
+      id: MAP_PANEL_ID,
+      order: 35,
+      label: () => t("map.title")
+    }, MindMapPanelIcon), "sidebar.panellist");
     registerSafely("main", () => ctx.slots.register({
       name: "main",
       key: MAP_PANEL_ID,
       label: () => t("map.title")
     }, MapOverlay), "main panel");
+    // 侧栏席位。两个不确定点都要兜住：
+    //  1) 启动时 betterSidebar 可能还没注册 —— 以前直接 return，那一窗就永远没有这个 tab
+    //     （用户看到的「重启后右侧又没有思维图」就是它）。现在每 500ms 重试，最多 60 次。
+    //  2) better-sidebar 只按会话记已开的 tab，冷启动不回填 —— 拿到服务后自己轮询 openTab，
+    //     直到 tab 真的挂载（MapSidebarTab 的 effect 置 mounted）为止。
+    (function registerSidebarSeat() {
+      var acquired = false;
+      var tries = 0;
+      var tryAcquire = function () {
+        if (acquired === true) return true;
+        var better = null;
+        try { better = typeof ctx.get === "function" ? ctx.get("betterSidebar") : void 0; } catch (error) { better = void 0; }
+        if (better === void 0 || better === null || typeof better.registerTab !== "function") return false;
+        acquired = true;
+        mindMapSidebarSeat.service = better;
+        mindMapApplyCtx = ctx;
+        try {
+          ctx.effect(function () {
+            var dispose = better.registerTab({
+              id: "mind_map:map",
+              title: function () { return t("map.title"); },
+              order: 45,
+              single: true,
+              onOpen: function () { mindMapSidebarTabRemember(true); },
+              onActivate: function () { mindMapSidebarTabRemember(true); },
+              onClose: function () { mindMapSidebarTabRemember(false); },
+              component: function (tabProps) { return (0, import_jsx_runtime16.jsx)(MapSidebarTab, tabProps); }
+            });
+            return function () { mindMapSidebarSeat.service = null; dispose(); };
+          }, "mind_map: sidebar tab");
+        } catch (error) { console.error("[mind_map] sidebar tab registration failed:", error); }
+        // 启动即尝试把那一栏开出来（不再看「上次关没关」的偏好：重启后就是要回来）。
+        var seatAttempts = 0;
+        var seatTimer = window.setInterval(function () {
+          seatAttempts += 1;
+          if (mindMapSidebarSeat.mounted === true || seatAttempts > 20) {
+            window.clearInterval(seatTimer);
+            seatTimer = 0;
+            return;
+          }
+          mindMapOpenSidebarTab(better);
+        }, 1200);
+        mindMapOpenSidebarTab(better);
+        return true;
+      };
+      var acquireTimer = window.setInterval(function () {
+        tries += 1;
+        if (tryAcquire() === true || tries > 60) {
+          window.clearInterval(acquireTimer);
+          acquireTimer = 0;
+        }
+      }, 500);
+      tryAcquire();
+    })();
     attachServices({
       sessions: ctx.sessions,
       workspaces: ctx.workspaces,
@@ -16320,7 +16810,7 @@ function apply(ctx) {
     });
     ctx.effect(() => () => {
       attachServices(void 0);
-    }, "dsh-talk-map: services");
+    }, "mind_map: services");
     if (typeof ctx.inject === "function") {
       try {
         ctx.inject(["connection", "uiWorkspace"], (scoped) => {
@@ -16334,18 +16824,30 @@ function apply(ctx) {
           });
         });
       } catch (error) {
-        console.error("[dsh-talk-map] late service binding failed:", error);
+        console.error("[mind_map] late service binding failed:", error);
       }
     }
     ctx.effect(() => {
       try {
         return attachAlertSource(resolveRemote(ctx), ctx.sessions.list);
       } catch (error) {
-        console.error("[dsh-talk-map] session alerts unavailable:", error);
+        console.error("[mind_map] session alerts unavailable:", error);
         return () => {
         };
       }
-    }, "dsh-talk-map: session alerts");
+    }, "mind_map: session alerts");
+    ctx.effect(function () {
+      var attached = false;
+      var attachWith = function (remote, namespace) {
+        if (attached === true || remote === void 0 || remote === null) return;
+        try { attached = mindMapLive.attach(remote, ctx.sessions !== void 0 && ctx.sessions !== null ? ctx.sessions.list : null, namespace); } catch (error) { attached = false; }
+      };
+      try { attachWith(ctx.get("remote"), ctx.get("remote.session")); } catch (error) { }
+      if (attached !== true) {
+        try { ctx.inject(["remote", "remote.session"], function (scoped) { attachWith(scoped.remote, scoped["remote.session"]); }); } catch (error) { }
+      }
+      return function () { try { mindMapLive.dispose(); } catch (error) { } };
+    }, "mind_map: live activity");
     canvas.ensureLoaded();
     ctx.effect(() => {
       const onKeyDown = (event) => {
@@ -16360,14 +16862,1758 @@ function apply(ctx) {
       return () => {
         window.removeEventListener("keydown", onKeyDown, { capture: true });
       };
-    }, "dsh-talk-map: toggle hotkey");
+    }, "mind_map: toggle hotkey");
   } catch (error) {
-    console.error("[dsh-talk-map] client apply failed:", error);
+    console.error("[mind_map] client apply failed:", error);
   }
 }
+
+// ===== mind-map graph view patch (local) =====
+// MIND_MAP_GRAPH_PATCH_V1 — the marker the patcher greps for; without it a
+// second run would happily patch the already patched bundle.
+// 换名迁移：旧构建用的 dsh.mind-map.* 浏览器偏好键，一次性复制到 dsh.mind-map.*。
+// 不删旧键（回退到旧构建仍能读到），只在新键缺失时复制。前缀用拼接写，避免
+// 下面 renameAll 把这段迁移代码自己也换掉。
+(function migrateBrowserKeys() {
+  try {
+    var legacyPrefix = "dsh." + "tal" + "k-map" + ".";
+    var nextPrefix = "dsh." + "min" + "d-map" + ".";
+    var index;
+    for (index = 0; index < window.localStorage.length; index += 1) {
+      var legacyKey = window.localStorage.key(index);
+      if (legacyKey === null || legacyKey.indexOf(legacyPrefix) !== 0) continue;
+      var migratedKey = nextPrefix + legacyKey.slice(legacyPrefix.length);
+      if (window.localStorage.getItem(migratedKey) === null) window.localStorage.setItem(migratedKey, window.localStorage.getItem(legacyKey));
+    }
+  } catch (error) { }
+})();
+var GRAPH_MODE_KEY = "dsh.mind-map.graph-mode.v1";
+var GRAPH_LAID_KEY = "dsh.mind-map.graph-laid.v1";
+var HIDE_ARCHIVED_KEY = "dsh.mind-map.hide-archived.v1";
+var graphModeState = true;
+try { graphModeState = window.localStorage.getItem(GRAPH_MODE_KEY) !== "0"; } catch (error) { graphModeState = true; }
+var graphModeListeners = new Set();
+function graphModeGet() { return graphModeState; }
+function graphModeSubscribe(listener) {
+  graphModeListeners.add(listener);
+  return function () { graphModeListeners.delete(listener); };
+}
+function graphModeSet(next) {
+  if (graphModeState === next) return;
+  graphModeState = next;
+  try { window.localStorage.setItem(GRAPH_MODE_KEY, next ? "1" : "0"); } catch (error) { }
+  // Entering the graph view re-runs the auto layout: the whiteboard view keeps
+  // rewriting card positions into slots, so the stored x/y is stale by then.
+  if (next) try { window.localStorage.removeItem(GRAPH_LAID_KEY); } catch (error) { }
+  for (const listener of graphModeListeners) { try { listener(); } catch (error) { } }
+}
+/** "Hide archived cards" is a graph-view preference, persisted per browser.
+ * Archived is the DEFAULT: a board where two thirds of the cards are sessions
+ * you already archived is noise, so you opt in to seeing them. */
+var hideArchivedState = true;
+try { hideArchivedState = window.localStorage.getItem(HIDE_ARCHIVED_KEY) !== "0"; } catch (error) { hideArchivedState = true; }
+var hideArchivedListeners = new Set();
+function hideArchivedGet() { return hideArchivedState; }
+function hideArchivedSubscribe(listener) {
+  hideArchivedListeners.add(listener);
+  return function () { hideArchivedListeners.delete(listener); };
+}
+function hideArchivedSet(next) {
+  if (hideArchivedState === next) return;
+  hideArchivedState = next;
+  try { window.localStorage.setItem(HIDE_ARCHIVED_KEY, next ? "1" : "0"); } catch (error) { }
+  for (const listener of hideArchivedListeners) { try { listener(); } catch (error) { } }
+}
+/** Hook the canvas surface installs so the "重新排布" button can restart the
+ * running simulation instead of only writing new coordinates. */
+var mindMapSimKick = { fn: null };
+/** The canvas owns its own camera, so React Flow's screenToFlowPosition (which
+ * degrades to "return the client point" when no React Flow is mounted) cannot
+ * answer where a click landed. The canvas registers the real conversion here;
+ * the context menu uses it for "place the new thing at the click". */
+var mindMapCanvasToFlow = { fn: null };
+/** Frames actually painted: lets the verification scripts prove that an idle
+ * map stops drawing instead of only looking still. */
+var mindMapDrawCount = 0;
+var FOCUS_MODE_KEY = "dsh.mind-map.focus-mode.v1";
+var FOCUS_DEPTH = 2;
+var DOT_SIZE = 16;
+var focusModeState = true;
+try { focusModeState = window.localStorage.getItem(FOCUS_MODE_KEY) !== "0"; } catch (error) { focusModeState = true; }
+var focusModeListeners = new Set();
+function focusModeGet() { return focusModeState; }
+function focusModeSubscribe(listener) {
+  focusModeListeners.add(listener);
+  return function () { focusModeListeners.delete(listener); };
+}
+function focusModeSet(next) {
+  if (focusModeState === next) return;
+  focusModeState = next;
+  try { window.localStorage.setItem(FOCUS_MODE_KEY, next ? "1" : "0"); } catch (error) { }
+  for (const listener of focusModeListeners) { try { listener(); } catch (error) { } }
+}
+var GRAPH_TAG_STOP = new Set(["这个", "那个", "一个", "可以", "我们", "什么", "如果", "因为", "所以", "就是", "不是", "没有", "已经", "还是", "这样", "那样", "然后", "现在", "需要", "使用", "通过", "进行", "问题", "东西", "时候", "一些", "这些", "那些", "自己", "他们", "它们", "如何", "以及", "并且", "但是", "而且", "或者", "其中", "一样", "之前", "之后", "里面", "上面", "下面", "这里", "那里", "一下", "一点", "比较", "非常", "应该", "可能", "觉得", "知道", "看到", "出来", "进去", "回到", "开始", "结束", "完成", "直接", "一起", "两个", "三个", "一份", "一次", "目前", "当前", "原来", "其实", "当然", "仍然", "只是", "还有", "例如", "比如", "包括", "相关", "部分", "情况", "结果", "方法", "方式", "内容", "功能", "工具", "数据", "文件", "代码", "项目", "时间", "今天", "昨天", "明天", "最近", "任务", "并且", "没有", "不会", "不能", "是不是", "有没有", "怎么样", "为什么", "怎么办", "一样", "这种", "那种", "多少", "这里", "那边", "起来", "下来", "出去", "过来", "以后", "以前", "同时", "另外", "此外", "因此", "于是", "不过", "虽然", "只要", "只有", "无论", "不管", "即使", "除非", "除了"]);
+var GRAPH_TAG_STOP_EN = new Set(["the", "and", "for", "with", "that", "this", "from", "have", "has", "had", "was", "were", "are", "not", "but", "you", "your", "can", "will", "would", "should", "could", "they", "them", "there", "their", "about", "into", "over", "than", "then", "when", "what", "which", "while", "also", "just", "like", "make", "made", "more", "most", "only", "some", "such", "take", "very", "well", "been", "being", "both", "each", "other", "same", "because", "before", "after", "between", "through", "under", "again", "still", "much", "many", "need", "needs", "used", "using", "use", "does", "did", "doing", "done", "get", "gets", "got", "one", "two", "three", "new", "old", "first", "last", "next", "now", "here", "where", "how", "why", "all", "any", "out", "off", "own", "too", "per", "via", "yet", "its", "http", "https", "www", "com", "html", "json", "true", "false", "null"]);
+var GRAPH_TAG_CHAR_STOP = "的了与和是在有个也就都而及或把被让使从向对为以于之其这那些上中里外前后时两三二一几第各每全更最很太又再还只才已未不没无非别等着过吧呢啊吗嗯哦呀么";
+function graphTagTokens(text) {
+  const out = [];
+  const source = String(text === undefined || text === null ? "" : text).toLowerCase();
+  const ascii = source.match(/[a-z][a-z0-9_+#.\-]{2,}/g);
+  if (ascii !== null) for (const word of ascii) { if (!GRAPH_TAG_STOP_EN.has(word)) out.push(word); }
+  const cjk = source.match(/[\u4e00-\u9fa5]{2,}/g);
+  if (cjk !== null) for (const run of cjk) {
+    for (let length = 2; length <= 4; length += 1) {
+      for (let cursor = 0; cursor + length <= run.length; cursor += 1) {
+        const gram = run.slice(cursor, cursor + length);
+        if (GRAPH_TAG_STOP.has(gram)) continue;
+        if (GRAPH_TAG_CHAR_STOP.indexOf(gram.charAt(0)) >= 0) continue;
+        if (GRAPH_TAG_CHAR_STOP.indexOf(gram.charAt(gram.length - 1)) >= 0) continue;
+        out.push(gram);
+      }
+    }
+  }
+  return out;
+}
+/** Keyword tags derived from the digests already on disk (no LLM call). */
+function graphDeriveTags(digests) {
+  const docs = {};
+  const documentFrequency = new Map();
+  let total = 0;
+  for (const entry of Object.entries(digests || {})) {
+    const digest = entry[1];
+    if (digest === undefined || digest === null) continue;
+    const text = [digest.summary || "", (digest.keyFindings || []).join(" ")].join(" ");
+    const termFrequency = new Map();
+    for (const token of graphTagTokens(text)) termFrequency.set(token, (termFrequency.get(token) || 0) + 1);
+    if (termFrequency.size === 0) continue;
+    docs[entry[0]] = termFrequency;
+    total += 1;
+    for (const token of termFrequency.keys()) documentFrequency.set(token, (documentFrequency.get(token) || 0) + 1);
+  }
+  const out = {};
+  const ceiling = Math.max(3, Math.round(total * 0.2));
+  for (const entry of Object.entries(docs)) {
+    const scored = [];
+    for (const term of entry[1]) {
+      const frequency = documentFrequency.get(term[0]) || 0;
+      if (frequency < 2 || frequency > ceiling) continue;
+      const length = term[0].length;
+      const lengthBonus = length >= 3 ? 1.5 + 0.15 * (length - 3) : 1;
+      scored.push([term[0], term[1] * Math.log(1 + total / frequency) * lengthBonus]);
+    }
+    scored.sort(function (left, right) { return right[1] - left[1]; });
+    const picked = [];
+    for (const candidate of scored) {
+      const token = candidate[0];
+      let redundant = false;
+      for (const chosen of picked) {
+        if (chosen.indexOf(token) >= 0) { redundant = true; break; }
+      }
+      if (redundant) continue;
+      for (let index = picked.length - 1; index >= 0; index -= 1) {
+        if (token.indexOf(picked[index]) >= 0) picked.splice(index, 1);
+      }
+      picked.push(token);
+      if (picked.length >= 3) break;
+    }
+    out[entry[0]] = picked;
+  }
+  return out;
+}
+/** Fruchterman-Reingold + rectangle separation; deterministic for equal input. */
+function graphLayoutForce(entries, links, options) {
+  const settings = options || {};
+  const width = settings.width || 224;
+  const height = settings.height || 120;
+  const count = entries.length;
+  const result = {};
+  if (count === 0) return result;
+  if (count === 1) { result[entries[0].id] = { x: entries[0].x, y: entries[0].y }; return result; }
+  const ideal = settings.ideal || Math.sqrt((width + 120) * (height + 90)) * 1.45;
+  const nodes = entries.map(function (entry, position) {
+    const angle = (position / count) * Math.PI * 2;
+    return { id: entry.id, x: entry.x + Math.cos(angle) * 8, y: entry.y + Math.sin(angle) * 8, dx: 0, dy: 0 };
+  });
+  const lookup = new Map();
+  nodes.forEach(function (node, position) { lookup.set(node.id, position); });
+  const springs = [];
+  for (const link of links || []) {
+    const from = lookup.get(link[0]);
+    const to = lookup.get(link[1]);
+    if (from === undefined || to === undefined || from === to) continue;
+    springs.push([from, to]);
+  }
+  let centerX = 0;
+  let centerY = 0;
+  for (const node of nodes) { centerX += node.x; centerY += node.y; }
+  centerX = centerX / count;
+  centerY = centerY / count;
+  let temperature = ideal * 0.9;
+  const iterations = settings.iterations || 400;
+  const repulsionRange = settings.repulsionRange || ideal * 1.45;
+  const gravity = settings.gravity || 0.12;
+  for (let step = 0; step < iterations; step += 1) {
+    for (const node of nodes) { node.dx = 0; node.dy = 0; }
+    for (let left = 0; left < count; left += 1) {
+      for (let right = left + 1; right < count; right += 1) {
+        let deltaX = nodes[left].x - nodes[right].x;
+        let deltaY = nodes[left].y - nodes[right].y;
+        let distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        if (distance < 0.01) {
+          deltaX = ((left % 7) - 3) + 0.5;
+          deltaY = ((right % 7) - 3) + 0.5;
+          distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY) || 1;
+        }
+        // Bounded-range repulsion: without the cutoff a 60-node board explodes
+        // to a 25k-pixel square, which is unreadable even zoomed out.
+        const force = distance < repulsionRange ? (ideal * ideal) / distance : 0;
+        const unitX = deltaX / distance;
+        const unitY = deltaY / distance;
+        nodes[left].dx += unitX * force;
+        nodes[left].dy += unitY * force;
+        nodes[right].dx -= unitX * force;
+        nodes[right].dy -= unitY * force;
+      }
+    }
+    for (const spring of springs) {
+      const from = nodes[spring[0]];
+      const to = nodes[spring[1]];
+      const deltaX = to.x - from.x;
+      const deltaY = to.y - from.y;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY) || 1;
+      const force = (distance * distance) / ideal;
+      const unitX = deltaX / distance;
+      const unitY = deltaY / distance;
+      from.dx += unitX * force;
+      from.dy += unitY * force;
+      to.dx -= unitX * force;
+      to.dy -= unitY * force;
+    }
+    for (const node of nodes) {
+      node.dx += (centerX - node.x) * gravity;
+      node.dy += (centerY - node.y) * gravity;
+      const length = Math.sqrt(node.dx * node.dx + node.dy * node.dy) || 1;
+      const limited = Math.min(length, temperature);
+      node.x += (node.dx / length) * limited;
+      node.y += (node.dy / length) * limited;
+    }
+    temperature = Math.max(ideal * 0.02, temperature * 0.965);
+  }
+  const padX = 30;
+  const padY = 24;
+  for (let pass = 0; pass < 90; pass += 1) {
+    let moved = false;
+    for (let left = 0; left < count; left += 1) {
+      for (let right = left + 1; right < count; right += 1) {
+        const first = nodes[left];
+        const second = nodes[right];
+        const overlapX = (width + padX) - Math.abs(second.x - first.x);
+        const overlapY = (height + padY) - Math.abs(second.y - first.y);
+        if (overlapX <= 0 || overlapY <= 0) continue;
+        moved = true;
+        if (overlapX < overlapY) {
+          const push = (overlapX / 2) * (second.x >= first.x ? 1 : -1);
+          second.x += push;
+          first.x -= push;
+        } else {
+          const push = (overlapY / 2) * (second.y >= first.y ? 1 : -1);
+          second.y += push;
+          first.y -= push;
+        }
+      }
+    }
+    if (!moved) break;
+  }
+  for (const node of nodes) result[node.id] = { x: Math.round(node.x), y: Math.round(node.y) };
+  return result;
+}
+/** Face pair for a graph edge: dominant axis only. The slot layout's
+ * pickFaces searches for clearance between grid neighbours and returns
+ * top/bottom faces for far-apart cards, which turns a straight relationship
+ * into a loop that sweeps across the board. */
+function graphFaces(fromCard, toCard) {
+  if (fromCard === void 0 || toCard === void 0) return { sourceHandle: "r", targetHandle: "l" };
+  const deltaX = toCard.x - fromCard.x;
+  const deltaY = toCard.y - fromCard.y;
+  if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+    return deltaX >= 0 ? { sourceHandle: "r", targetHandle: "l" } : { sourceHandle: "l", targetHandle: "r" };
+  }
+  return deltaY >= 0 ? { sourceHandle: "b", targetHandle: "t" } : { sourceHandle: "t", targetHandle: "b" };
+}
+function graphSameNode(left, right) {
+  if (left.selected !== right.selected) return false;
+  if (left.hidden !== right.hidden) return false;
+  if (left.className !== right.className) return false;
+  if (left.position.x !== right.position.x || left.position.y !== right.position.y) return false;
+  const a = left.data;
+  const b = right.data;
+  const keys = Object.keys(a);
+  if (keys.length !== Object.keys(b).length) return false;
+  for (const key of keys) { if (a[key] !== b[key]) return false; }
+  return true;
+}
+/** Reuse the previous node object when nothing it renders actually changed:
+ * React Flow keys its internal node cache by object identity, so a stable
+ * reference lets it skip re-rendering that card entirely. */
+function graphStableNode(cache, cardId, next) {
+  const previous = cache.get(cardId);
+  if (previous !== void 0 && graphSameNode(previous, next)) return previous;
+  cache.set(cardId, next);
+  return next;
+}
+var mindMapTapBridge = { live: null };
+var mindMapCanvasBridge = { current: null };
+(function installMindMapTap() {
+  if (typeof window === "undefined" || typeof window.addEventListener !== "function") return;
+  var started = null;
+  var cardOf = function (target) {
+    return target !== null && typeof target === "object" && typeof target.closest === "function" ? target.closest("[data-mindmap-session]") : null;
+  };
+  window.addEventListener("pointerdown", function (event) {
+    var element = cardOf(event.target);
+    if (element === null) { started = null; return; }
+    var box = element.getBoundingClientRect();
+    started = { sessionId: element.getAttribute("data-mindmap-session"), x: event.clientX, y: event.clientY, box: { left: box.left, top: box.top, right: box.right, bottom: box.bottom } };
+  }, true);
+  window.addEventListener("pointerup", function (event) {
+    var from = started;
+    started = null;
+    var live = mindMapTapBridge.live;
+    if (from === null || live === null || live.batchMode) return;
+    // React Flow's own click dies as soon as the pointer moves a pixel: d3-drag's
+    // gesture handlers call stopImmediatePropagation() on the window capture
+    // phase, so a real mouse — which always jitters — silently did nothing on a
+    // card. Handle 1-10 px of travel here as a tap.
+    var moved = Math.abs(event.clientX - from.x) + Math.abs(event.clientY - from.y);
+    if (moved === 0 || moved > 10) return;
+    // The card moved with the pointer, so event.target at pointerup is the pane,
+    // not the card: hit-test by geometry instead of by target identity.
+    if (event.clientX < from.box.left - 12 || event.clientX > from.box.right + 12) return;
+    if (event.clientY < from.box.top - 12 || event.clientY > from.box.bottom + 12) return;
+    if (live.sessions.byId[from.sessionId] === void 0) return;
+    var sessionId = from.sessionId;
+    window.setTimeout(function () {
+      var current = mindMapTapBridge.live;
+      if (current === null) return;
+      current.open(sessionId);
+    }, 0);
+  }, true);
+})();
+/** Where a line between two centres leaves a rectangle: the classic four-way
+ * face pick, but exact (it lands on whichever side actually faces the other
+ * node, including corners), so it re-routes continuously while dragging. */
+function graphAnchorPoint(centerX, centerY, width, height, towardX, towardY) {
+  const deltaX = towardX - centerX;
+  const deltaY = towardY - centerY;
+  if (deltaX === 0 && deltaY === 0) return { x: centerX, y: centerY };
+  const scaleX = Math.abs(deltaX) < 1e-6 ? Infinity : (width / 2) / Math.abs(deltaX);
+  const scaleY = Math.abs(deltaY) < 1e-6 ? Infinity : (height / 2) / Math.abs(deltaY);
+  const scale = Math.min(scaleX, scaleY);
+  return { x: centerX + deltaX * scale, y: centerY + deltaY * scale };
+}
+function GraphLineEdge(props) {
+  const boxes = useStore(function (state) {
+    const from = state.nodeLookup.get(props.source);
+    const to = state.nodeLookup.get(props.target);
+    if (from === void 0 || to === void 0) return null;
+    return {
+      ax: from.internals.positionAbsolute.x,
+      ay: from.internals.positionAbsolute.y,
+      aw: from.measured.width || 0,
+      ah: from.measured.height || 0,
+      bx: to.internals.positionAbsolute.x,
+      by: to.internals.positionAbsolute.y,
+      bw: to.measured.width || 0,
+      bh: to.measured.height || 0
+    };
+  }, shallow$1);
+  if (boxes === null || boxes.aw === 0 || boxes.bw === 0) return null;
+  const fromCenterX = boxes.ax + boxes.aw / 2;
+  const fromCenterY = boxes.ay + boxes.ah / 2;
+  const toCenterX = boxes.bx + boxes.bw / 2;
+  const toCenterY = boxes.by + boxes.bh / 2;
+  const start = graphAnchorPoint(fromCenterX, fromCenterY, boxes.aw, boxes.ah, toCenterX, toCenterY);
+  const end = graphAnchorPoint(toCenterX, toCenterY, boxes.bw, boxes.bh, fromCenterX, fromCenterY);
+  const angle = Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI;
+  const ready = props.data === void 0 || props.data.ready !== false;
+  return (0, import_jsx_runtime16.jsxs)(import_jsx_runtime16.Fragment, { children: [
+    (0, import_jsx_runtime16.jsx)(BaseEdge, {
+      id: props.id,
+      path: "M " + start.x + " " + start.y + " L " + end.x + " " + end.y,
+      style: { stroke: "rgba(198, 206, 220, 0.34)", strokeWidth: 1.1, opacity: ready ? 1 : 0 }
+    }),
+    (0, import_jsx_runtime16.jsx)("path", {
+      d: "M0 0 L-9 -4 L-9 4 Z",
+      transform: "translate(" + end.x + " " + end.y + ") rotate(" + angle + ")",
+      fill: "rgba(198, 206, 220, 0.42)",
+      opacity: ready ? 1 : 0,
+      pointerEvents: "none"
+    })
+  ] });
+}
+function GraphDotNode(props) {
+  const data = props.data ?? {};
+  const className = "tm_dot" + (data.running === true ? " tm_dotRunning" : "") + (data.waiting === true ? " tm_dotWaiting" : "") + (data.glow === "done" ? " tm_dotDone" : "");
+  const hoverIn = function (event) { if (typeof data.onHover === "function") data.onHover(data.cardId, event.clientX, event.clientY); };
+  const hoverOut = function () { if (typeof data.onHover === "function") data.onHover(null, 0, 0); };
+  return /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)("div", {
+    className: className,
+    "data-mindmap-session": data.sessionId,
+    "data-mindmap-dot": "1",
+    onMouseEnter: hoverIn,
+    onMouseMove: hoverIn,
+    onMouseLeave: hoverOut,
+    children: [
+      /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(Handle, { id: "t", type: "source", position: Position.Top, className: "tm_dotHandle" }),
+      /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(Handle, { id: "l", type: "source", position: Position.Left, className: "tm_dotHandle" }),
+      /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(Handle, { id: "r", type: "source", position: Position.Right, className: "tm_dotHandle" }),
+      /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(Handle, { id: "b", type: "source", position: Position.Bottom, className: "tm_dotHandle" })
+    ]
+  });
+}
+var GRAPH_CAMERA_KEY = "dsh.mind-map.graph-camera.v1";
+var GRAPH_CARD_RENDER_H = 124;
+var GRAPH_FONT_STACK = "system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif";
+function readGraphCamera() {
+  try {
+    var raw = window.localStorage.getItem(GRAPH_CAMERA_KEY);
+    if (raw === null) return null;
+    var parsed = JSON.parse(raw);
+    if (parsed !== null && typeof parsed === "object" && typeof parsed.x === "number" && typeof parsed.y === "number" && typeof parsed.zoom === "number") {
+      return { x: parsed.x, y: parsed.y, zoom: parsed.zoom };
+    }
+  } catch (error) { }
+  return null;
+}
+function writeGraphCamera(camera) {
+  try { window.localStorage.setItem(GRAPH_CAMERA_KEY, JSON.stringify(camera)); } catch (error) { }
+}
+function graphRoundRect(context, x, y, width, height, radius) {
+  context.beginPath();
+  context.moveTo(x + radius, y);
+  context.arcTo(x + width, y, x + width, y + height, radius);
+  context.arcTo(x + width, y + height, x, y + height, radius);
+  context.arcTo(x, y + height, x, y, radius);
+  context.arcTo(x, y, x + width, y, radius);
+  context.closePath();
+}
+function graphEllipsis(context, text, maxWidth) {
+  if (text === "" || context.measureText(text).width <= maxWidth) return text;
+  var low = 0;
+  var high = text.length;
+  while (low < high) {
+    var middle = Math.ceil((low + high) / 2);
+    if (context.measureText(text.slice(0, middle) + "…").width <= maxWidth) low = middle;
+    else high = middle - 1;
+  }
+  return text.slice(0, low) + "…";
+}
+/** Canvas graph surface: one draw call per frame instead of a DOM tree per card.
+ * It speaks the same event vocabulary as React Flow (onNodesChange /
+ * onMoveEnd), so the persistence, tap-to-open and repulsion logic above keep
+ * working unchanged. */
+function GraphCanvasSurface(props) {
+  var react = import_react13;
+  var rootRef = react.useRef(null);
+  var canvasRef = react.useRef(null);
+  var propsRef = react.useRef(props);
+  propsRef.current = props;
+  var cameraRef = react.useRef(null);
+  if (cameraRef.current === null) cameraRef.current = readGraphCamera();
+  var dragRef = react.useRef(null);
+  var frameRef = react.useRef(0);
+  var hoverRef = react.useRef(null);
+  var drawRef = react.useRef(function () { });
+  var fitRef = react.useRef(null);
+
+  // ---- force simulation -------------------------------------------------
+  // Continuous and d3-force shaped: all-pairs Coulomb repulsion, spring edges
+  // with a hard length ceiling, velocity decay and annealing. Unlike the
+  // "shove the neighbour aside when you bump into it" behaviour it replaces,
+  // every node keeps pushing every other node all the time, so the board
+  // settles into an equilibrium instead of only reacting to collisions.
+  // Positions live in this ref; the plugin store is written once per settle.
+  var simRef = react.useRef(null);
+  var tweenRef = react.useRef(null);
+  var forkRef = react.useRef(null);
+  // Set when an outside writer (the "重新排布" button, a restored layout) has
+  // just moved the cards: the next tick re-reads every position from the store
+  // instead of keeping the simulation's old coordinates.
+  var reseedRef = react.useRef(false);
+  var simSettings = {
+    // Sized for 224x120 cards: an isolated pair settles at roughly 420 px
+    // (k*(d-L) = charge/d^2). d3's defaults are for 30 px dots, so they are
+    // useless here — with charge -30 nothing moves at all.
+    charge: -320000,       // repulsion constant: a = charge / d^2
+    linkDistance: 330,     // spring rest length, a little over one card width
+    stiffness: 0.02,       // spring constant below the ceiling
+    stiffCeiling: 0.3,     // pull when stretched past maxStretch * linkDistance
+    maxStretch: 1.35,
+    gravity: 0.003,        // weak pull to the centroid so nothing escapes
+    repulsionRange: 1150,  // beyond this the pairs stop pushing: dragging one
+                           // card then relaxes its neighbourhood instead of
+                           // rearranging the whole board
+    forceScale: 1,         // multiplier on every force
+    velocityDecay: 0.5,    // v = (v + a) * 0.5 — heavy damping: the board stops
+                           // where it is instead of gliding on for seconds
+    maxVelocity: 45,
+    alphaDecay: 0.955,     // ~2.0 s from rest-heat to a standstill at 60 fps
+    alphaMin: 0.004
+  };
+
+  var ensureSim = function () {
+    var sim = simRef.current;
+    if (sim === null) { sim = { nodes: new Map(), alpha: 0 }; simRef.current = sim; }
+    if (reseedRef.current === true) {
+      reseedRef.current = false;
+      sim.nodes.clear();
+    }
+    var nodes = visibleNodes();
+    var alive = new Set();
+    var idle = sim.alpha <= simSettings.alphaMin;
+    for (var index = 0; index < nodes.length; index += 1) {
+      var node = nodes[index];
+      alive.add(node.id);
+      var state = sim.nodes.get(node.id);
+      if (state === void 0) {
+        sim.nodes.set(node.id, { x: node.position.x, y: node.position.y, vx: 0, vy: 0 });
+        continue;
+      }
+      // While the simulation stands still the store wins: a relayout, a restored
+      // drag or a card placed by the plugin must not be overruled by the last
+      // tick, otherwise the canvas would show stale coordinates forever.
+      if (idle) {
+        state.x = node.position.x;
+        state.y = node.position.y;
+        state.vx = 0;
+        state.vy = 0;
+      }
+    }
+    var stale = [];
+    sim.nodes.forEach(function (value, key) { if (!alive.has(key)) stale.push(key); });
+    for (var drop = 0; drop < stale.length; drop += 1) sim.nodes.delete(stale[drop]);
+    return sim;
+  };
+
+  var reheat = function (value) {
+    var sim = ensureSim();
+    if (sim.alpha < value) sim.alpha = value;
+  };
+
+  var tickSim = function () {
+    var sim = ensureSim();
+    var settings = simSettings;
+    if (sim.alpha <= settings.alphaMin) return false;
+    var ids = [];
+    sim.nodes.forEach(function (value, key) { ids.push(key); });
+    var count = ids.length;
+    var list = [];
+    var centroidX = 0;
+    var centroidY = 0;
+    for (var index = 0; index < count; index += 1) {
+      var state = sim.nodes.get(ids[index]);
+      state.fx = 0;
+      state.fy = 0;
+      list.push(state);
+      centroidX += state.x;
+      centroidY += state.y;
+    }
+    centroidX = count === 0 ? 0 : centroidX / count;
+    centroidY = count === 0 ? 0 : centroidY / count;
+    var alpha = sim.alpha;
+    // All-pairs repulsion. 62 cards are ~2k pairs per frame: cheap, and unlike
+    // a collision test it keeps pushing long before the cards touch.
+    for (var left = 0; left < count; left += 1) {
+      for (var right = left + 1; right < count; right += 1) {
+        var deltaX = list[right].x - list[left].x;
+        var deltaY = list[right].y - list[left].y;
+        var distanceSquared = deltaX * deltaX + deltaY * deltaY;
+        if (distanceSquared < 1) {
+          // Two cards sitting exactly on top of each other: nudge them apart on
+          // a deterministic axis so they cannot stay welded together.
+          deltaX = 0.7 + left * 0.001;
+          deltaY = 0.7 + right * 0.001;
+          distanceSquared = deltaX * deltaX + deltaY * deltaY;
+        }
+        var distance = Math.sqrt(distanceSquared);
+        if (distance > settings.repulsionRange) continue;
+        var push = (settings.charge / distanceSquared) * alpha * settings.forceScale;
+        var unitX = deltaX / distance;
+        var unitY = deltaY / distance;
+        list[left].fx += unitX * push;
+        list[left].fy += unitY * push;
+        list[right].fx -= unitX * push;
+        list[right].fy -= unitY * push;
+      }
+    }
+    // Spring edges: linear below the ceiling, hard pull above it, so a card can
+    // never be dragged arbitrarily far from the conversations it belongs to.
+    // 组内现在全连接，如果不按度数归一，一个大组会被十几根弹簧压成一团：
+    // 每条弹簧按 2/(degA+degB) 加权，使每个节点受到的总弹力大致恒定。
+    var edges = propsRef.current.edges || [];
+    var edgeDegree = new Map();
+    for (var degreeIndex = 0; degreeIndex < edges.length; degreeIndex += 1) {
+      edgeDegree.set(edges[degreeIndex].source, (edgeDegree.get(edges[degreeIndex].source) || 0) + 1);
+      edgeDegree.set(edges[degreeIndex].target, (edgeDegree.get(edges[degreeIndex].target) || 0) + 1);
+    }
+    for (var edgeIndex = 0; edgeIndex < edges.length; edgeIndex += 1) {
+      var from = sim.nodes.get(edges[edgeIndex].source);
+      var to = sim.nodes.get(edges[edgeIndex].target);
+      if (from === void 0 || to === void 0) continue;
+      var springX = to.x - from.x;
+      var springY = to.y - from.y;
+      var length = Math.sqrt(springX * springX + springY * springY);
+      if (length < 0.5) length = 0.5;
+      var edgeWeight = 2 / ((edgeDegree.get(edges[edgeIndex].source) || 1) + (edgeDegree.get(edges[edgeIndex].target) || 1));
+      var stiffness = (length > settings.linkDistance * settings.maxStretch ? settings.stiffCeiling : settings.stiffness) * edgeWeight;
+      var pull = (length - settings.linkDistance) * stiffness * alpha * settings.forceScale;
+      var springUnitX = springX / length;
+      var springUnitY = springY / length;
+      from.fx += springUnitX * pull;
+      from.fy += springUnitY * pull;
+      to.fx -= springUnitX * pull;
+      to.fy -= springUnitY * pull;
+    }
+    var drag = dragRef.current;
+    var pinned = drag !== null && drag.kind === "node" && drag.preview !== null ? drag.preview : null;
+    for (var step = 0; step < count; step += 1) {
+      var node = list[step];
+      // A dragged card is pinned under the pointer and does not integrate; the
+      // rest of the board keeps sliding around it.
+      if (pinned !== null && ids[step] === drag.id) {
+        node.x = pinned.x;
+        node.y = pinned.y;
+        node.vx = 0;
+        node.vy = 0;
+        continue;
+      }
+      node.fx += (centroidX - node.x) * settings.gravity * alpha;
+      node.fy += (centroidY - node.y) * settings.gravity * alpha;
+      node.vx = (node.vx + node.fx) * settings.velocityDecay;
+      node.vy = (node.vy + node.fy) * settings.velocityDecay;
+      if (node.vx > settings.maxVelocity) node.vx = settings.maxVelocity;
+      if (node.vx < -settings.maxVelocity) node.vx = -settings.maxVelocity;
+      if (node.vy > settings.maxVelocity) node.vy = settings.maxVelocity;
+      if (node.vy < -settings.maxVelocity) node.vy = -settings.maxVelocity;
+      node.x += node.vx;
+      node.y += node.vy;
+    }
+    sim.alpha = alpha * settings.alphaDecay;
+    return true;
+  };
+
+  /** Write the settled layout back to the plugin store — once, not per frame.
+   * Goes through the tap bridge because moveCards is the only entry point
+   * that does not re-enter the drop/click logic of the parent component. */
+  var commitSim = function () {
+    var sim = simRef.current;
+    if (sim === null) return;
+    var live = mindMapTapBridge.live;
+    if (live === null || typeof live.commit !== "function") return;
+    var points = {};
+    var any = false;
+    sim.nodes.forEach(function (state, key) {
+      var x = Math.round(state.x);
+      var y = Math.round(state.y);
+      var node = null;
+      var nodes = propsRef.current.nodes || [];
+      for (var index = 0; index < nodes.length; index += 1) if (nodes[index].id === key) node = nodes[index];
+      if (node === null) return;
+      if (Math.abs(node.position.x - x) < 1 && Math.abs(node.position.y - y) < 1) return;
+      points[key] = { x: x, y: y };
+      any = true;
+    });
+    if (any) live.commit(points);
+  };
+
+  var animateCameraTo = function (target, duration) {
+    var camera = cameraRef.current;
+    if (camera === null || duration <= 0) {
+      cameraRef.current = target;
+      writeGraphCamera(target);
+      schedule();
+      return;
+    }
+    tweenRef.current = {
+      from: { x: camera.x, y: camera.y, zoom: camera.zoom },
+      to: target,
+      start: typeof performance !== "undefined" ? performance.now() : Date.now(),
+      duration: duration
+    };
+    schedule();
+  };
+
+  var stepTween = function (now) {
+    var tween = tweenRef.current;
+    if (tween === null) return false;
+    var progress = Math.min(1, (now - tween.start) / tween.duration);
+    var eased = 1 - Math.pow(1 - progress, 3);
+    cameraRef.current = {
+      x: tween.from.x + (tween.to.x - tween.from.x) * eased,
+      y: tween.from.y + (tween.to.y - tween.from.y) * eased,
+      zoom: tween.from.zoom + (tween.to.zoom - tween.from.zoom) * eased
+    };
+    if (progress >= 1) {
+      tweenRef.current = null;
+      writeGraphCamera(cameraRef.current);
+    }
+    return true;
+  };
+
+  var schedule = function () {
+    if (frameRef.current !== 0) return;
+    frameRef.current = window.requestAnimationFrame(function () {
+      frameRef.current = 0;
+      drawRef.current();
+    });
+  };
+
+  var visibleNodes = function () {
+    var out = [];
+    var nodes = propsRef.current.nodes || [];
+    for (var index = 0; index < nodes.length; index += 1) {
+      var node = nodes[index];
+      if (node.hidden === true) continue;
+      if (node.type !== "sessionCard" && node.type !== "sessionDot") continue;
+      out.push(node);
+    }
+    return out;
+  };
+
+  var boxMap = function () {
+    var drag = dragRef.current;
+    var boxes = new Map();
+    var nodes = visibleNodes();
+    var sim = simRef.current;
+    for (var index = 0; index < nodes.length; index += 1) {
+      var node = nodes[index];
+      var position = node.position;
+      // The simulation owns the positions while it runs; reading node.position
+      // here would draw the previous frame and fight the layout.
+      var state = sim === null ? null : sim.nodes.get(node.id);
+      if (state !== void 0 && state !== null) position = { x: state.x, y: state.y };
+      if (drag !== null && drag.kind === "node" && drag.id === node.id && drag.preview !== null) position = drag.preview;
+      boxes.set(node.id, { x: position.x, y: position.y, w: CARD_W, h: GRAPH_CARD_RENDER_H });
+    }
+    return boxes;
+  };
+
+  fitRef.current = function (options) {
+    var root = rootRef.current;
+    if (root === null) return;
+    var boxes = boxMap();
+    if (boxes.size === 0) return;
+    var minX = Infinity;
+    var minY = Infinity;
+    var maxX = -Infinity;
+    var maxY = -Infinity;
+    boxes.forEach(function (box) {
+      if (box.x < minX) minX = box.x;
+      if (box.y < minY) minY = box.y;
+      if (box.x + box.w > maxX) maxX = box.x + box.w;
+      if (box.y + box.h > maxY) maxY = box.y + box.h;
+    });
+    var viewWidth = Math.max(160, root.clientWidth - 120);
+    var viewHeight = Math.max(160, root.clientHeight - 160);
+    var spanX = Math.max(CARD_W, maxX - minX);
+    var spanY = Math.max(GRAPH_CARD_RENDER_H, maxY - minY);
+    var zoom = Math.max(0.06, Math.min(1, Math.min(viewWidth / spanX, viewHeight / spanY)));
+    var target = {
+      x: root.clientWidth / 2 - ((minX + maxX) / 2) * zoom,
+      y: root.clientHeight / 2 - ((minY + maxY) / 2) * zoom,
+      zoom: zoom
+    };
+    // First paint snaps; everything after eases, so switching focus no longer
+    // teleports the camera (250 ms ease-out, the same beat the plugin's own
+    // setCenter uses).
+    var ease = options !== undefined && options !== null && options.ease === true;
+    if (ease) animateCameraTo(target, 250);
+    else {
+      cameraRef.current = target;
+      writeGraphCamera(target);
+      schedule();
+    }
+  };
+
+  drawRef.current = function () {
+    mindMapDrawCount += 1;
+    var root = rootRef.current;
+    var canvas = canvasRef.current;
+    if (root === null || canvas === null) return;
+    var width = root.clientWidth;
+    var height = root.clientHeight;
+    if (width < 4 || height < 4) return;
+    if (cameraRef.current === null) {
+      fitRef.current();
+      return;
+    }
+    var dpr = window.devicePixelRatio || 1;
+    var pixelWidth = Math.round(width * dpr);
+    var pixelHeight = Math.round(height * dpr);
+    if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+      canvas.width = pixelWidth;
+      canvas.height = pixelHeight;
+      canvas.style.width = width + "px";
+      canvas.style.height = height + "px";
+    }
+    var context = canvas.getContext("2d");
+    if (context === null) return;
+    var camera = cameraRef.current;
+    var now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    var dark = propsRef.current.colorMode !== "light";
+    context.setTransform(dpr, 0, 0, dpr, 0, 0);
+    context.clearRect(0, 0, width, height);
+    context.fillStyle = dark ? "#14161b" : "#fbfbfd";
+    context.fillRect(0, 0, width, height);
+    var step = 24 * camera.zoom;
+    if (step > 10) {
+      context.fillStyle = dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.055)";
+      var offsetX = camera.x % step;
+      var offsetY = camera.y % step;
+      for (var dotX = offsetX; dotX < width; dotX += step) {
+        for (var dotY = offsetY; dotY < height; dotY += step) context.fillRect(dotX, dotY, 1, 1);
+      }
+    }
+    var boxes = boxMap();
+    var zoom = camera.zoom;
+    var lod = zoom < 0.42;
+    var lodBlock = zoom < 0.22;
+    var hovered = hoverRef.current;
+    var edges = propsRef.current.edges || [];
+    context.save();
+    context.translate(camera.x, camera.y);
+    context.scale(zoom, zoom);
+    context.lineWidth = 1.1 / zoom;
+    var edgePalette = {
+      ws: dark ? "rgba(150,165,190,0.34)" : "rgba(70,85,105,0.30)",
+      tag: dark ? "rgba(120,180,255,0.38)" : "rgba(40,110,200,0.34)",
+      lineage: dark ? "rgba(255,206,120,0.42)" : "rgba(190,130,30,0.36)",
+      other: dark ? "rgba(198,206,220,0.26)" : "rgba(40,48,60,0.24)"
+    };
+    context.fillStyle = dark ? "rgba(198,206,220,0.42)" : "rgba(40,48,60,0.34)";
+    for (var edgeIndex = 0; edgeIndex < edges.length; edgeIndex += 1) {
+      var edge = edges[edgeIndex];
+      var fromBox = boxes.get(edge.source);
+      var toBox = boxes.get(edge.target);
+      if (fromBox === void 0 || toBox === void 0) continue;
+      var fromCenterX = fromBox.x + fromBox.w / 2;
+      var fromCenterY = fromBox.y + fromBox.h / 2;
+      var toCenterX = toBox.x + toBox.w / 2;
+      var toCenterY = toBox.y + toBox.h / 2;
+      // ws = same workspace chain, tag = shared tag chain, lineage = the
+      // plugin's own fork/draw edges, other = manual links and the rest.
+      var kind = edge.data !== void 0 && edge.data.graphKind !== void 0 ? edge.data.graphKind : (edge.type === "mindMap" ? "lineage" : "other");
+      var touchesHover = hovered !== null && (edge.source === hovered || edge.target === hovered);
+      context.globalAlpha = hovered === null ? 1 : (touchesHover ? 1 : 0.18);
+      context.strokeStyle = edgePalette[kind] === void 0 ? edgePalette.other : edgePalette[kind];
+      context.lineWidth = (touchesHover ? 2.2 : 1.1) / zoom;
+      var start = graphAnchorPoint(fromCenterX, fromCenterY, fromBox.w, fromBox.h, toCenterX, toCenterY);
+      var end = graphAnchorPoint(toCenterX, toCenterY, toBox.w, toBox.h, fromCenterX, fromCenterY);
+      context.beginPath();
+      context.moveTo(start.x, start.y);
+      context.lineTo(end.x, end.y);
+      context.stroke();
+      // No arrowheads: these relationships are undirected, arrows only add noise.
+    }
+    context.globalAlpha = 1;
+    context.lineWidth = 1.1 / zoom;
+    var nodes = visibleNodes();
+    for (var nodeIndex = 0; nodeIndex < nodes.length; nodeIndex += 1) {
+      var node = nodes[nodeIndex];
+      var box = boxes.get(node.id);
+      if (box === void 0) continue;
+      var data = node.data || {};
+      var archived = data.archived === true;
+      // 子会话：跑着时正常显示（角标「子代理 · 运行中」），跑完就和归档一样灰化。
+      var isSubagent = data.subagent === true;
+      var subagentDone = isSubagent && data.subagentFinished === true;
+      var dormant = archived || subagentDone;
+      var isHovered = hovered === node.id;
+      var isDimmed = hovered !== null && hovered !== node.id;
+      context.globalAlpha = dormant ? 0.42 : (isDimmed ? 0.45 : 1);
+      graphRoundRect(context, box.x, box.y, box.w, box.h, 10);
+      context.fillStyle = dark ? "#1b1e25" : "#ffffff";
+      context.fill();
+      var isCurrent = data.current === true;
+      context.lineWidth = (isCurrent ? 2 : (isHovered ? 2 : 1)) / zoom;
+      context.strokeStyle = isCurrent ? "#ffd66a" : (isHovered ? "#8ab4ff" : (dark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.10)"));
+      context.stroke();
+      if (dormant) {
+        context.fillStyle = dark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.45)";
+        context.font = "10px " + GRAPH_FONT_STACK;
+        context.fillText(archived ? "已归档" : "子代理 · 已完成", box.x + 12, box.y + box.h - 8);
+      } else if (isSubagent) {
+        context.fillStyle = "rgba(150,190,255,0.9)";
+        context.font = "10px " + GRAPH_FONT_STACK;
+        context.fillText("子代理 · 运行中", box.x + 12, box.y + box.h - 8);
+      }
+      if (data.running === true || data.glow === "running") {
+        context.beginPath();
+        context.arc(box.x + box.w - 14, box.y + 14, 4, 0, Math.PI * 2);
+        context.fillStyle = "#ffffff";
+        context.fill();
+      } else if (data.waiting === true) {
+        context.beginPath();
+        context.arc(box.x + box.w - 14, box.y + 14, 4, 0, Math.PI * 2);
+        context.fillStyle = "#f5b22e";
+        context.fill();
+      } else if (data.done === true) {
+        context.beginPath();
+        context.arc(box.x + box.w - 14, box.y + 14, 4, 0, Math.PI * 2);
+        context.fillStyle = "#34c759";
+        context.fill();
+      }
+      if (data.running === true || data.glow === "running") {
+        // Travelling light around the card, the canvas version of the CSS ring sweep.
+        var phase = (now % 2400) / 2400;
+        var perimeter = 2 * (box.w + box.h);
+        context.save();
+        context.lineWidth = 2 / zoom;
+        context.strokeStyle = "rgba(255,255,255,0.92)";
+        context.shadowColor = "rgba(255,255,255,0.75)";
+        context.shadowBlur = 10 / zoom;
+        graphRoundRect(context, box.x - 2, box.y - 2, box.w + 4, box.h + 4, 12);
+        context.setLineDash([perimeter * 0.16, perimeter]);
+        context.lineDashOffset = -perimeter * phase;
+        context.stroke();
+        context.restore();
+        var pulse = 0.5 + 0.5 * Math.sin(now / 420);
+        context.save();
+        context.beginPath();
+        context.arc(box.x + box.w - 14, box.y + 14, 4, 0, Math.PI * 2);
+        context.fillStyle = "#ffffff";
+        context.shadowColor = "rgba(255,255,255,0.9)";
+        context.shadowBlur = (4 + 10 * pulse) / zoom;
+        context.fill();
+        context.restore();
+      }
+      if (!lodBlock) {
+        context.fillStyle = dark ? "#e9ebf1" : "#1b1e25";
+        context.font = "600 13px " + GRAPH_FONT_STACK;
+        context.fillText(graphEllipsis(context, String(data.title === void 0 ? "" : data.title), box.w - 28), box.x + 12, box.y + 26);
+        var preview = data.preview === void 0 ? "" : String(data.preview);
+        if (preview !== "" && !lod) {
+          context.fillStyle = dark ? "rgba(233,235,241,0.60)" : "rgba(27,30,37,0.60)";
+          context.font = "12px " + GRAPH_FONT_STACK;
+          context.fillText(graphEllipsis(context, preview, box.w - 24), box.x + 12, box.y + 48);
+        }
+        var activity = mindMapLive.textFor(data.sessionId === void 0 ? "" : data.sessionId);
+        if (activity !== "") {
+          // 正在执行 = 琥珀、正在思考 = 蓝、正在回复 = 绿；一眼能分清这条会话在干什么。
+          context.fillStyle = activity.indexOf("正在执行") === 0 ? "rgba(255,196,110,0.94)" : activity.indexOf("正在思考") === 0 ? "rgba(150,190,255,0.94)" : activity.indexOf("正在分析") === 0 ? "rgba(170,178,196,0.92)" : "rgba(150,235,180,0.94)";
+          context.font = "11px " + GRAPH_FONT_STACK;
+          context.fillText(graphEllipsis(context, activity, box.w - 24), box.x + 12, box.y + 66);
+        }
+        var tags = lod || data.tags === void 0 ? [] : data.tags;
+        var tagX = box.x + 12;
+        context.font = "10px " + GRAPH_FONT_STACK;
+        for (var tagIndex = 0; tagIndex < tags.length && tagIndex < 3; tagIndex += 1) {
+          var tag = String(tags[tagIndex]);
+          var tagWidth = context.measureText(tag).width + 12;
+          if (tagX + tagWidth > box.x + box.w - 12) break;
+          graphRoundRect(context, tagX, box.y + box.h - 30, tagWidth, 16, 4);
+          context.fillStyle = "rgba(90,160,255,0.16)";
+          context.fill();
+          context.fillStyle = "rgba(140,200,255,0.95)";
+          context.fillText(tag, tagX + 6, box.y + box.h - 18);
+          tagX += tagWidth + 5;
+        }
+      }
+      context.globalAlpha = 1;
+    }
+    // Rubber band while shift-dragging out of a card: release over empty canvas
+    // and the plugin's own "spawn a session with injected context" dialog opens.
+    var fork = forkRef.current;
+    if (fork !== null) {
+      var forkBox = boxes.get(fork.id);
+      if (forkBox !== void 0) {
+        var forkStart = graphAnchorPoint(forkBox.x + forkBox.w / 2, forkBox.y + forkBox.h / 2, forkBox.w, forkBox.h, fork.flowX, fork.flowY);
+        context.save();
+        context.setLineDash([6 / zoom, 5 / zoom]);
+        context.lineWidth = 2 / zoom;
+        context.strokeStyle = "rgba(120,180,255,0.92)";
+        context.beginPath();
+        context.moveTo(forkStart.x, forkStart.y);
+        context.lineTo(fork.flowX, fork.flowY);
+        context.stroke();
+        context.setLineDash([]);
+        context.beginPath();
+        context.arc(fork.flowX, fork.flowY, 4 / zoom, 0, Math.PI * 2);
+        context.fillStyle = "rgba(120,180,255,0.92)";
+        context.fill();
+        context.restore();
+      }
+    }
+    context.restore();
+  };
+
+  var emitNodeChange = function (id, position, dragging) {
+    var handler = propsRef.current.onNodesChange;
+    if (typeof handler !== "function") return;
+    handler([{ id: id, type: "position", position: position, dragging: dragging }]);
+  };
+
+  var hitTest = function (flowX, flowY) {
+    var boxes = boxMap();
+    var nodes = visibleNodes();
+    for (var index = nodes.length - 1; index >= 0; index -= 1) {
+      var box = boxes.get(nodes[index].id);
+      if (box === void 0) continue;
+      if (flowX >= box.x && flowX <= box.x + box.w && flowY >= box.y && flowY <= box.y + box.h) return nodes[index];
+    }
+    return null;
+  };
+
+  var toFlow = function (clientX, clientY) {
+    var root = rootRef.current;
+    var camera = cameraRef.current;
+    if (root === null || camera === null) return { x: 0, y: 0 };
+    var rect = root.getBoundingClientRect();
+    return { x: (clientX - rect.left - camera.x) / camera.zoom, y: (clientY - rect.top - camera.y) / camera.zoom };
+  };
+
+  var onWheel = function (event) {
+    event.preventDefault();
+    var root = rootRef.current;
+    var camera = cameraRef.current;
+    if (root === null || camera === null) return;
+    var rect = root.getBoundingClientRect();
+    var pointerX = event.clientX - rect.left;
+    var pointerY = event.clientY - rect.top;
+    var factor = Math.exp(-event.deltaY * 0.0015);
+    var zoom = Math.max(0.05, Math.min(2.6, camera.zoom * factor));
+    var ratio = zoom / camera.zoom;
+    cameraRef.current = { x: pointerX - (pointerX - camera.x) * ratio, y: pointerY - (pointerY - camera.y) * ratio, zoom: zoom };
+    writeGraphCamera(cameraRef.current);
+    schedule();
+  };
+
+  var onPointerDown = function (event) {
+    if (event.button !== 0) return;
+    if (event.target !== null && typeof event.target.closest === "function" && event.target.closest(".tm_canvasCtl") !== null) return;
+    var root = rootRef.current;
+    if (root === null) return;
+    var flow = toFlow(event.clientX, event.clientY);
+    var hit = hitTest(flow.x, flow.y);
+    hoverRef.current = hit === null ? null : hit.id;
+    if (root.setPointerCapture !== void 0) {
+      try { root.setPointerCapture(event.pointerId); } catch (error) { }
+    }
+    if (hit === null) {
+      var camera = cameraRef.current;
+      dragRef.current = { kind: "pan", startClientX: event.clientX, startClientY: event.clientY, cameraX: camera.x, cameraY: camera.y, moved: false, preview: null };
+    } else if (event.shiftKey === true) {
+      // Shift + drag out of a card is the fork gesture: it never moves the card,
+      // it draws a rubber band and hands the release point to the plugin.
+      dragRef.current = { kind: "fork", id: hit.id, startClientX: event.clientX, startClientY: event.clientY, moved: false, preview: null };
+      forkRef.current = { id: hit.id, flowX: flow.x, flowY: flow.y };
+    } else {
+      dragRef.current = { kind: "node", id: hit.id, offsetX: flow.x - hit.position.x, offsetY: flow.y - hit.position.y, startClientX: event.clientX, startClientY: event.clientY, moved: false, preview: null };
+      // Pressing a card wakes the layout up: neighbours start sliding away
+      // before the card has even moved 1 px.
+      reheat(0.8);
+      emitNodeChange(hit.id, hit.position, true);
+    }
+    event.preventDefault();
+  };
+
+  var onPointerMove = function (event) {
+    var drag = dragRef.current;
+    if (drag === null) {
+      var hoverFlow = toFlow(event.clientX, event.clientY);
+      var hoverNode = hitTest(hoverFlow.x, hoverFlow.y);
+      var hoverId = hoverNode === null ? null : hoverNode.id;
+      if (hoverId !== hoverRef.current) {
+        hoverRef.current = hoverId;
+        schedule();
+      }
+      return;
+    }
+    var deltaX = event.clientX - drag.startClientX;
+    var deltaY = event.clientY - drag.startClientY;
+    if (drag.kind === "fork") {
+      if (!drag.moved && Math.abs(deltaX) + Math.abs(deltaY) > 6) drag.moved = true;
+      var forkPoint = toFlow(event.clientX, event.clientY);
+      if (forkRef.current !== null) {
+        forkRef.current.flowX = forkPoint.x;
+        forkRef.current.flowY = forkPoint.y;
+      }
+      schedule();
+      return;
+    }
+    if (!drag.moved && Math.abs(deltaX) + Math.abs(deltaY) > 6) {
+      drag.moved = true;
+      if (drag.kind === "node") emitNodeChange(drag.id, drag.preview === null ? drag.origin : drag.preview, true);
+    }
+    if (drag.kind === "pan") {
+      cameraRef.current = { x: drag.cameraX + deltaX, y: drag.cameraY + deltaY, zoom: cameraRef.current.zoom };
+      writeGraphCamera(cameraRef.current);
+    } else {
+      var flow = toFlow(event.clientX, event.clientY);
+      var position = { x: Math.round(flow.x - drag.offsetX), y: Math.round(flow.y - drag.offsetY) };
+      drag.preview = position;
+      // Keep the heat high while the pointer is down so the rest of the board
+      // keeps flowing instead of freezing after the first 300 ms.
+      var sim = simRef.current;
+      if (sim !== null && sim.alpha < 0.4) sim.alpha = 0.4;
+      if (drag.moved) emitNodeChange(drag.id, position, true);
+    }
+    schedule();
+  };
+
+  var onPointerUp = function (event) {
+    var drag = dragRef.current;
+    dragRef.current = null;
+    if (drag === null) return;
+    if (drag.kind === "fork") {
+      var fork = forkRef.current;
+      forkRef.current = null;
+      if (drag.moved && fork !== null) {
+        var forkPoint = toFlow(event.clientX, event.clientY);
+        var bridge = mindMapCanvasBridge.current;
+        var landed = hitTest(forkPoint.x, forkPoint.y);
+        if (bridge !== null && landed === null && typeof bridge.forkFrom === "function") bridge.forkFrom(drag.id, forkPoint.x, forkPoint.y);
+      }
+      schedule();
+      return;
+    }
+    if (drag.kind === "node") {
+      if (drag.moved) {
+        var position = drag.preview !== null ? drag.preview : drag.origin;
+        emitNodeChange(drag.id, position, false);
+        // Hand the board back to the simulation: the neighbours are still off
+        // equilibrium after being pushed around, so let them find it.
+        reheat(0.55);
+      } else {
+        // A plain click: hand it to the plugin's own node-click handler, which
+        // knows how to open the session and when not to.
+        var node = null;
+        var nodes = propsRef.current.nodes || [];
+        for (var index = 0; index < nodes.length; index += 1) if (nodes[index].id === drag.id) node = nodes[index];
+        if (node !== null && typeof propsRef.current.onNodeClick === "function") {
+          propsRef.current.onNodeClick(event, node);
+        }
+      }
+    } else {
+      var handler = propsRef.current.onMoveEnd;
+      if (typeof handler === "function") handler(null, cameraRef.current);
+    }
+    schedule();
+  };
+
+  var zoomBy = function (factor) {
+    var root = rootRef.current;
+    var camera = cameraRef.current;
+    if (root === null || camera === null) return;
+    var centerX = root.clientWidth / 2;
+    var centerY = root.clientHeight / 2;
+    var zoom = Math.max(0.05, Math.min(2.6, camera.zoom * factor));
+    var ratio = zoom / camera.zoom;
+    cameraRef.current = { x: centerX - (centerX - camera.x) * ratio, y: centerY - (centerY - camera.y) * ratio, zoom: zoom };
+    writeGraphCamera(cameraRef.current);
+    schedule();
+  };
+
+  react.useEffect(function () {
+    var root = rootRef.current;
+    if (root === null) return;
+    var observer = null;
+    if (typeof ResizeObserver === "function") {
+      observer = new ResizeObserver(function () { schedule(); });
+      observer.observe(root);
+    }
+    // React attaches wheel listeners as passive, where preventDefault() throws;
+    // register a native non-passive one so the canvas can own the zoom gesture.
+    var wheelHandler = function (event) {
+      event.preventDefault();
+      var target = rootRef.current;
+      var camera = cameraRef.current;
+      if (target === null || camera === null) return;
+      var rect = target.getBoundingClientRect();
+      var pointerX = event.clientX - rect.left;
+      var pointerY = event.clientY - rect.top;
+      var factor = Math.exp(-event.deltaY * 0.0015);
+      var zoom = Math.max(0.05, Math.min(2.6, camera.zoom * factor));
+      var ratio = zoom / camera.zoom;
+      cameraRef.current = { x: pointerX - (pointerX - camera.x) * ratio, y: pointerY - (pointerY - camera.y) * ratio, zoom: zoom };
+      writeGraphCamera(cameraRef.current);
+      schedule();
+    };
+    root.addEventListener("wheel", wheelHandler, { passive: false });
+    // The frame loop does three jobs in priority order: advance the force
+    // simulation, advance the camera tween, otherwise repaint only while a
+    // session is actually running. Everything is driven from one rAF so an idle
+    // map still costs zero.
+    var animationFrame = 0;
+    var animationTick = 0;
+    var animate = function () {
+      animationFrame = window.requestAnimationFrame(animate);
+      animationTick += 1;
+      var now = typeof performance !== "undefined" ? performance.now() : Date.now();
+      var sim = simRef.current;
+      var simRunning = sim !== null && sim.alpha > simSettings.alphaMin;
+      if (simRunning) tickSim();
+      var tweening = stepTween(now);
+      if (simRunning || tweening) {
+        drawRef.current();
+        if (simRunning && simRef.current !== null && simRef.current.alpha <= simSettings.alphaMin) commitSim();
+        return;
+      }
+      if (animationTick % 2 !== 0) return;
+      var nodes = propsRef.current.nodes || [];
+      for (var index = 0; index < nodes.length; index += 1) {
+        var node = nodes[index];
+        if (node.hidden !== true && node.data !== void 0 && node.data.running === true) {
+          drawRef.current();
+          return;
+        }
+      }
+    };
+    // Deliberately does NOT call ensureSim here: the store write that triggered
+    // this may not have re-rendered yet, and re-seeding from the old props would
+    // throw the new layout away. The next tick re-seeds from the fresh props.
+    var offLive = mindMapLive.subscribe(function () { schedule(); });
+    mindMapSimKick.fn = function () {
+      reseedRef.current = true;
+      var sim = simRef.current;
+      if (sim === null) { sim = { nodes: new Map(), alpha: 0 }; simRef.current = sim; }
+      sim.alpha = 1;
+      schedule();
+    };
+    mindMapCanvasToFlow.fn = function (clientX, clientY) { return toFlow(clientX, clientY); };
+    // Read-only introspection for the verification scripts (alpha, node count,
+    // committed positions); nothing in the UI reads it.
+    window.__mindMapDebug = {
+      alpha: function () { var sim = simRef.current; return sim === null ? null : sim.alpha; },
+      size: function () { var sim = simRef.current; return sim === null ? 0 : sim.nodes.size; },
+      nodes: function () { var sim = simRef.current; var out = {}; if (sim !== null) sim.nodes.forEach(function (value, key) { out[key] = { x: Math.round(value.x), y: Math.round(value.y), vx: value.vx, vy: value.vy }; }); return out; },
+      reheat: function () { reheat(1); },
+      draws: function () { return mindMapDrawCount; },
+      // Live force tuning: mutate these from the console to feel the difference
+      // without a rebuild, e.g. __mindMapDebug.settings.velocityDecay = 0.55
+      settings: simSettings
+    };
+    animationFrame = window.requestAnimationFrame(animate);
+    if (cameraRef.current === null) fitRef.current();
+    schedule();
+    return function () {
+      root.removeEventListener("wheel", wheelHandler);
+      if (typeof offLive === "function") offLive();
+      mindMapSimKick.fn = null;
+      mindMapCanvasToFlow.fn = null;
+      if (animationFrame !== 0) window.cancelAnimationFrame(animationFrame);
+      if (observer !== null) observer.disconnect();
+      if (frameRef.current !== 0) window.cancelAnimationFrame(frameRef.current);
+      frameRef.current = 0;
+    };
+  }, []);
+
+  var signatureRef = react.useRef("");
+  react.useEffect(function () {
+    var nodes = props.nodes || [];
+    var ids = [];
+    for (var index = 0; index < nodes.length; index += 1) if (nodes[index].hidden !== true) ids.push(nodes[index].id);
+    ids.sort();
+    var signature = ids.join(",");
+    if (signature !== signatureRef.current) {
+      signatureRef.current = signature;
+      // A different set of cards is in play (focus switched, a card appeared):
+      // re-seed from the store, heat the layout up and ease the camera onto the
+      // new bounding box instead of snapping.
+      simRef.current = null;
+      reheat(1);
+      fitRef.current({ ease: cameraRef.current !== null });
+    } else {
+      schedule();
+    }
+  }, [props.nodes, props.edges, props.colorMode]);
+
+  return (0, import_jsx_runtime16.jsxs)("div", {
+    className: "tm_graphSurface",
+    ref: rootRef,
+    onPointerDown: onPointerDown,
+    onPointerMove: onPointerMove,
+    onPointerUp: onPointerUp,
+    onPointerCancel: onPointerUp,
+    onPointerLeave: function () {
+      if (hoverRef.current !== null) {
+        hoverRef.current = null;
+        schedule();
+      }
+    },
+    onDoubleClick: function (event) {
+      event.stopPropagation();
+      var flow = toFlow(event.clientX, event.clientY);
+      var bridge = mindMapCanvasBridge.current;
+      if (bridge !== null && hitTest(flow.x, flow.y) === null && typeof bridge.startSessionAt === "function") bridge.startSessionAt(flow.x, flow.y);
+    },
+    onContextMenu: function (event) {
+      event.preventDefault();
+      var bridge = mindMapCanvasBridge.current;
+      if (bridge === null) return;
+      var flow = toFlow(event.clientX, event.clientY);
+      var node = hitTest(flow.x, flow.y);
+      var fake = { clientX: event.clientX, clientY: event.clientY, preventDefault: function () { }, stopPropagation: function () { } };
+      if (node === null) { if (typeof bridge.openPaneMenu === "function") bridge.openPaneMenu(fake); }
+      else if (typeof bridge.openCardMenu === "function") bridge.openCardMenu(fake, node.id);
+    },
+    children: [
+      (0, import_jsx_runtime16.jsx)("canvas", { ref: canvasRef, className: "tm_graphCanvas" }),
+      (0, import_jsx_runtime16.jsxs)("div", { className: "tm_canvasCtl", children: [
+        (0, import_jsx_runtime16.jsx)("button", { type: "button", title: "放大", onClick: function () { zoomBy(1.25); }, children: "+" }),
+        (0, import_jsx_runtime16.jsx)("button", { type: "button", title: "缩小", onClick: function () { zoomBy(0.8); }, children: "−" }),
+        (0, import_jsx_runtime16.jsx)("button", { type: "button", title: "适配视图", onClick: function () { fitRef.current(); }, children: "⤢" })
+      ] })
+    ]
+  });
+}
+/** Switches the renderer: canvas in graph mode, React Flow in whiteboard mode.
+ * Both receive the exact same props object. */
+function GraphSurface(props) {
+  var graphOn = (0, import_react13.useSyncExternalStore)(graphModeSubscribe, graphModeGet, graphModeGet);
+  if (graphOn) return (0, import_jsx_runtime16.jsx)(GraphCanvasSurface, props);
+  return (0, import_jsx_runtime16.jsx)(index, props);
+}
+function GraphBar(props) {
+  const graphOn = (0, import_react13.useSyncExternalStore)(graphModeSubscribe, graphModeGet, graphModeGet);
+  const children = [];
+  children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("button", {
+    type: "button",
+    className: "tm_graphBtn" + (graphOn ? " tm_graphBtnActive" : ""),
+    title: graphOn ? "切回白板（槽位平铺）视图" : "切换到图谱视图：节点按关系连线、自动排布、可拖动",
+    onClick: function () { graphModeSet(!graphOn); },
+    children: graphOn ? "🕸 图谱" : "▦ 白板"
+  }, "mode"));
+  if (graphOn) {
+    children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("button", {
+      type: "button",
+      className: "tm_graphBtn" + (props.focusOn === true ? " tm_graphBtnActive" : ""),
+      title: "只显示当前会话和与它相关（连在一起）的对话；点卡片打开会话后，聚焦会跟过去",
+      onClick: props.onToggleFocus,
+      children: props.focusOn === true ? "🎯 聚焦 " + props.focusCount : "🎯 聚焦"
+    }, "focus"));
+    children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("button", {
+      type: "button",
+      className: "tm_graphBtn",
+      title: "按连线关系重新做力导向排布（拖动过的卡片也会重新排）",
+      onClick: props.onRelayout,
+      children: "⟲ 重新排布"
+    }, "relayout"));
+    children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("button", {
+      type: "button",
+      className: "tm_graphBtn",
+      disabled: props.tagBusy === true,
+      title: "用默认模型给还没有标签的会话生成标签（每个会话一次 LLM 调用）",
+      onClick: props.onGenerateTags,
+      children: props.tagBusy === true ? "标签生成中…" : "🏷 生成标签"
+    }, "tags"));
+    children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("button", {
+      type: "button",
+      className: "tm_graphBtn" + (props.hideArchived === true ? " tm_graphBtnActive" : ""),
+      title: "隐藏已归档会话和已跑完的子代理（子代理跑完会灰化，和归档一样藏起来）；开合状态记在浏览器里",
+      onClick: props.onToggleHideArchived,
+      children: props.hideArchived === true ? "🗄 已隐藏 " + (props.archivedCount > 0 ? props.archivedCount : "0") : "🗄 显示全部"
+    }, "archived"));
+    if (props.tagCount > 0) children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("span", {
+      className: "tm_graphHint",
+      children: props.tagCount + " 个标签"
+    }, "count"));
+  }
+  return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("div", { className: "tm_graphBar", role: "toolbar", children: children });
+}
+/* ---- 侧栏席位：把同一张地图挂进 dsh-better-sidebar 的一栏 ---------------
+ * 壳给 slot 组件的标准 props（useSessions / useWorkspaces / useSessionStatus）
+ * 在侧栏 tab 里拿不到，所以这里用同一批 store 自己造一份选择器 hook：
+ * sessions 用 ctx.sessions.list，workspaces 用 ctx.workspaces.list，
+ * sessionStatus 用 slots._rootBinding.hooks.sessionStatus（拿不到就省略，
+ * 地图会退化成用列表行自带的字段）。 */
+var mindMapSidebarSeat = { service: null, mounted: false };
+var mindMapStandardCache = null;
+var mindMapApplyCtx = null;
+/** 侧栏那一栏的「要不要开着」记在浏览器里：关掉就置 '0'，之后重启不自动弹。 */
+var MIND_MAP_SIDEBAR_TAB_KEY = "dsh.mind-map.sidebar-tab.v1";
+function mindMapSidebarTabWanted() {
+  try { return window.localStorage.getItem(MIND_MAP_SIDEBAR_TAB_KEY) !== "0"; } catch (error) { return true; }
+}
+function mindMapSidebarTabRemember(open) {
+  try { window.localStorage.setItem(MIND_MAP_SIDEBAR_TAB_KEY, open ? "1" : "0"); } catch (error) { }
+}
+/** 开那一栏；没有当前会话时返回 false（better-sidebar 的 tab 必须挂在会话上）。 */
+function mindMapOpenSidebarTab(service) {
+  if (service === null || service === void 0 || typeof service.openTab !== "function") return false;
+  try {
+    var snap = typeof service.getSnapshot === "function" ? service.getSnapshot() : null;
+    if (snap === null || snap === void 0 || snap.sessionId === void 0) return false;
+    service.openTab({ type: "mind_map:map", title: t("map.title") });
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+function mindMapSelectorHook(store) {
+  return function (selector, equality) {
+    var select = typeof selector === "function" ? selector : function (state) { return state; };
+    var cacheRef = import_react13.useRef({ has: false, value: void 0 });
+    var read = function () {
+      var next = select(store.getSnapshot());
+      var cache = cacheRef.current;
+      var same = typeof equality === "function" ? equality(cache.value, next) : cache.value === next;
+      if (cache.has === true && same) return cache.value;
+      cache.has = true;
+      cache.value = next;
+      return next;
+    };
+    return import_react13.useSyncExternalStore(function (notify) { return store.subscribe(notify); }, read, read);
+  };
+}
+
+function mindMapSidebarProps() {
+  if (mindMapStandardCache !== null) return mindMapStandardCache;
+  // 必须用 apply() 拿到的那个 ctx：侧栏 tab 自带的 ctx 没有 sessions/workspaces
+  // 的 inject，直接取属性会抛 "cannot get property ... without inject"。
+  var ctx = mindMapApplyCtx;
+  var sessionsStore = null;
+  var workspacesStore = null;
+  var statusStore = null;
+  try { sessionsStore = ctx !== null && ctx.sessions !== void 0 && ctx.sessions !== null && ctx.sessions.list !== void 0 ? ctx.sessions.list : null; } catch (error) { sessionsStore = null; }
+  try { workspacesStore = ctx !== null && ctx.workspaces !== void 0 && ctx.workspaces !== null && ctx.workspaces.list !== void 0 ? ctx.workspaces.list : null; } catch (error) { workspacesStore = null; }
+  try { statusStore = ctx !== null && ctx.slots !== void 0 && ctx.slots._rootBinding !== void 0 ? ctx.slots._rootBinding.hooks.sessionStatus : null; } catch (error) { statusStore = null; }
+  mindMapStandardCache = {
+    useSessions: sessionsStore === null ? function () { return { ids: [], byId: {} }; } : mindMapSelectorHook(sessionsStore),
+    useWorkspaces: workspacesStore === null ? function () { return { items: [] }; } : mindMapSelectorHook(workspacesStore),
+    useSessionStatus: statusStore === null || statusStore === void 0 ? void 0 : mindMapSelectorHook(statusStore)
+  };
+  return mindMapStandardCache;
+}
+
+/** 侧栏入口：有 betterSidebar 且有当前会话就开那一栏（已开则聚焦）；否则返回 false，
+ *  调用方退回中间栏面板（面板不依赖会话，空板上也能看）。 */
+function openMindMapSidebar() {
+  return mindMapOpenSidebarTab(mindMapSidebarSeat.service);
+}
+function MapSidebarTab(tabProps) {
+  var standard = mindMapSidebarProps();
+  var ui = import_react13.useSyncExternalStore(mapUi.subscribe, mapUi.get, mapUi.get);
+  // 挂载即说明这一栏真的开出来了：自动恢复的轮询凭这个信号停止。
+  import_react13.useEffect(function () {
+    mindMapSidebarSeat.mounted = true;
+    return function () { mindMapSidebarSeat.mounted = false; };
+  }, []);
+  return (0, import_jsx_runtime16.jsxs)("div", {
+    className: "tm_sbPanel",
+    children: [
+      (0, import_jsx_runtime16.jsxs)("div", { className: "tm_sbBar", children: [
+        (0, import_jsx_runtime16.jsx)("span", { className: "tm_sbTitle", children: t("map.title") }),
+        (0, import_jsx_runtime16.jsx)("button", {
+          type: "button",
+          className: "tm_graphBtn tm_sbFull",
+          title: "在中间栏全屏打开思维图（整理卡片时更好用）",
+          onClick: function () { openMapPanel(); },
+          children: "⤢ 全屏"
+        })
+      ] }),
+      ui.open === true
+        ? (0, import_jsx_runtime16.jsx)("div", { className: "tm_sbNote", children: "地图正在中间栏全屏显示" })
+        : (0, import_jsx_runtime16.jsx)(MapCanvas, standard)
+    ]
+  });
+}
+/** 左栏 panellist 行（插件 / 记忆系统 / SSH 那一排）的图标。壳体负责行框、
+ *  标签、tooltip、高亮与折叠，这里只画 glyph，并用 data-dsh-panel-entry 标出
+ *  这一行属于哪个面板（壳按它反查，跟 dsh-ssh 的做法一致）。 */
+function MindMapPanelIcon(props) {
+  var edge = props === void 0 || props.size === void 0 ? 16 : props.size;
+  return (0, import_jsx_runtime16.jsxs)("svg", {
+    "data-dsh-panel-entry": MAP_PANEL_ID,
+    viewBox: "0 0 16 16",
+    width: edge,
+    height: edge,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.5,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": "true",
+    children: [
+      (0, import_jsx_runtime16.jsx)("path", { d: "M9.2 2.6 4.2 4.1v9.3l5-1.5 3 1.1 3.8-1.5V2l-3.8 1.5Z" }, "a"),
+      (0, import_jsx_runtime16.jsx)("path", { d: "M9.2 2.6v9.2" }, "b"),
+      (0, import_jsx_runtime16.jsx)("path", { d: "M12.2 3.5v9.5" }, "c")
+    ]
+  });
+}
+/* live 模块在这个块之后才定义，调试钩子在 module-block 的 replace 末尾挂（见下）。 */
+// ===== end mind-map graph view patch =====
+
+// mind_map · 会话实时活动（正在思考 / 正在回复 / 正在执行）
+// 取数通道：ctx.remote.session.follow({address, activate:true, assistantStream:true}) 的异步流。
+// 帧：snapshot / assistant-stream(start|chunk|end) / event(tool/call、tool/result、step/end)。
+// 帧率实测 40-55/s，所以对外只做 150ms 合并通知；拿不到通道时 textFor 全返回 ''。
+// 详细证据见 docs/live-activity-notes.md。
+var mindMapLive = (function () {
+  var CAP = 2000;            // 单缓冲区上限（留尾部；卡片只用最后 40 字）
+  var SHOW = 40;             // 卡片上显示的字符数
+  var THROTTLE = 150;        // 订阅者回调节流（ms）。帧率实测 40-55/s，必须节流
+  var MAX_STREAMS = 8;       // 同时订阅的会话数上限
+  var PREFER = ['description', 'command', 'file_path', 'pattern', 'query', 'path', 'url', 'prompt', 'title', 'label'];
+  var SKIP = { 'function': 1, code: 1, script: 1, content: 1, body: 1, text: 1, new_string: 1, old_string: 1, source: 1, patch: 1 };
+
+  var states = {};      // sessionId -> { reasoning, text, phase, pending, running, attemptId, turn, step, updatedAt }
+  var streams = {};     // sessionId -> { abort, done }
+  var offs = [];
+  var listeners = [];
+  var timer = 0;
+  var dirty = false;
+  var ns = null;        // remote.session 命名空间
+  var listRef = null;   // ctx.sessions.list
+
+  function trim(s) { return String(s).replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, ''); }
+  function tail(s, n) { s = String(s); return s.length > n ? '…' + s.slice(s.length - n) : s; }
+  function keep(s) { s = String(s); return s.length > CAP ? s.slice(s.length - CAP) : s; }
+
+  function stateFor(id) {
+    if (!states[id]) states[id] = { reasoning: '', text: '', phase: '', pending: null, running: null, attemptId: '', turn: -1, step: -1, updatedAt: 0 };
+    return states[id];
+  }
+
+  /** 150ms 合并一次重绘：一帧一次 render 会把图谱拖死。 */
+  function notify() {
+    if (dirty) return;
+    dirty = true;
+    timer = setTimeout(function () {
+      dirty = false; timer = 0;
+      var fns = listeners.slice();
+      for (var i = 0; i < fns.length; i++) { try { fns[i](); } catch (e) {} }
+    }, THROTTLE);
+  }
+
+  /** 工具参数 -> 卡片上那半句。优先语义字段，跳过整段代码。 */
+  function summarize(raw) {
+    var args = null, i, k, v;
+    try { args = JSON.parse(raw); } catch (e) { args = null; }
+    if (!args || typeof args !== 'object') { var flat = trim(raw || ''); return flat ? tail(flat, SHOW) : ''; }
+    for (i = 0; i < PREFER.length; i++) { v = args[PREFER[i]]; if (typeof v === 'string' && v) return tail(trim(v), SHOW); }
+    for (k in args) {
+      if (!Object.prototype.hasOwnProperty.call(args, k) || SKIP[k] === 1) continue;
+      v = args[k];
+      if (typeof v === 'string' && v && v.length <= 160) return tail(trim(v), SHOW);
+    }
+    return '';
+  }
+
+  function applyChunk(s, c) {
+    if (!c || typeof c !== 'object') return;
+    var t = c.type;
+    if (t === 'block-start') {
+      s.phase = c.blockType === 'reasoning' ? 'thinking' : c.blockType === 'text' ? 'replying' : c.blockType === 'tool-call' ? 'tool' : s.phase;
+      return;
+    }
+    if (t === 'reasoning-delta') { if (typeof c.text === 'string') s.reasoning = keep(s.reasoning + c.text); s.phase = 'thinking'; return; }
+    if (t === 'text-delta') { if (typeof c.text === 'string') s.text = keep(s.text + c.text); s.phase = 'replying'; return; }
+    if (t === 'tool-call-delta') {
+      if (!s.pending) s.pending = { name: '', args: '', id: '' };
+      if (typeof c.name === 'string' && c.name) s.pending.name = c.name;
+      if (typeof c.id === 'string' && c.id) s.pending.id = c.id;
+      if (typeof c.argumentsDelta === 'string') s.pending.args = keep(s.pending.args + c.argumentsDelta);
+      s.phase = 'tool';
+      return;
+    }
+    if (t === 'block-end') {
+      var b = c.block;   // 该块全文，权威值：直接覆盖累加结果
+      if (b && b.type === 'reasoning' && typeof b.text === 'string') s.reasoning = keep(b.text);
+      else if (b && b.type === 'text' && typeof b.text === 'string') s.text = keep(b.text);
+      return;
+    }
+    if (t === 'finish') { if (c.reason && c.reason.kind === 'tool-calls') s.phase = 'tool'; return; }
+  }
+
+  /** 重连基线：把 activeAttempt.stream 折叠成当前文本，省掉"等下一帧"。 */
+  function foldedBaseline(id, base) {
+    var att = base && base.activeAttempt;
+    if (!att) return;
+    var s = stateFor(id), recs = att.stream || [], i, r;
+    s.attemptId = att.attemptId || ''; s.turn = att.turn; s.step = att.step;
+    for (i = 0; i < recs.length; i++) {
+      r = recs[i];
+      if (!r || typeof r !== 'object') continue;
+      if (r.type === 'reasoning-chunks' && r.texts) s.reasoning = keep(s.reasoning + r.texts.join(''));
+      else if (r.type === 'text-chunks' && r.texts) s.text = keep(s.text + r.texts.join(''));
+      else if (r.type === 'chunk' && r.chunk) applyChunk(s, r.chunk);
+      else if (r.type === 'tool-call-chunks' && r.name && !s.pending) s.pending = { name: r.name, args: '', id: '' };
+    }
+    s.updatedAt = Date.now(); notify();
+  }
+
+  function onFrame(id, f) {
+    if (!f || typeof f !== 'object') return;
+    var s = stateFor(id), fr, ev, d, cid;
+    if (f.type === 'snapshot') { foldedBaseline(id, f.assistantStream); return; }
+
+    if (f.type === 'assistant-stream') {
+      fr = f.frame || {};
+      if (fr.type === 'start') {
+        s.attemptId = fr.attemptId || ''; s.turn = fr.turn; s.step = fr.step;
+        s.reasoning = ''; s.text = ''; s.pending = null; s.phase = '';
+      } else if (fr.type === 'chunk') {
+        applyChunk(s, fr.chunk);
+      } else if (fr.type === 'end') {
+        // attempt 结算：文本已落盘（assistant/message），流里的副本必须清掉，否则下一步会串味
+        s.reasoning = ''; s.text = ''; s.pending = null; s.phase = '';
+      }
+      s.updatedAt = Date.now(); notify(); return;
+    }
+
+    if (f.type === 'event') {
+      ev = f.event || {}; d = ev.data || {};
+      if (ev.type === 'tool/call') {
+        s.running = { name: typeof d.name === 'string' ? d.name : 'tool',
+                      args: typeof d.arguments === 'string' ? d.arguments : '',
+                      callId: d.callId };
+        s.pending = null; s.phase = 'tool';
+      } else if (ev.type === 'tool/result') {
+        cid = d.message && d.message.source && d.message.source.callId;
+        if (!s.running || s.running.callId === cid) s.running = null;
+      } else if (ev.type === 'step/end') {
+        s.running = null; s.pending = null; s.reasoning = ''; s.text = ''; s.phase = '';
+      } else if (ev.type === 'assistant/message') {
+        s.reasoning = ''; s.text = '';
+      }
+      s.updatedAt = Date.now(); notify();
+    }
+  }
+
+  /** 会话行说自己还在跑吗（模型请求在飞、但流里还没吐出任何文本时用它兜底）。 */
+  function isRunning(id) {
+    try {
+      var snap = listRef ? listRef.getSnapshot() : null;
+      var row = snap && snap.byId ? snap.byId[id] : null;
+      return !!(row && row.running === true);
+    } catch (e) { return false; }
+  }
+
+  function addressFor(id) {
+    var row = null;
+    try { row = listRef ? listRef.getSnapshot().byId[id] : null; } catch (e) { row = null; }
+    if (row && row.origin === 'subagent' && row.parentId) {
+      return { kind: 'subagent', parentSessionId: row.parentId, childSessionId: id, mode: 'continuable' };
+    }
+    return { kind: 'session', sessionId: id };
+  }
+
+  function openStream(id, modeOverride) {
+    if (!ns || streams[id]) return;
+    var slot = streams[id] = { abort: typeof AbortController === 'function' ? new AbortController() : null, done: false };
+    var req = { address: addressFor(id), activate: true, assistantStream: true, maxMessages: 1 };
+    if (modeOverride) req.address.mode = modeOverride;
+
+    function startIter(src) {
+      var it = src && typeof src[Symbol.asyncIterator] === 'function' ? src[Symbol.asyncIterator]() : src;
+      if (!it || typeof it.next !== 'function') { delete streams[id]; return; }
+      function pump() {
+        it.next().then(function (r) {
+          if (slot.done || !r || r.done) return;
+          onFrame(id, r.value);
+          pump();                       // 不在 promise 回调里长栈，安全
+        }, function (err) {
+          delete streams[id];
+          var msg = String((err && err.message) || err);
+          // subagent 的 mode 只能试：one-shot / continuable，错了重开一次
+          if (/mode does not match/.test(msg) && !modeOverride) { openStream(id, 'one-shot'); }
+        });
+      }
+      pump();
+    }
+
+    try {
+      var src = ns.follow(req, slot.abort ? slot.abort.signal : undefined);
+      if (src && typeof src.then === 'function') src.then(startIter, function () { delete streams[id]; });
+      else startIter(src);
+    } catch (e) { delete streams[id]; }
+  }
+
+  function closeStream(id) {
+    var s = streams[id];
+    if (!s) return;
+    s.done = true; delete streams[id];
+    if (s.abort) { try { s.abort.abort(); } catch (e) {} }
+  }
+
+  function reconcile() {
+    if (!listRef) return;
+    var snap = listRef.getSnapshot(), ids = Object.keys(snap.byId || {}), n = 0, i, row;
+    for (i = 0; i < ids.length; i++) {
+      row = snap.byId[ids[i]];
+      if (!row || row.running !== true) { if (streams[ids[i]]) closeStream(ids[i]); continue; }
+      if (streams[ids[i]]) continue;
+      if (n >= MAX_STREAMS) break;
+      n++; openStream(ids[i]);
+    }
+  }
+
+  return {
+    /**
+     * @param remote      ctx.remote（ClientRemoteService，$on 用它）
+     * @param list        ctx.sessions.list（可选；缺省时只订阅 attach 之后才跑起来的会话）
+     * @param namespace   ctx.remote.session / scoped.remote.session（可选，缺省时试 remote.session）
+     * @returns 是否接上了
+     */
+    attach: function (remote, list, namespace) {
+      listRef = list || null;
+      ns = namespace || null;
+      if (!ns) { try { ns = remote.session; } catch (e) { ns = null; } }
+      if (!ns) return false;
+
+      try {
+        offs.push(remote.$on('api-session/status', function (sessionId, running) {
+          if (running === true) openStream(sessionId); else closeStream(sessionId);
+        }));
+      } catch (e) {}
+
+      if (listRef) {
+        try { offs.push(listRef.subscribe(reconcile)); } catch (e) {}
+        reconcile();
+      }
+      return true;
+    },
+    /** 接线程/开流/有状态的会话数，排障用（不影响渲染）。 */
+    debug: function () {
+      return { attached: ns !== null, streams: Object.keys(streams), sessions: Object.keys(states), listeners: listeners.length };
+    },
+    /** 不需要重绘时可手动调用（list 变化时自动也会调）。 */
+    reconcile: reconcile,
+    /** 卡片上要画的那一行；无内容返回 ''。 */
+    textFor: function (sessionId) {
+      var s = states[sessionId];
+      if (!s) return '';
+      if (s.running) { var a = summarize(s.running.args); return '正在执行：' + s.running.name + (a ? ' ' + a : ''); }
+      if (s.pending && s.pending.name) { var b = summarize(s.pending.args); return '正在执行：' + s.pending.name + (b ? ' ' + b : ''); }
+      var think = trim(s.reasoning);
+      if (think) return '正在思考：' + tail(think, SHOW);
+      var say = trim(s.text);
+      if (say) return '正在回复：' + tail(say, SHOW);
+      // 模型请求在飞、还没有第一个 delta —— 和外壳聊天区显示的是同一个状态。
+      if (isRunning(sessionId)) return '正在分析请求';
+      return '';
+    },
+    /** 节流后的变更通知（150ms 最多一次）。 */
+    subscribe: function (fn) {
+      listeners.push(fn);
+      return function () { var i = listeners.indexOf(fn); if (i >= 0) listeners.splice(i, 1); };
+    },
+    dispose: function () {
+      for (var id in streams) closeStream(id);
+      for (var i = 0; i < offs.length; i++) { try { offs[i](); } catch (e) {} }
+      offs = []; states = {}; listeners = [];
+      if (timer) { clearTimeout(timer); timer = 0; dirty = false; }
+      ns = null; listRef = null;
+    }
+  };
+})();
+
+try { if (typeof window !== "undefined" && window !== null) window.__mindMapLive = mindMapLive; } catch (error) { }
 	} catch (error) {
-		console.error('[dsh-talk-map] client bundle failed to evaluate (inert this boot):', error);
-		return { name: "dsh-talk-map", apply() {} };
+		console.error('[mind_map] client bundle failed to evaluate (inert this boot):', error);
+		return { name: "mind_map", apply() {} };
 	}
 	return module.exports;
 }

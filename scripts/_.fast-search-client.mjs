@@ -12,7 +12,7 @@ api = api.replace(
     '    blocks: string[][]',
     '    seqs: (number | null)[]',
     '  }> {',
-    "    return postJson('/talk-map/search-session', { sessionId, query })",
+    "    return postJson('/mind-map/search-session', { sessionId, query })",
     '  },',
     '  /** The passage around one hit — fetched only when the pointer rests on it. */',
   ]),
@@ -32,7 +32,7 @@ export async function fetchSessionHits(
   query: string,
 ): Promise<{ blocks: string[][]; seqs: (number | null)[] }> {
   try {
-    const page = await talkMapApi.searchSessionHits(sessionId, query)
+    const page = await mindMapApi.searchSessionHits(sessionId, query)
     const blocks = (page.blocks ?? []).filter(block => Array.isArray(block) && block.length > 0)
     return { blocks, seqs: blocks.map((_, index) => (typeof page.seqs?.[index] === 'number' ? page.seqs[index] : null)) }
   } catch (error) {

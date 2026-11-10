@@ -1,5 +1,5 @@
 /**
- * Thin fetch/EventSource layer over the host half's /talk-map/* routes.
+ * Thin fetch/EventSource layer over the host half's /mind-map/* routes.
  * Same-origin by construction (relative URLs against the serving shell).
  */
 import type { Card, Digest, MapEdgeData, MapGlobal, MapStatePayload } from '../shared/model.ts'
@@ -40,24 +40,24 @@ function postJson<T>(path: string, body: unknown): Promise<T> {
   })
 }
 
-export const talkMapApi = {
+export const mindMapApi = {
   getState(): Promise<MapStatePayload> {
-    return requestJson<MapStatePayload>('/talk-map/state')
+    return requestJson<MapStatePayload>('/mind-map/state')
   },
   upsertCards(cards: Record<string, Card>): Promise<void> {
-    return postJson('/talk-map/cards/upsert', { cards })
+    return postJson('/mind-map/cards/upsert', { cards })
   },
   deleteCards(ids: readonly string[]): Promise<void> {
-    return postJson('/talk-map/cards/delete', { ids })
+    return postJson('/mind-map/cards/delete', { ids })
   },
   upsertEdges(edges: Record<string, MapEdgeData>): Promise<void> {
-    return postJson('/talk-map/edges/upsert', { edges })
+    return postJson('/mind-map/edges/upsert', { edges })
   },
   deleteEdges(ids: readonly string[]): Promise<void> {
-    return postJson('/talk-map/edges/delete', { ids })
+    return postJson('/mind-map/edges/delete', { ids })
   },
   setGlobal(global: MapGlobal): Promise<void> {
-    return postJson('/talk-map/global', { global })
+    return postJson('/mind-map/global', { global })
   },
   spawn(request: {
     parents: { cardId: string; sessionId: string; text: string }[]
@@ -66,27 +66,27 @@ export const talkMapApi = {
     y: number
     wsOverride?: string
   }): Promise<{ sessionId: string; cardId: string; card: Card; edges: Record<string, MapEdgeData> }> {
-    return postJson('/talk-map/spawn', request)
+    return postJson('/mind-map/spawn', request)
   },
   injectContext(sessionId: string, parents: { sessionId: string; text: string }[]): Promise<{ ok: true }> {
-    return postJson('/talk-map/inject', { sessionId, parents })
+    return postJson('/mind-map/inject', { sessionId, parents })
   },
   refreshDigest(sessionId: string): Promise<{ sessionId: string; digest: Digest }> {
-    return postJson('/talk-map/digest/refresh', { sessionId })
+    return postJson('/mind-map/digest/refresh', { sessionId })
   },
   /**
    * Regenerate ONLY if the conversation moved on: the Host hashes the
    * transcript and hands back the stored digest when it is still current.
    */
   ensureDigest(sessionId: string): Promise<{ sessionId: string; digest: Digest }> {
-    return postJson('/talk-map/digest/ensure', { sessionId })
+    return postJson('/mind-map/digest/ensure', { sessionId })
   },
   /**
    * The last message the USER sent, per session — what the card body shows now
    * that the LLM summary is gone. Read straight off the Host's session surface.
    */
   lastUserMessages(sessionIds: readonly string[]): Promise<{ texts: Record<string, string> }> {
-    return postJson('/talk-map/last-user', { sessionIds })
+    return postJson('/mind-map/last-user', { sessionIds })
   },
   /**
    * Full-text search across every conversation, done Host-side. This is the
@@ -97,27 +97,27 @@ export const talkMapApi = {
     items: { sessionId: string; blocks?: string[][]; seqs?: (number | null)[]; agent?: string; depth?: number; lines?: string[]; snippet?: string }[]
     hasMore?: boolean
   }> {
-    return postJson('/talk-map/search', cwd === undefined ? { query } : { query, cwd })
+    return postJson('/mind-map/search', cwd === undefined ? { query } : { query, cwd })
   },
   /** Every extra hit inside ONE conversation (asked for explicitly). */
   searchSessionHits(sessionId: string, query: string): Promise<{
     blocks: string[][]
     seqs: (number | null)[]
   }> {
-    return postJson('/talk-map/search-session', { sessionId, query })
+    return postJson('/mind-map/search-session', { sessionId, query })
   },
   /** The passage around one hit — fetched only when the pointer rests on it. */
   searchContext(sessionId: string, seq: number, query: string): Promise<{ lines: string[] }> {
-    return postJson('/talk-map/search-context', { sessionId, seq, query })
+    return postJson('/mind-map/search-context', { sessionId, seq, query })
   },
   ensureDir(path: string): Promise<{ ok: true; path: string }> {
-    return postJson('/talk-map/fs/ensure-dir', { path })
+    return postJson('/mind-map/fs/ensure-dir', { path })
   },
   getDefaults(): Promise<{
     model: { provider: string; model: string; reasoningEffort?: string } | null
     preset: string | null
   }> {
-    return requestJson('/talk-map/defaults')
+    return requestJson('/mind-map/defaults')
   },
   /**
    * Subscribe to host-side domain changes (multi-tab sync, digest arrivals).
@@ -129,7 +129,7 @@ export const talkMapApi = {
     operation: 'put' | 'deleted'
     value?: unknown
   }) => void): () => void {
-    const source = new EventSource('/talk-map/events')
+    const source = new EventSource('/mind-map/events')
     source.addEventListener('change', (event) => {
       try {
         onChange(JSON.parse((event as MessageEvent).data as string))

@@ -1,7 +1,7 @@
 /** Hand-drawn arrowhead + brighter sparks + sweep direction. */
 import fs from 'node:fs'
 
-const file = 'src/client/TalkMapEdge.tsx'
+const file = 'src/client/MindMapEdge.tsx'
 let source = fs.readFileSync(file, 'utf8')
 const before = source
 

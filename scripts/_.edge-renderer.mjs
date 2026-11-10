@@ -7,10 +7,10 @@ const EOL = source.includes('\r\n') ? '\r\n' : '\n'
 const J = (lines) => lines.join(EOL)
 
 // ---- import ------------------------------------------------------------
-if (!source.includes("from './TalkMapEdge.tsx'")) {
+if (!source.includes("from './MindMapEdge.tsx'")) {
   source = source.replace(
     "import { ContextMenu, type MenuItem, type MenuState } from './ContextMenu.tsx'",
-    "import { ContextMenu, type MenuItem, type MenuState } from './ContextMenu.tsx'" + EOL + "import { edgeTypes } from './TalkMapEdge.tsx'",
+    "import { ContextMenu, type MenuItem, type MenuState } from './ContextMenu.tsx'" + EOL + "import { edgeTypes } from './MindMapEdge.tsx'",
   )
 }
 
@@ -36,7 +36,7 @@ source = source.replace(
     '        // Handles stored per edge; legacy edges keep their old r→l anchoring.',
     "        sourceHandle: edge.fromHandle ?? 'r',",
     "        targetHandle: edge.toHandle ?? 'l',",
-    '        type: TALK_MAP_EDGE_TYPE,',
+    '        type: MIND_MAP_EDGE_TYPE,',
   ]),
 )
 source = source.replace(
@@ -59,7 +59,7 @@ source = source.replace(
     '        selectable: false,',
   ]),
   J([
-    '        type: TALK_MAP_EDGE_TYPE,',
+    '        type: MIND_MAP_EDGE_TYPE,',
   ]),
 )
 source = source.replace(
@@ -105,7 +105,7 @@ source = source.replace(
   J(['const CARD_W =']),
   J([
     "/** Registered in `edgeTypes`: the map's only edge renderer. */",
-    "const TALK_MAP_EDGE_TYPE = 'talkMap'",
+    "const MIND_MAP_EDGE_TYPE = 'mindMap'",
     '',
     'const CARD_W =',
   ]),

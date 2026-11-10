@@ -3,7 +3,7 @@
  * external assets — the menu renders one 14px icon per row so the list can be
  * scanned by shape instead of read word by word.
  */
-import styles from './talk-map.module.css'
+import styles from './mind-map.module.css'
 
 export type MenuIconName =
   | 'pin'

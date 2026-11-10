@@ -13,7 +13,7 @@ const EDGE = [
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
   'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
 ].find(f => fs.existsSync(f))
-const profile = path.join(os.tmpdir(), 'talkmap-file-demo')
+const profile = path.join(os.tmpdir(), 'mindmap-file-demo')
 if (fs.existsSync(profile)) fs.rmSync(profile, { recursive: true, force: true })
 const edge = spawn(EDGE, [
   '--remote-debugging-port=9373', `--user-data-dir=${profile}`, '--no-first-run',
@@ -57,7 +57,7 @@ const edge = spawn(EDGE, [
     await p.keyboard.type('官网', { delay: 50 })
     await p.keyboard.press('Enter')
     await p.waitForTimeout(900)
-    stats.gsHits = await p.evaluate(() => document.querySelectorAll('[data-talkmap-search-hit]').length)
+    stats.gsHits = await p.evaluate(() => document.querySelectorAll('[data-mindmap-search-hit]').length)
     await p.screenshot({ path: path.join(ROOT, 'demo', 'shots', 'real-search.png') })
   }
   console.log(JSON.stringify(stats))

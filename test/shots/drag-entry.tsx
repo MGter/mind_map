@@ -3,7 +3,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { ReactFlow, ReactFlowProvider, Background, Handle, Position, ConnectionMode, useReactFlow } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { edgeTypes } from '../../src/client/TalkMapEdge.tsx'
+import { edgeTypes } from '../../src/client/MindMapEdge.tsx'
 
 const SCENE = {"cards":[{"id":"top","x":0,"y":0,"w":224,"h":120},{"id":"mid","x":4,"y":176,"w":250,"h":129},{"id":"bottom","x":0,"y":361,"w":224,"h":120}]}
 const CARD_W = 224
@@ -11,7 +11,7 @@ const CARD_H = 120
 
 const nodeTypes = {
   card: ({ data }) => (
-    <div data-talkmap-session={data.id} style={{ width: data.w, height: data.h, background: '#23262d',
+    <div data-mindmap-session={data.id} style={{ width: data.w, height: data.h, background: '#23262d',
       color: '#cfd6e3', border: '1px solid #333a45', borderRadius: 10, position: 'relative' }}>
       <Handle id="t" type="source" position={Position.Top} />
       <Handle id="r" type="source" position={Position.Right} />
@@ -40,7 +40,7 @@ function Canvas() {
       target: connection.target,
       sourceHandle: connection.sourceHandle,
       targetHandle: connection.targetHandle,
-      type: 'talkMap',
+      type: 'mindMap',
       data: {
         sync: 'idle',
         obstacles: others.map(card => ({ x: card.x, y: card.y, w: card.w, h: card.h })),
