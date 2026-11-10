@@ -369,7 +369,7 @@ function graphLayoutForce(entries, links, options) {
   centerX = centerX / count;
   centerY = centerY / count;
   let temperature = ideal * 0.9;
-  const iterations = settings.iterations || 400;
+  const iterations = settings.iterations || 180;
   const repulsionRange = settings.repulsionRange || ideal * 1.45;
   const gravity = settings.gravity || 0.12;
   for (let step = 0; step < iterations; step += 1) {
@@ -421,7 +421,7 @@ function graphLayoutForce(entries, links, options) {
   }
   const padX = 30;
   const padY = 24;
-  for (let pass = 0; pass < 90; pass += 1) {
+  for (let pass = 0; pass < (settings.collisionPasses || 24); pass += 1) {
     let moved = false;
     for (let left = 0; left < count; left += 1) {
       for (let right = left + 1; right < count; right += 1) {
@@ -1432,11 +1432,11 @@ function GraphCanvasSurface(props) {
     // throw the new layout away. The next tick re-seeds from the fresh props.
     var offLive = mindMapLive.subscribe(function () { schedule(); });
     mindMapFitKick.fn = function () { pendingFitRef.current = true; reheat(1); schedule(); };
-    mindMapSimKick.fn = function () {
+    mindMapSimKick.fn = function (heat) {
       reseedRef.current = true;
       var sim = simRef.current;
       if (sim === null) { sim = { nodes: new Map(), alpha: 0 }; simRef.current = sim; }
-      sim.alpha = 1;
+      sim.alpha = heat === void 0 ? 1 : heat;
       schedule();
     };
     mindMapCanvasToFlow.fn = function (clientX, clientY) { return toFlow(clientX, clientY); };
@@ -1758,6 +1758,8 @@ var mindMapGroupNodes = new Map();
 var mindMapGroupAnchors = new Map();
 /** 面板刚打开 / 宿主刚挂回去：下一帧按当前内容做一次初始 fit（留白收紧）。 */
 var mindMapPendingFit = { until: 0, last: 0, width: 0, height: 0 };
+/** 上次「重新排布」的同步耗时（ms），调试用。 */
+var mindMapLastRelayoutMs = 0;
 /** C. 悬停星形：cardId -> 共享标签的邻居 cardId（上限 24）。 */
 var mindMapStarIndex = new Map();
 var MIND_MAP_GROUP_W = 96;
@@ -2072,13 +2074,19 @@ const AUTO_LAYOUT_BLOCK = String.raw`  const graphCardIds = Object.keys(visibleC
     for (const drawn of liveEdges) links.push([drawn.source, drawn.target]);
     // ideal 从默认的 ~390 收到 232：重排后卡片紧挨着（略大于一张卡宽），
     // 再由画布的近距硬芯把重叠推开 —— 「先紧凑、再被阻力快速弹开」。
+    const layoutStart = typeof performance !== "undefined" ? performance.now() : Date.now();
     const placed = graphLayoutForce(entries, links, { width: CARD_W, height: CARD_H, ideal: 232 });
+    try {
+      mindMapLastRelayoutMs = (typeof performance !== "undefined" ? performance.now() : Date.now()) - layoutStart;
+      if (window.__mindMapDebug !== void 0 && window.__mindMapDebug !== null) window.__mindMapDebug.lastRelayoutMs = mindMapLastRelayoutMs;
+      console.info("[mind_map] relayout " + entries.length + " cards in " + mindMapLastRelayoutMs.toFixed(0) + " ms");
+    } catch (error) { }
     const points = {};
     for (const cardId of Object.keys(placed)) points[cardId] = { x: snap(placed[cardId].x), y: snap(placed[cardId].y) };
     canvas.moveCards(points);
     // The canvas keeps its own simulation: hand the new coordinates over and
     // heat it back up, otherwise the button would only move the cards on paper.
-    if (mindMapSimKick !== null && typeof mindMapSimKick.fn === "function") mindMapSimKick.fn();
+    if (mindMapSimKick !== null && typeof mindMapSimKick.fn === "function") mindMapSimKick.fn(0.22);
     // 重排之后把镜头缩放到刚排好的范围（收敛完成后 canvas 还会再 fit 一次）。
     if (mindMapFitKick !== null && typeof mindMapFitKick.fn === "function") mindMapFitKick.fn();
   };
