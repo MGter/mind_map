@@ -1036,6 +1036,34 @@ function GraphCanvasSurface(props) {
       }
     }
     var boxes = boxMap();
+    // 自动取景守卫：用户没碰过镜头时，只要内容出界或留白过大，就重新 fit 一次（节流 400ms）。
+    // 这样不管布局什么时候收敛、面板尺寸什么时候变化，镜头都会自己跟上。
+    if (mindMapCameraTouched !== true && Date.now() - mindMapAutoFitAt >= 400) {
+      var autoFitNow = Date.now();
+      var bMinX = Infinity;
+      var bMinY = Infinity;
+      var bMaxX = -Infinity;
+      var bMaxY = -Infinity;
+      boxes.forEach(function (autoBox) {
+        if (autoBox.x < bMinX) bMinX = autoBox.x;
+        if (autoBox.y < bMinY) bMinY = autoBox.y;
+        if (autoBox.x + autoBox.w > bMaxX) bMaxX = autoBox.x + autoBox.w;
+        if (autoBox.y + autoBox.h > bMaxY) bMaxY = autoBox.y + autoBox.h;
+      });
+      if (bMaxX > bMinX) {
+        mindMapAutoFitAt = autoFitNow;
+        var scrMinX = camera.x + bMinX * camera.zoom;
+        var scrMaxX = camera.x + bMaxX * camera.zoom;
+        var scrMinY = camera.y + bMinY * camera.zoom;
+        var scrMaxY = camera.y + bMaxY * camera.zoom;
+        var overflow = scrMinX < 6 || scrMinY < 6 || scrMaxX > width - 6 || scrMaxY > height - 6;
+        var tooSmall = (scrMaxX - scrMinX) < width * 0.55 && (scrMaxY - scrMinY) < height * 0.55;
+        if (overflow || tooSmall) {
+          fitRef.current({ ease: true });
+          return;
+        }
+      }
+    }
     var zoom = camera.zoom;
     var lod = zoom < 0.42;
     var lodBlock = zoom < 0.22;
@@ -1770,6 +1798,8 @@ var mindMapPendingFit = { until: 0, last: 0, width: 0, height: 0 };
 var mindMapLastRelayoutMs = 0;
 /** 用户自己拖过/缩放过镜头之后，布局收敛时就不再强行 fit（respect 手动视角）。 */
 var mindMapCameraTouched = false;
+/** 上一次自动取景的时间（节流 400ms）。 */
+var mindMapAutoFitAt = 0;
 /** C. 悬停星形：cardId -> 共享标签的邻居 cardId（上限 24）。 */
 var mindMapStarIndex = new Map();
 var MIND_MAP_GROUP_W = 96;
