@@ -460,3 +460,38 @@ systemctl --user restart dsh
 
 > 远端还留着旧的 `talk_map.json`（11-06，7KB），没动。要搬旧位置/摘要：
 > `node migrate-storage.mjs talk_map mind_map --force`（会改写 unit 头、保留旧文件）。
+
+---
+
+## 12. 最终定名：mind_map / 思维图（2026-11-10）
+
+再改一次名，这次是最终形态：
+
+| 层 | 最终值 |
+|---|---|
+| 仓库 / npm 包 | **mind_map**（GitHub: `MGter/mind_map`，本地目录 `Documents\DSH\mind_map`） |
+| 界面名 | **思维图**（i18n `map.title` / `map.toggle`，**不再带 ·v2**） |
+| cordis 插件行 | `id: mind_map` / `name: mind_map` |
+| 侧栏 tab id | `mind_map:map`（面板 id 同） |
+| 存储单元 | `mind_map`（不变，数据零迁移） |
+| 浏览器偏好键 | `dsh.mind_map.*`（启动时把 `dsh.talk-map.*` 与上一版 `dsh.mind-map.*` 一次性迁过来） |
+
+实现方式：`RENAME_PAIRS` 增加 `["对话地图","思维图"]`、`[" ·v2",""]`、`["·v2",""]`，
+第一对目标改成 `mind_map`；源码侧另有一次性替换（`dsh-mind-map`→`mind_map`、`dsh.mind-map.`→`dsh.mind_map.`、
+CSS module 文件改名 `mind_map.module.css`）。`mind-map.module.css` 之类的旧文件名/注释仍在注释里出现，
+不影响产物（产物里 `dsh-talk-map` / `dsh-mind-map` / `对话地图` / `·v2` 计数全为 0）。
+
+### 12.1 安装形态（本机 + 远端）
+
+- 本机：`~\.dsh\profiles\desktop\vendor\mind_map`（源）＋ `node_modules\mind_map`（junction），
+  dependency `"mind_map": "file:./vendor/mind_map"`，bundles 里 `mind_map`。**换包名后要重启桌面端**。
+- 远端 10.10.40.32（profile web）：`~/.dsh/profiles/web/vendor/mind_map-0.1.66.tgz`，
+  `dsh plugin --profile web add file:…` + `systemctl --user restart dsh`。
+  ⚠️ 同名同版本 tgz 覆盖后 pnpm 会信任 lockfile 不重装 —— 必须**先删 `node_modules/mind_map`
+  与 lockfile 里的条目**（或换文件名）再 add，否则装回去的还是旧内容。
+
+### 12.2 已知小尾巴
+
+- 改名**之前**已经开着的侧栏 tab，标题是 better-sidebar 创建时存下的旧文案
+  （「对话地图 ·v2」/「思维图 ·v2」），关掉再开就是「思维图」；better-sidebar 没有枚举
+  已开 tab 的公开 API，暂不自动刷新。
