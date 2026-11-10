@@ -2596,6 +2596,11 @@ const CLIENT_EDITS = [
       "          }, \"mind_map: sidebar tab\");\n" +
       "        } catch (error) { console.error(\"[mind_map] sidebar tab registration failed:\", error); }\n" +
       "        mindMapMountLauncher(better);\n" +
+      "        // 启动后只自动开「一次」（每次页面加载最多一次 openTab，不会像会话切换那样连打）：\n" +
+      "        // 这样刷新/重启后那一栏自己就回来了；之后切会话不再自动开（避免 1fps 风暴）。\n" +
+      "        window.setTimeout(function () {\n" +
+      "          try { if (document.querySelector(\".tm_sbPanel .tm_graphSurface\") === null) mindMapOpenSidebarTab(mindMapSidebarSeat.service); } catch (error) { }\n" +
+      "        }, 2500);\n" +
       "        window.setTimeout(mindMapDedupeCards, 2500);\n" +
       "        window.setTimeout(mindMapDedupeCards, 7000);\n" +
       "        return true;\n" +
