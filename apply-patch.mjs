@@ -1036,34 +1036,6 @@ function GraphCanvasSurface(props) {
       }
     }
     var boxes = boxMap();
-    // 自动取景守卫：用户没碰过镜头时，只要内容出界或留白过大，就重新 fit 一次（节流 400ms）。
-    // 这样不管布局什么时候收敛、面板尺寸什么时候变化，镜头都会自己跟上。
-    if (mindMapCameraTouched !== true && Date.now() - mindMapAutoFitAt >= 400) {
-      var autoFitNow = Date.now();
-      var bMinX = Infinity;
-      var bMinY = Infinity;
-      var bMaxX = -Infinity;
-      var bMaxY = -Infinity;
-      boxes.forEach(function (autoBox) {
-        if (autoBox.x < bMinX) bMinX = autoBox.x;
-        if (autoBox.y < bMinY) bMinY = autoBox.y;
-        if (autoBox.x + autoBox.w > bMaxX) bMaxX = autoBox.x + autoBox.w;
-        if (autoBox.y + autoBox.h > bMaxY) bMaxY = autoBox.y + autoBox.h;
-      });
-      if (bMaxX > bMinX) {
-        mindMapAutoFitAt = autoFitNow;
-        var scrMinX = camera.x + bMinX * camera.zoom;
-        var scrMaxX = camera.x + bMaxX * camera.zoom;
-        var scrMinY = camera.y + bMinY * camera.zoom;
-        var scrMaxY = camera.y + bMaxY * camera.zoom;
-        var overflow = scrMinX < 6 || scrMinY < 6 || scrMaxX > width - 6 || scrMaxY > height - 6;
-        var tooSmall = (scrMaxX - scrMinX) < width * 0.55 && (scrMaxY - scrMinY) < height * 0.55;
-        if (overflow || tooSmall) {
-          fitRef.current({ ease: true });
-          return;
-        }
-      }
-    }
     var zoom = camera.zoom;
     var lod = zoom < 0.42;
     var lodBlock = zoom < 0.22;
@@ -1442,6 +1414,39 @@ function GraphCanvasSurface(props) {
       // 宿主节点被摘下（全屏接管 / 正在换会话）时不跑模拟也不画：既省 CPU，也避免
       // 往 0 尺寸的容器里反复绘制 —— 那是「切过去像卡死」的来源之一。
       if (root.isConnected !== true) return;
+      // 自动取景守卫（常驻 rAF，空闲时也在跑）：每 400ms 看一次内容是否出界或留白过大，
+      // 用户没亲手拖过镜头就重新 fit —— 面板尺寸变化、布局收敛、切聚焦都会自愈。
+      if (mindMapCameraTouched !== true && Date.now() - mindMapAutoFitAt >= 400) {
+        mindMapAutoFitAt = Date.now();
+        var autoRoot = rootRef.current;
+        if (autoRoot !== null && autoRoot.clientWidth >= 40 && autoRoot.clientHeight >= 40) {
+          var autoCam = cameraRef.current;
+          if (autoCam !== null) {
+            var autoBoxes = boxMap();
+            if (autoBoxes.size > 0) {
+              var autoMinX = Infinity;
+              var autoMinY = Infinity;
+              var autoMaxX = -Infinity;
+              var autoMaxY = -Infinity;
+              autoBoxes.forEach(function (autoBox) {
+                if (autoBox.x < autoMinX) autoMinX = autoBox.x;
+                if (autoBox.y < autoMinY) autoMinY = autoBox.y;
+                if (autoBox.x + autoBox.w > autoMaxX) autoMaxX = autoBox.x + autoBox.w;
+                if (autoBox.y + autoBox.h > autoMaxY) autoMaxY = autoBox.y + autoBox.h;
+              });
+              if (autoMaxX > autoMinX) {
+                var autoScrMinX = autoCam.x + autoMinX * autoCam.zoom;
+                var autoScrMaxX = autoCam.x + autoMaxX * autoCam.zoom;
+                var autoScrMinY = autoCam.y + autoMinY * autoCam.zoom;
+                var autoScrMaxY = autoCam.y + autoMaxY * autoCam.zoom;
+                var autoOverflow = autoScrMinX < 6 || autoScrMinY < 6 || autoScrMaxX > autoRoot.clientWidth - 6 || autoScrMaxY > autoRoot.clientHeight - 6;
+                var autoTooSmall = autoScrMaxX - autoScrMinX < autoRoot.clientWidth * 0.55 && autoScrMaxY - autoScrMinY < autoRoot.clientHeight * 0.55;
+                if (autoOverflow || autoTooSmall) fitRef.current({ ease: true });
+              }
+            }
+          }
+        }
+      }
       animationTick += 1;
       var now = typeof performance !== "undefined" ? performance.now() : Date.now();
       var sim = simRef.current;
