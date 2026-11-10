@@ -951,7 +951,7 @@ function GraphCanvasSurface(props) {
     var viewHeight = Math.max(160, root.clientHeight - 160);
     var spanX = Math.max(CARD_W, maxX - minX);
     var spanY = Math.max(GRAPH_CARD_RENDER_H, maxY - minY);
-    var zoom = Math.max(0.06, Math.min(1, Math.min(viewWidth / spanX, viewHeight / spanY)));
+    var zoom = Math.max(0.06, Math.min(1.6, Math.min(viewWidth / spanX, viewHeight / spanY)));
     var target = {
       x: root.clientWidth / 2 - ((minX + maxX) / 2) * zoom,
       y: root.clientHeight / 2 - ((minY + maxY) / 2) * zoom,
@@ -1703,6 +1703,7 @@ function mindMapMountLauncher(service) {
       if (hostEl === null) { try { mindMapEnsureSingleton(mindMapSidebarProps()); hostEl = mindMapSingleton.host; } catch (error) { hostEl = null; } }
       if (holder !== null && hostEl !== null && holder.contains(hostEl) !== true) {
         try { holder.appendChild(hostEl); } catch (error) { }
+        mindMapPendingFit.until = Date.now() + 8000;
       }
     }
     var onScreen = document.querySelector(".tm_sbPanel .tm_graphSurface") !== null;
@@ -1755,6 +1756,8 @@ function mindMapDedupeCards() {
 var mindMapGroupNodes = new Map();
 /** A. 分组节点锚点（每个工作区只算一次，之后固定，避免与力导向互相追）。 */
 var mindMapGroupAnchors = new Map();
+/** 面板刚打开 / 宿主刚挂回去：下一帧按当前内容做一次初始 fit（留白收紧）。 */
+var mindMapPendingFit = { until: 0, last: 0, width: 0, height: 0 };
 /** C. 悬停星形：cardId -> 共享标签的邻居 cardId（上限 24）。 */
 var mindMapStarIndex = new Map();
 var MIND_MAP_GROUP_W = 96;
@@ -1890,6 +1893,7 @@ function MapSidebarTab(tabProps) {
     var nextHeight = holder.getBoundingClientRect().height;
     if (currentVisible && currentHeight >= nextHeight) return;
     holder.appendChild(host);
+    mindMapPendingFit.until = Date.now() + 8000;
   }, [ui.open]);
   var singletonReady = mindMapSingleton.supported === true;
   return (0, import_jsx_runtime16.jsxs)("div", {
@@ -2003,18 +2007,25 @@ const GRAPH_EDGES_BLOCK = String.raw`    if (graphOn) {
           return (leftSession === void 0 ? 0 : leftSession.updatedAt || 0) - (rightSession === void 0 ? 0 : rightSession.updatedAt || 0);
         });
         const groupNodeId = "group-ws-" + groupId;
-        let anchor = mindMapGroupAnchors.get(groupId);
-        if (anchor === void 0) {
-          let sumX = 0;
-          let sumY = 0;
-          for (const cardId of members) {
-            const card = visibleCards[cardId];
-            sumX += (card === void 0 ? 0 : card.x) + 112;
-            sumY += (card === void 0 ? 0 : card.y) + 62;
-          }
-          anchor = { x: sumX / (members.length || 1) - MIND_MAP_GROUP_W / 2, y: sumY / (members.length || 1) - MIND_MAP_GROUP_H / 2 };
-          mindMapGroupAnchors.set(groupId, anchor);
+        // 锚点跟着成员走：每次重建都按当前坐标重算并做一次平滑（0.4/0.6）。
+        // 以前只在第一次算完就固定，成员一搬走药丸就孤零零留在原地，
+        // 把 fit 的包围盒撑大，整块内容被挤到角落（用户看到的「留白巨大」）。
+        let sumX = 0;
+        let sumY = 0;
+        for (const cardId of members) {
+          const card = visibleCards[cardId];
+          sumX += (card === void 0 ? 0 : card.x) + 112;
+          sumY += (card === void 0 ? 0 : card.y) + 62;
         }
+        const targetX = sumX / (members.length || 1) - MIND_MAP_GROUP_W / 2;
+        const targetY = sumY / (members.length || 1) - MIND_MAP_GROUP_H / 2;
+        let anchor = mindMapGroupAnchors.get(groupId);
+        if (anchor === void 0) anchor = { x: targetX, y: targetY };
+        else {
+          anchor.x = anchor.x * 0.4 + targetX * 0.6;
+          anchor.y = anchor.y * 0.4 + targetY * 0.6;
+        }
+        mindMapGroupAnchors.set(groupId, anchor);
         mindMapGroupNodes.set(groupNodeId, {
           id: groupNodeId,
           type: "groupNode",
@@ -2031,6 +2042,10 @@ const GRAPH_EDGES_BLOCK = String.raw`    if (graphOn) {
         });
         for (const cardId of members) pushGraphEdge(cardId, groupNodeId, "ws");
       }
+      // 已经不存在的分组：把它的锚点一起丢掉，免得下次同名复用旧位置
+      mindMapGroupAnchors.forEach(function (value, key) {
+        if (byWorkspace.has(key) !== true) mindMapGroupAnchors.delete(key);
+      });
       // B. 标签不再画边（卡身上已经有 tag 徽章）。只留一张「同标签邻居」索引给 C 的悬停星形用。
       mindMapStarIndex.clear();
       for (const group of graphTagGroups) {
@@ -2748,7 +2763,7 @@ const CLIENT_EDITS = [
   {
     label: "group-visible-nodes",
     find: "      if (node.hidden === true) continue;\n      if (node.type !== \"sessionCard\" && node.type !== \"sessionDot\") continue;\n      out.push(node);\n    }\n    return out;",
-    replace: "      if (node.hidden === true) continue;\n      if (node.type !== \"sessionCard\" && node.type !== \"sessionDot\") continue;\n      out.push(node);\n    }\n    // A. 分组节点也参与可见集合（boxMap / 力导向 / 绘制都要用到）\n    var groupNodes = mindMapGroupNodesList();\n    for (var groupIndex = 0; groupIndex < groupNodes.length; groupIndex += 1) out.push(groupNodes[groupIndex]);\n    return out;"
+    replace: "      if (node.hidden === true) continue;\n      if (node.type !== \"sessionCard\" && node.type !== \"sessionDot\") continue;\n      out.push(node);\n    }\n    // A. 分组节点也参与可见集合（boxMap / 力导向 / 绘制都要用到），但只放「当前仍有 ≥2 个可见成员」的分组：\n    //    聚焦模式会 hidden 掉大部分卡，若药丸照旧全放进来，它们的锚点还在视口外，\n    //    fit 的包围盒被撑大，整块内容就被挤到角落（「留白巨大」的根因）。\n    var shownIds = new Set();\n    for (var shownIndex = 0; shownIndex < out.length; shownIndex += 1) shownIds.add(out[shownIndex].id);\n    var groupNodes = mindMapGroupNodesList();\n    for (var groupIndex = 0; groupIndex < groupNodes.length; groupIndex += 1) {\n      var groupEntry = groupNodes[groupIndex];\n      var members = groupEntry.data !== void 0 && groupEntry.data.memberIds !== void 0 ? groupEntry.data.memberIds : [];\n      var shownCount = 0;\n      for (var memberIndex = 0; memberIndex < members.length; memberIndex += 1) {\n        if (shownIds.has(members[memberIndex])) shownCount += 1;\n      }\n      if (shownCount < 2) continue;\n      out.push(groupEntry);\n    }\n    return out;"
   },
   {
     label: "group-box",
@@ -2779,6 +2794,16 @@ const CLIENT_EDITS = [
     label: "group-skip-card-draw",
     find: "      var node = nodes[nodeIndex];\n      var box = boxes.get(node.id);",
     replace: "      var node = nodes[nodeIndex];\n      if (node.type === \"groupNode\") continue;\n      var box = boxes.get(node.id);"
+  },
+  {
+    label: "fit-on-open",
+    find: "    var width = root.clientWidth;\n    var height = root.clientHeight;\n    if (width < 4 || height < 4) return;",
+    replace: "    var width = root.clientWidth;\n    var height = root.clientHeight;\n    if (width < 4 || height < 4) return;\n    // 面板刚打开（或刚挂回侧栏）：先按当前内容做一次初始 fit，避免用户面对一个\n    // 偏到屏幕外 / 留白过大的旧镜头。\n    if (mindMapPendingFit.until > Date.now()) {\n      // 刚打开的 8 秒内：布局在收敛、面板尺寸在变化（右栏展开动画），两者都会让首帧的 fit 失准，\n      // 所以这里每 150ms 或尺寸变化时重算一次，等稳定时镜头自然收到位。\n      var fitNow = Date.now();\n      var sizeChanged = Math.abs(mindMapPendingFit.width - width) > 8 || Math.abs(mindMapPendingFit.height - height) > 8;\n      if (sizeChanged || fitNow - mindMapPendingFit.last >= 150) {\n        mindMapPendingFit.last = fitNow;\n        mindMapPendingFit.width = width;\n        mindMapPendingFit.height = height;\n        fitRef.current({ ease: false });\n      }\n    }"
+  },
+  {
+    label: "fit-tight-padding",
+    find: "    var viewWidth = Math.max(160, root.clientWidth - 120);\n    var viewHeight = Math.max(160, root.clientHeight - 160);",
+    replace: "    // 留白收紧：左右各 24px、上下各 36px（原来 60/80），内容尽量占满主界面。\n    var viewWidth = Math.max(160, root.clientWidth - 48);\n    var viewHeight = Math.max(160, root.clientHeight - 72);"
   },
   {
     label: "start-fork",
