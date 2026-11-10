@@ -613,3 +613,15 @@ CSS module 文件改名 `mind_map.module.css`）。`mind-map.module.css` 之类�
 
 实测：120 → **115** 张卡，图上 `sessionId` 重复数 **0**，无 console 报错。
 （注意：子代理再生子代理是**不同 session**，各自一张卡是对的，不算重复。）
+
+### 13.7 「点了打不开」的三重兜底（2026-11-10）
+
+占位按钮点了却没反应，最可能是**当前没有选中会话**：better-sidebar 的 tab 必须挂在会话上，
+`openTab` 在没有会话时静默失败（返回 false，页面上什么都不发生）。补了三层：
+
+1. `mindMapOpenSidebarTab` 返回 false 时，**兜底切到中间栏全屏面板**（`openMapPanel()`，不依赖会话）。
+2. 点按钮后 2.2 秒还看不到 `.tm_sbPanel .tm_graphSurface`，再兜一次中间栏。
+3. **自愈挂载**：每 1.5 秒巡检——面板在、但地图宿主没挂进去（换占位漏挂 / 被摘下），就补挂一次；
+   宿主还没创建过则顺手 `createRoot` 建出来。
+
+实测：强制把宿主节点从 DOM 里摘掉，4 秒内自动挂回（canvas 810px 复原）；全程无 console 报错。
