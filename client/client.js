@@ -16843,7 +16843,8 @@ function apply(ctx) {
       };
       attachSessionWatch();
       // 兜底：即便 subscribeState 不在会话切换时通知，也每 2 秒对一次 sessionId。
-      window.setInterval(ensureSeat, 2000);
+      if (window.__mindMapWatchTimer !== void 0 && window.__mindMapWatchTimer !== null) window.clearInterval(window.__mindMapWatchTimer);
+      window.__mindMapWatchTimer = window.setInterval(ensureSeat, 2000);
     })();
     attachServices({
       sessions: ctx.sessions,
@@ -18135,6 +18136,9 @@ function GraphCanvasSurface(props) {
     var animationTick = 0;
     var animate = function () {
       animationFrame = window.requestAnimationFrame(animate);
+      // 宿主节点被摘下（全屏接管 / 正在换会话）时不跑模拟也不画：既省 CPU，也避免
+      // 往 0 尺寸的容器里反复绘制 —— 那是「切过去像卡死」的来源之一。
+      if (root.isConnected !== true) return;
       animationTick += 1;
       var now = typeof performance !== "undefined" ? performance.now() : Date.now();
       var sim = simRef.current;
@@ -18335,7 +18339,7 @@ function GraphBar(props) {
  * sessions 用 ctx.sessions.list，workspaces 用 ctx.workspaces.list，
  * sessionStatus 用 slots._rootBinding.hooks.sessionStatus（拿不到就省略，
  * 地图会退化成用列表行自带的字段）。 */
-var mindMapSidebarSeat = { service: null, mounted: false };
+var mindMapSidebarSeat = { service: null, mounted: false, lastOpenAt: 0, opens: 0 };
 var mindMapStandardCache = null;
 var mindMapApplyCtx = null;
 /** 侧栏那一栏的「要不要开着」记在浏览器里：关掉就置 '0'，之后重启不自动弹。 */
@@ -18377,6 +18381,15 @@ function mindMapOpenSidebarTab(service) {
   try {
     var snap = typeof service.getSnapshot === "function" ? service.getSnapshot() : null;
     if (snap === null || snap === void 0 || snap.sessionId === void 0) return false;
+    // 屏幕上已经有一份思维图就别再开新的：切会话时旧 tab 会随会话消失，这里只在
+    // 「当前会话看不到地图」时补一次，避免每切一次就多一个 tab 把界面拖死。
+    if (typeof document !== "undefined" && document !== null && document.querySelector(".tm_sbPanel .tm_graphSurface") !== null) return true;
+    // 连打开栏会把 better-sidebar 拖进「每帧重排」的死循环（实测 6 次 openTab 后帧率
+    // 从 60 掉到 1，且摘掉地图也不恢复），所以这里做冷却：8 秒内最多开一次。
+    var now = Date.now();
+    if (now - mindMapSidebarSeat.lastOpenAt < 8000) return false;
+    mindMapSidebarSeat.lastOpenAt = now;
+    mindMapSidebarSeat.opens += 1;
     service.openTab({ type: "mind_map:map", title: t("map.title") });
     return true;
   } catch (error) {
@@ -18449,6 +18462,7 @@ var mindMapReactDom = (function () {
   }
 })();
 try { if (typeof window !== "undefined" && window !== null) window.__mindMapSingleton = mindMapSingleton; } catch (error) { }
+try { if (typeof window !== "undefined" && window !== null) window.__mindMapSeat = mindMapSidebarSeat; } catch (error) { }
 function mindMapEnsureSingleton(standard) {
   if (typeof document === "undefined" || document === null) return null;
   if (mindMapSingleton.host === null) {
@@ -18493,7 +18507,17 @@ function MapSidebarTab(tabProps) {
     if (ui.open === true) { mindMapDetachSingleton(); return; }
     var host = null;
     try { host = mindMapEnsureSingleton(standard); } catch (error) { host = null; }
-    if (host !== null && host.parentNode !== holder) holder.appendChild(host);
+    if (host === null) return;
+    if (host.parentNode === holder) return;
+    // 同一个 tab 类型可能同时出现在右栏和底部小面板里：宿主只能待在一处，
+    // 规则是「谁大挂谁」——底部小面板先挂上去了，右栏挂载时会把宿主抢过来；
+    // 一旦宿主所在占位已经从文档里摘下（切会话/关 tab），新占位直接接管。
+    var current = host.parentNode;
+    var currentVisible = current !== null && current !== void 0 && current.nodeType === 1 && document.body.contains(host);
+    var currentHeight = currentVisible ? current.getBoundingClientRect().height : -1;
+    var nextHeight = holder.getBoundingClientRect().height;
+    if (currentVisible && currentHeight >= nextHeight) return;
+    holder.appendChild(host);
   }, [ui.open]);
   var singletonReady = mindMapSingleton.supported === true;
   return (0, import_jsx_runtime16.jsxs)("div", {

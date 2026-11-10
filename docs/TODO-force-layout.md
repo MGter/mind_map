@@ -561,3 +561,26 @@ CSS module 文件改名 `mind_map.module.css`）。`mind-map.module.css` 之类�
 
 实测：给宿主节点打 `data-probe="instance-1"`，拖动卡片→关掉 tab→重开，标记仍在、
 相机字符串一模一样、卡片坐标（177,722）没回弹、可见集合不变。
+
+### 13.4 「跳转时卡死」的排查结论（2026-11-10）
+
+现象：切对话时思维图有时候整个界面卡住。排查步骤与结论：
+
+1. 单实例本身没问题：全屏开关往返、关 tab 再开，宿主节点标记（`data-probe`）一直在，
+   相机/坐标不变，60fps。
+2. **连续调用 `openTab` 是元凶**：连打 6 次 `betterSidebar.openTab({type:"mind_map:map"})`
+   之后，整页帧率从 **60 → 1 fps** 并且**不恢复**；把地图宿主从 DOM 里摘掉（地图完全不渲染）
+   帧率仍然是 1 —— 说明不是我们的地图在烧 CPU，而是 better-sidebar 自己进入了每帧重排/重算
+   的状态（同一类型 tab 被反复打开时触发）。
+3. 我们的「切会话自动补开」正好会走到这条路径：切几次会话 = 连打几次 `openTab`。
+
+修复：
+
+- **开栏限流**：`mindMapSidebarSeat.lastOpenAt`，8 秒内最多真正调用一次 `openTab`（`opens` 计数可观测）。
+- **已在屏就别开**：`document.querySelector('.tm_sbPanel .tm_graphSurface')` 存在时直接返回 true，
+  不再产生新 tab。
+- **轮询幂等**：`window.__mindMapWatchTimer` 先清再设，模块被重复求值也不会叠加定时器。
+- **detached 时不画不跑**：`animate()` 里 `root.isConnected !== true` 直接返回，宿主被摘下
+  （全屏接管、换占位过渡）时不再往 0 尺寸容器里循环绘制。
+
+代价：切对话后如果 8 秒内又切一次，那一栏可能暂时是空的（防卡死优先）。
