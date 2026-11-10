@@ -100,6 +100,7 @@ node apply-patch.mjs --revert                # 从 .mindmap-graph-backup 还原
 | 7 | 双击空白新建会话 | 用当前相机换 flow 坐标 → `startSessionIn(folderAt(x,y))`（会关地图、进 shell 的新会话屏） |
 | 8 | 拉线分叉 | **shift + 从卡片拖出**，画虚线橡皮筋，松手在空白处 → 造出与插件原生一致的 `PendingSpawn` → 复用 `SpawnPreview` 对话框 |
 | 9 | 镜头缓动 | 自写 rAF 补间（250 ms ease-out cubic）；`fit` 首次瞬移、之后缓动 |
+| 10 | 跳转居中 | 点状态栏（队列里的任务）的一条 → 镜头 320 ms 缓动，把那张卡平移到视口正中（见 3.8） |
 
 ### 3.3 隐藏归档会**重算连线**（而不是只把节点藏起来）
 
@@ -192,6 +193,31 @@ A 与 C 谁都不连，剩下的卡变成孤岛。所以两份图数据都按「
 - 新增 `mindMapCanvasToFlow` 钩子（canvas 挂载时注册自己的屏幕→flow 换算），
   `openMenu` 算 flow 坐标时优先用它 → 右键菜单里「在此处新建/粘贴」才落在点击位置。
 - 双击空白走 canvas 自己的换算，不依赖 React Flow。
+
+### 3.8 跳转居中：点状态栏的一条，镜头滑到那张卡
+
+**现象（2026-11-10 用户报）**：状态栏「队列中的任务」里点一条，本该跳到那张卡；
+实际是画面不动，卡片出现在哪儿全看你之前把画布拖到了哪儿 ——「每次跳转位置都不一样」。
+
+**根因**：跳转走的是插件原生的 `focusCard`，它只调 React Flow 的 `setCenter(...)`。
+图谱模式下 React Flow **根本没挂载**（就是 3.7 那条 `return false`），所以每次点击都是空操作。
+
+**改法**（`jump-center` 补丁 + 模块块里的 canvas 相机）：
+
+- 模块块新增 `var mindMapCenterKick = { fn: null };` 这条桥，canvas 挂载时把
+  `centerOnCard(cardId, { zoom })` 注册进去、卸载时置空（和 `mindMapFitKick` 同一套写法）。
+- `centerOnCard` 的落点：`boxMap()` 里那张卡的实时矩形（模拟运行中的坐标、拖动预览都算），
+  按 `x = clientWidth/2 - (box.x + box.w/2) * zoom` 反解镜头，**只和卡在哪有关，
+  与当前视口被拖到过哪儿无关**；动画走已有那套 320 ms ease-out 相机补间。
+- 缩放：`clamp(当前 zoom, 0.62, 1.5)`。比 0.62 还远（默认 fit 常在 0.45 上下）就先拉到能看清
+  标题+摘要的读数，本来就更近则保留，最多 1.5 不贴脸。
+- `focusCard` 末尾多一句：`mindMapCenterKick.fn(cardId)`。白板模式下 canvas 没挂载、
+  桥为 null，这行是空操作，行为不变。
+- 探针：`window.__mindMapDebug.camera() / viewport() / box(cardId) / centerOn(cardId, zoom) / tweening()`。
+
+**实测（真实 GUI，端口 9821，侧栏 417×782，zoom 0.45）**：
+先把画布拖走 150,-100（卡片屏幕中心偏到 260,400），再点状态栏那条 → 镜头缓动后
+`box` 中心换算回屏幕 = `(208.5, 391)`，与视口中心误差 **0.00 px / 0.00 px**，zoom 落到 0.62。
 
 ---
 

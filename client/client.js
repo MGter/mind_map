@@ -14752,6 +14752,9 @@ function CanvasInner(props) {
     setSelectedIds([cardId]);
     if (point === void 0) return;
     setCenter(point.x + CARD_W / 2, point.y + CARD_H / 2, { zoom: getZoom(), duration: 320 });
+    // 图谱模式没有挂 React Flow，上面这句是空操作（setCenter 直接 return false）；
+    // 镜头改由 canvas 自己缓动，把这张卡平移到视口正中。
+    if (mindMapCenterKick !== null && typeof mindMapCenterKick.fn === "function") mindMapCenterKick.fn(cardId);
   }, [cardLayout, visibleCards, setCenter, getZoom, setSelectedIds]);
   const liveNodes = (0, import_react13.useMemo)(() => {
     const wsColors = canvasState.global?.wsColors ?? {};
@@ -16982,6 +16985,10 @@ var mindMapSimKick = { fn: null };
  * answer where a click landed. The canvas registers the real conversion here;
  * the context menu uses it for "place the new thing at the click". */
 var mindMapCanvasToFlow = { fn: null };
+/** 跳转居中：点状态栏里的一条（或任何"带我去那张卡"的入口）时，把那张卡
+ * 平移到视口正中。图谱模式下 React Flow 没挂载，插件的 setCenter 直接
+ * return false，所以镜头必须由 canvas 自己缓动过去。 */
+var mindMapCenterKick = { fn: null };
 /** Frames actually painted: lets the verification scripts prove that an idle
  * map stops drawing instead of only looking still. */
 var mindMapDrawCount = 0;
@@ -17694,6 +17701,27 @@ function GraphCanvasSurface(props) {
     }
   };
 
+  /** 把一张卡平移到视口正中：这是图模式下的"跳转"。
+   * 位置取 boxMap()（模拟进行中的实时坐标、拖动中的预览都算在内），所以
+   * 镜头落点只取决于那张卡在哪，跟当前视口被拖到过哪儿无关。 */
+  var centerOnCard = function (cardId, options) {
+    var root = rootRef.current;
+    var camera = cameraRef.current;
+    if (root === null || camera === null) return false;
+    var box = boxMap().get(cardId);
+    if (box === void 0) return false;
+    // 跳过去是为了看它：当前比 0.62 还远就先拉到能看清标题+摘要的距离，
+    // 本来就更近则原样保留（上限 1.5，别贴到脸上）。都走 320 ms ease-out。
+    var requested = options !== undefined && options !== null && typeof options.zoom === "number" ? options.zoom : camera.zoom;
+    var zoom = Math.max(0.62, Math.min(1.5, requested));
+    animateCameraTo({
+      x: root.clientWidth / 2 - (box.x + box.w / 2) * zoom,
+      y: root.clientHeight / 2 - (box.y + box.h / 2) * zoom,
+      zoom: zoom
+    }, 320);
+    return true;
+  };
+
   drawRef.current = function () {
     mindMapDrawCount += 1;
     var root = rootRef.current;
@@ -18141,6 +18169,7 @@ function GraphCanvasSurface(props) {
       schedule();
     };
     mindMapCanvasToFlow.fn = function (clientX, clientY) { return toFlow(clientX, clientY); };
+    mindMapCenterKick.fn = centerOnCard;
     // Read-only introspection for the verification scripts (alpha, node count,
     // committed positions); nothing in the UI reads it.
     window.__mindMapDebug = {
@@ -18149,6 +18178,13 @@ function GraphCanvasSurface(props) {
       nodes: function () { var sim = simRef.current; var out = {}; if (sim !== null) sim.nodes.forEach(function (value, key) { out[key] = { x: Math.round(value.x), y: Math.round(value.y), vx: value.vx, vy: value.vy }; }); return out; },
       reheat: function () { reheat(1); },
       draws: function () { return mindMapDrawCount; },
+      // 跳转居中的探针：camera() 读当前镜头，viewport() 读画布尺寸，
+      // box(cardId) 读那张卡的实时矩形，centerOn(cardId) 直接触发一次跳转。
+      camera: function () { var camera = cameraRef.current; return camera === null ? null : { x: camera.x, y: camera.y, zoom: camera.zoom }; },
+      viewport: function () { var root = rootRef.current; return root === null ? null : { width: root.clientWidth, height: root.clientHeight }; },
+      box: function (cardId) { var box = boxMap().get(cardId); return box === void 0 ? null : { x: box.x, y: box.y, w: box.w, h: box.h }; },
+      centerOn: function (cardId, zoom) { return centerOnCard(cardId, { zoom: zoom }); },
+      tweening: function () { return tweenRef.current !== null; },
       // Live force tuning: mutate these from the console to feel the difference
       // without a rebuild, e.g. __mindMapDebug.settings.velocityDecay = 0.55
       settings: simSettings
@@ -18162,6 +18198,7 @@ function GraphCanvasSurface(props) {
       mindMapSimKick.fn = null;
       mindMapFitKick.fn = null;
       mindMapCanvasToFlow.fn = null;
+      mindMapCenterKick.fn = null;
       if (animationFrame !== 0) window.cancelAnimationFrame(animationFrame);
       if (observer !== null) observer.disconnect();
       if (frameRef.current !== 0) window.cancelAnimationFrame(frameRef.current);
