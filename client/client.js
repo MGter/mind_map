@@ -15093,22 +15093,55 @@ function CanvasInner(props) {
         if (!byWorkspace.has(groupId)) byWorkspace.set(groupId, []);
         byWorkspace.get(groupId).push(cardId);
       }
-      for (const members of byWorkspace.values()) {
+      // A. 二部图：同组不再两两互连，而是「每张卡连到它的分组节点」，边数从 O(n²) 变 O(n)。
+      mindMapGroupNodes.clear();
+      for (const [groupId, members] of byWorkspace.entries()) {
         members.sort(function (left, right) {
           const leftSession = sessions.byId[visibleCards[left].sessionId];
           const rightSession = sessions.byId[visibleCards[right].sessionId];
           return (leftSession === void 0 ? 0 : leftSession.updatedAt || 0) - (rightSession === void 0 ? 0 : rightSession.updatedAt || 0);
         });
-        // 同组任意两点都连（组内全连接），不是只连成一条链。
-        for (let left = 0; left < members.length; left += 1) {
-          for (let right = left + 1; right < members.length; right += 1) pushGraphEdge(members[left], members[right], "ws");
+        const groupNodeId = "group-ws-" + groupId;
+        let anchor = mindMapGroupAnchors.get(groupId);
+        if (anchor === void 0) {
+          let sumX = 0;
+          let sumY = 0;
+          for (const cardId of members) {
+            const card = visibleCards[cardId];
+            sumX += (card === void 0 ? 0 : card.x) + 112;
+            sumY += (card === void 0 ? 0 : card.y) + 62;
+          }
+          anchor = { x: sumX / (members.length || 1) - MIND_MAP_GROUP_W / 2, y: sumY / (members.length || 1) - MIND_MAP_GROUP_H / 2 };
+          mindMapGroupAnchors.set(groupId, anchor);
         }
+        mindMapGroupNodes.set(groupNodeId, {
+          id: groupNodeId,
+          type: "groupNode",
+          position: { x: anchor.x, y: anchor.y },
+          draggable: false,
+          selectable: false,
+          data: {
+            anchor: true,
+            wsId: groupId,
+            label: wsTitles.get(groupId) === void 0 ? "工作区" : wsTitles.get(groupId),
+            count: members.length,
+            memberIds: members.slice()
+          }
+        });
+        for (const cardId of members) pushGraphEdge(cardId, groupNodeId, "ws");
       }
+      // B. 标签不再画边（卡身上已经有 tag 徽章）。只留一张「同标签邻居」索引给 C 的悬停星形用。
+      mindMapStarIndex.clear();
       for (const group of graphTagGroups) {
         const members = group[1].filter(function (cardId) { return !foldedSet.has(cardId); });
         if (members.length < 2) continue;
-        for (let left = 0; left < members.length; left += 1) {
-          for (let right = left + 1; right < members.length; right += 1) pushGraphEdge(members[left], members[right], "tag", group[0]);
+        for (const cardId of members) {
+          let list = mindMapStarIndex.get(cardId);
+          if (list === void 0) { list = []; mindMapStarIndex.set(cardId, list); }
+          for (const other of members) {
+            if (other === cardId) continue;
+            if (list.indexOf(other) === -1 && list.length < 24) list.push(other);
+          }
         }
       }
     }
@@ -17393,7 +17426,7 @@ function GraphCanvasSurface(props) {
       alive.add(node.id);
       var state = sim.nodes.get(node.id);
       if (state === void 0) {
-        sim.nodes.set(node.id, { x: node.position.x, y: node.position.y, vx: 0, vy: 0 });
+        sim.nodes.set(node.id, { x: node.position.x, y: node.position.y, vx: 0, vy: 0, anchor: node.type === "groupNode" });
         continue;
       }
       // While the simulation stands still the store wins: a relayout, a restored
@@ -17442,6 +17475,7 @@ function GraphCanvasSurface(props) {
     // a collision test it keeps pushing long before the cards touch.
     for (var left = 0; left < count; left += 1) {
       for (var right = left + 1; right < count; right += 1) {
+          if (list[left].anchor === true || list[right].anchor === true) continue;
         var deltaX = list[right].x - list[left].x;
         var deltaY = list[right].y - list[left].y;
         var distanceSquared = deltaX * deltaX + deltaY * deltaY;
@@ -17495,6 +17529,8 @@ function GraphCanvasSurface(props) {
     var pinned = drag !== null && drag.kind === "node" && drag.preview !== null ? drag.preview : null;
     for (var step = 0; step < count; step += 1) {
       var node = list[step];
+      // 分组节点固定不动：它是二部图的「分组」一端，只负责吸引成员
+      if (node.anchor === true) { node.fx = 0; node.fy = 0; node.vx = 0; node.vy = 0; continue; }
       // A dragged card is pinned under the pointer and does not integrate; the
       // rest of the board keeps sliding around it.
       if (pinned !== null && ids[step] === drag.id) {
@@ -17601,6 +17637,9 @@ function GraphCanvasSurface(props) {
       if (node.type !== "sessionCard" && node.type !== "sessionDot") continue;
       out.push(node);
     }
+    // A. 分组节点也参与可见集合（boxMap / 力导向 / 绘制都要用到）
+    var groupNodes = mindMapGroupNodesList();
+    for (var groupIndex = 0; groupIndex < groupNodes.length; groupIndex += 1) out.push(groupNodes[groupIndex]);
     return out;
   };
 
@@ -17617,7 +17656,11 @@ function GraphCanvasSurface(props) {
       var state = sim === null ? null : sim.nodes.get(node.id);
       if (state !== void 0 && state !== null) position = { x: state.x, y: state.y };
       if (drag !== null && drag.kind === "node" && drag.id === node.id && drag.preview !== null) position = drag.preview;
-      boxes.set(node.id, { x: position.x, y: position.y, w: CARD_W, h: GRAPH_CARD_RENDER_H });
+      if (node.type === "groupNode") {
+        boxes.set(node.id, { x: position.x, y: position.y, w: MIND_MAP_GROUP_W, h: MIND_MAP_GROUP_H });
+      } else {
+        boxes.set(node.id, { x: position.x, y: position.y, w: CARD_W, h: GRAPH_CARD_RENDER_H });
+      }
     }
     return boxes;
   };
@@ -17760,11 +17803,54 @@ function GraphCanvasSurface(props) {
       context.stroke();
       // No arrowheads: these relationships are undirected, arrows only add noise.
     }
+    // C. 悬停星形先画（虚线，压在实体边下面）
+    if (hovered !== null) {
+      var starNeighbours = mindMapStarIndex.get(hovered);
+      var starFrom = boxes.get(hovered);
+      if (starNeighbours !== void 0 && starFrom !== void 0) {
+        context.globalAlpha = 0.8;
+        context.strokeStyle = edgePalette.tag;
+        context.lineWidth = 1.3 / zoom;
+        context.setLineDash([5 / zoom, 4 / zoom]);
+        var starFromX = starFrom.x + starFrom.w / 2;
+        var starFromY = starFrom.y + starFrom.h / 2;
+        for (var starIndex = 0; starIndex < starNeighbours.length; starIndex += 1) {
+          var starTo = boxes.get(starNeighbours[starIndex]);
+          if (starTo === void 0) continue;
+          var starToX = starTo.x + starTo.w / 2;
+          var starToY = starTo.y + starTo.h / 2;
+          var starStart = graphAnchorPoint(starFromX, starFromY, starFrom.w, starFrom.h, starToX, starToY);
+          var starEnd = graphAnchorPoint(starToX, starToY, starTo.w, starTo.h, starFromX, starFromY);
+          context.beginPath();
+          context.moveTo(starStart.x, starStart.y);
+          context.lineTo(starEnd.x, starEnd.y);
+          context.stroke();
+        }
+        context.setLineDash([]);
+      }
+    }
     context.globalAlpha = 1;
     context.lineWidth = 1.1 / zoom;
     var nodes = visibleNodes();
+    // A. 分组节点：小药丸 = 二部图的「分组」一端
+    for (var groupPaint = 0; groupPaint < nodes.length; groupPaint += 1) {
+      if (nodes[groupPaint].type !== "groupNode") continue;
+      var groupBox = boxes.get(nodes[groupPaint].id);
+      if (groupBox === void 0) continue;
+      var groupData = nodes[groupPaint].data || {};
+      graphRoundRect(context, groupBox.x, groupBox.y, groupBox.w, groupBox.h, groupBox.h / 2);
+      context.fillStyle = dark ? "rgba(30,34,44,0.94)" : "rgba(255,255,255,0.96)";
+      context.fill();
+      context.lineWidth = 1 / zoom;
+      context.strokeStyle = dark ? "rgba(140,170,220,0.55)" : "rgba(60,110,180,0.45)";
+      context.stroke();
+      context.fillStyle = dark ? "rgba(190,205,230,0.95)" : "rgba(40,55,80,0.9)";
+      context.font = "11px " + GRAPH_FONT_STACK;
+      context.fillText((groupData.label === void 0 ? "" : groupData.label) + " · " + (groupData.count === void 0 ? 0 : groupData.count), groupBox.x + 10, groupBox.y + groupBox.h / 2 + 4);
+    }
     for (var nodeIndex = 0; nodeIndex < nodes.length; nodeIndex += 1) {
       var node = nodes[nodeIndex];
+      if (node.type === "groupNode") continue;
       var box = boxes.get(node.id);
       if (box === void 0) continue;
       var data = node.data || {};
@@ -18438,6 +18524,25 @@ function mindMapDedupeCards() {
   } catch (error) {
     return 0;
   }
+}
+
+
+/** A. 二部图：分组节点注册表。由「边构建」每帧重建，只有 count>=2 的分组才有节点。 */
+var mindMapGroupNodes = new Map();
+/** A. 分组节点锚点（每个工作区只算一次，之后固定，避免与力导向互相追）。 */
+var mindMapGroupAnchors = new Map();
+/** C. 悬停星形：cardId -> 共享标签的邻居 cardId（上限 24）。 */
+var mindMapStarIndex = new Map();
+var MIND_MAP_GROUP_W = 96;
+var MIND_MAP_GROUP_H = 26;
+/** 把注册表转成节点数组（type=groupNode），供可见集合、boxMap、绘制使用。 */
+function mindMapGroupNodesList() {
+  var out = [];
+  mindMapGroupNodes.forEach(function (entry) {
+    if (entry.data.count < 2) return;
+    out.push(entry);
+  });
+  return out;
 }
 
 function mindMapSelectorHook(store) {

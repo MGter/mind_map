@@ -1745,6 +1745,25 @@ function mindMapDedupeCards() {
   }
 }
 
+
+/** A. 二部图：分组节点注册表。由「边构建」每帧重建，只有 count>=2 的分组才有节点。 */
+var mindMapGroupNodes = new Map();
+/** A. 分组节点锚点（每个工作区只算一次，之后固定，避免与力导向互相追）。 */
+var mindMapGroupAnchors = new Map();
+/** C. 悬停星形：cardId -> 共享标签的邻居 cardId（上限 24）。 */
+var mindMapStarIndex = new Map();
+var MIND_MAP_GROUP_W = 96;
+var MIND_MAP_GROUP_H = 26;
+/** 把注册表转成节点数组（type=groupNode），供可见集合、boxMap、绘制使用。 */
+function mindMapGroupNodesList() {
+  var out = [];
+  mindMapGroupNodes.forEach(function (entry) {
+    if (entry.data.count < 2) return;
+    out.push(entry);
+  });
+  return out;
+}
+
 function mindMapSelectorHook(store) {
   return function (selector, equality) {
     var select = typeof selector === "function" ? selector : function (state) { return state; };
@@ -1970,22 +1989,55 @@ const GRAPH_EDGES_BLOCK = String.raw`    if (graphOn) {
         if (!byWorkspace.has(groupId)) byWorkspace.set(groupId, []);
         byWorkspace.get(groupId).push(cardId);
       }
-      for (const members of byWorkspace.values()) {
+      // A. 二部图：同组不再两两互连，而是「每张卡连到它的分组节点」，边数从 O(n²) 变 O(n)。
+      mindMapGroupNodes.clear();
+      for (const [groupId, members] of byWorkspace.entries()) {
         members.sort(function (left, right) {
           const leftSession = sessions.byId[visibleCards[left].sessionId];
           const rightSession = sessions.byId[visibleCards[right].sessionId];
           return (leftSession === void 0 ? 0 : leftSession.updatedAt || 0) - (rightSession === void 0 ? 0 : rightSession.updatedAt || 0);
         });
-        // 同组任意两点都连（组内全连接），不是只连成一条链。
-        for (let left = 0; left < members.length; left += 1) {
-          for (let right = left + 1; right < members.length; right += 1) pushGraphEdge(members[left], members[right], "ws");
+        const groupNodeId = "group-ws-" + groupId;
+        let anchor = mindMapGroupAnchors.get(groupId);
+        if (anchor === void 0) {
+          let sumX = 0;
+          let sumY = 0;
+          for (const cardId of members) {
+            const card = visibleCards[cardId];
+            sumX += (card === void 0 ? 0 : card.x) + 112;
+            sumY += (card === void 0 ? 0 : card.y) + 62;
+          }
+          anchor = { x: sumX / (members.length || 1) - MIND_MAP_GROUP_W / 2, y: sumY / (members.length || 1) - MIND_MAP_GROUP_H / 2 };
+          mindMapGroupAnchors.set(groupId, anchor);
         }
+        mindMapGroupNodes.set(groupNodeId, {
+          id: groupNodeId,
+          type: "groupNode",
+          position: { x: anchor.x, y: anchor.y },
+          draggable: false,
+          selectable: false,
+          data: {
+            anchor: true,
+            wsId: groupId,
+            label: wsTitles.get(groupId) === void 0 ? "工作区" : wsTitles.get(groupId),
+            count: members.length,
+            memberIds: members.slice()
+          }
+        });
+        for (const cardId of members) pushGraphEdge(cardId, groupNodeId, "ws");
       }
+      // B. 标签不再画边（卡身上已经有 tag 徽章）。只留一张「同标签邻居」索引给 C 的悬停星形用。
+      mindMapStarIndex.clear();
       for (const group of graphTagGroups) {
         const members = group[1].filter(function (cardId) { return !foldedSet.has(cardId); });
         if (members.length < 2) continue;
-        for (let left = 0; left < members.length; left += 1) {
-          for (let right = left + 1; right < members.length; right += 1) pushGraphEdge(members[left], members[right], "tag", group[0]);
+        for (const cardId of members) {
+          let list = mindMapStarIndex.get(cardId);
+          if (list === void 0) { list = []; mindMapStarIndex.set(cardId, list); }
+          for (const other of members) {
+            if (other === cardId) continue;
+            if (list.indexOf(other) === -1 && list.length < 24) list.push(other);
+          }
         }
       }
     }
@@ -2685,6 +2737,41 @@ const CLIENT_EDITS = [
     if (Object.keys(batch).length > 0) canvas.addCards(batch);
   }, [canvasState.phase, sessions, visibleCards, boardSessionIds]);
 ` + "  const savedCamera = canvas.savedCamera(INBOX_BOARD_ID);"
+  },
+  {
+    label: "group-visible-nodes",
+    find: "      if (node.hidden === true) continue;\n      if (node.type !== \"sessionCard\" && node.type !== \"sessionDot\") continue;\n      out.push(node);\n    }\n    return out;",
+    replace: "      if (node.hidden === true) continue;\n      if (node.type !== \"sessionCard\" && node.type !== \"sessionDot\") continue;\n      out.push(node);\n    }\n    // A. 分组节点也参与可见集合（boxMap / 力导向 / 绘制都要用到）\n    var groupNodes = mindMapGroupNodesList();\n    for (var groupIndex = 0; groupIndex < groupNodes.length; groupIndex += 1) out.push(groupNodes[groupIndex]);\n    return out;"
+  },
+  {
+    label: "group-box",
+    find: "      boxes.set(node.id, { x: position.x, y: position.y, w: CARD_W, h: GRAPH_CARD_RENDER_H });",
+    replace: "      if (node.type === \"groupNode\") {\n        boxes.set(node.id, { x: position.x, y: position.y, w: MIND_MAP_GROUP_W, h: MIND_MAP_GROUP_H });\n      } else {\n        boxes.set(node.id, { x: position.x, y: position.y, w: CARD_W, h: GRAPH_CARD_RENDER_H });\n      }"
+  },
+  {
+    label: "group-sim-anchor",
+    find: "        sim.nodes.set(node.id, { x: node.position.x, y: node.position.y, vx: 0, vy: 0 });",
+    replace: "        sim.nodes.set(node.id, { x: node.position.x, y: node.position.y, vx: 0, vy: 0, anchor: node.type === \"groupNode\" });"
+  },
+  {
+    label: "group-repulsion-skip",
+    find: "for (var right = left + 1; right < count; right += 1) {",
+    replace: "for (var right = left + 1; right < count; right += 1) {\n          if (list[left].anchor === true || list[right].anchor === true) continue;"
+  },
+  {
+    label: "group-integration-skip",
+    find: "      var node = list[step];\n      // A dragged card is pinned under the pointer and does not integrate; the",
+    replace: "      var node = list[step];\n      // 分组节点固定不动：它是二部图的「分组」一端，只负责吸引成员\n      if (node.anchor === true) { node.fx = 0; node.fy = 0; node.vx = 0; node.vy = 0; continue; }\n      // A dragged card is pinned under the pointer and does not integrate; the"
+  },
+  {
+    label: "group-draw-pills",
+    find: "    context.globalAlpha = 1;\n    context.lineWidth = 1.1 / zoom;\n    var nodes = visibleNodes();",
+    replace: "    // C. 悬停星形先画（虚线，压在实体边下面）\n    if (hovered !== null) {\n      var starNeighbours = mindMapStarIndex.get(hovered);\n      var starFrom = boxes.get(hovered);\n      if (starNeighbours !== void 0 && starFrom !== void 0) {\n        context.globalAlpha = 0.8;\n        context.strokeStyle = edgePalette.tag;\n        context.lineWidth = 1.3 / zoom;\n        context.setLineDash([5 / zoom, 4 / zoom]);\n        var starFromX = starFrom.x + starFrom.w / 2;\n        var starFromY = starFrom.y + starFrom.h / 2;\n        for (var starIndex = 0; starIndex < starNeighbours.length; starIndex += 1) {\n          var starTo = boxes.get(starNeighbours[starIndex]);\n          if (starTo === void 0) continue;\n          var starToX = starTo.x + starTo.w / 2;\n          var starToY = starTo.y + starTo.h / 2;\n          var starStart = graphAnchorPoint(starFromX, starFromY, starFrom.w, starFrom.h, starToX, starToY);\n          var starEnd = graphAnchorPoint(starToX, starToY, starTo.w, starTo.h, starFromX, starFromY);\n          context.beginPath();\n          context.moveTo(starStart.x, starStart.y);\n          context.lineTo(starEnd.x, starEnd.y);\n          context.stroke();\n        }\n        context.setLineDash([]);\n      }\n    }\n    context.globalAlpha = 1;\n    context.lineWidth = 1.1 / zoom;\n    var nodes = visibleNodes();\n    // A. 分组节点：小药丸 = 二部图的「分组」一端\n    for (var groupPaint = 0; groupPaint < nodes.length; groupPaint += 1) {\n      if (nodes[groupPaint].type !== \"groupNode\") continue;\n      var groupBox = boxes.get(nodes[groupPaint].id);\n      if (groupBox === void 0) continue;\n      var groupData = nodes[groupPaint].data || {};\n      graphRoundRect(context, groupBox.x, groupBox.y, groupBox.w, groupBox.h, groupBox.h / 2);\n      context.fillStyle = dark ? \"rgba(30,34,44,0.94)\" : \"rgba(255,255,255,0.96)\";\n      context.fill();\n      context.lineWidth = 1 / zoom;\n      context.strokeStyle = dark ? \"rgba(140,170,220,0.55)\" : \"rgba(60,110,180,0.45)\";\n      context.stroke();\n      context.fillStyle = dark ? \"rgba(190,205,230,0.95)\" : \"rgba(40,55,80,0.9)\";\n      context.font = \"11px \" + GRAPH_FONT_STACK;\n      context.fillText((groupData.label === void 0 ? \"\" : groupData.label) + \" · \" + (groupData.count === void 0 ? 0 : groupData.count), groupBox.x + 10, groupBox.y + groupBox.h / 2 + 4);\n    }"
+  },
+  {
+    label: "group-skip-card-draw",
+    find: "      var node = nodes[nodeIndex];\n      var box = boxes.get(node.id);",
+    replace: "      var node = nodes[nodeIndex];\n      if (node.type === \"groupNode\") continue;\n      var box = boxes.get(node.id);"
   },
   {
     label: "start-fork",
