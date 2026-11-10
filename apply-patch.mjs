@@ -69,7 +69,9 @@ const RENAME_PAIRS = [
   ["TAL" + "K_MAP", "MIND_MAP"],
   ["tal" + "kmap", "mindmap"],
   ["Tal" + "kMap", "MindMap"],
-  ["对话地图", "思维图"]
+  ["对话地图", "思维图"],
+  [" ·v2", ""],
+  ["·v2", ""]
 ];
 function renameAll(code) {
   let out = code;
@@ -179,25 +181,31 @@ const MODULE_BLOCK = String.raw`
 // ===== mind-map graph view patch (local) =====
 // MIND_MAP_GRAPH_PATCH_V1 — the marker the patcher greps for; without it a
 // second run would happily patch the already patched bundle.
-// 换名迁移：旧构建用的 dsh.mind-map.* 浏览器偏好键，一次性复制到 dsh.mind-map.*。
+// 换名迁移：旧构建用的 dsh.mind_map.* 浏览器偏好键，一次性复制到 dsh.mind_map.*。
 // 不删旧键（回退到旧构建仍能读到），只在新键缺失时复制。前缀用拼接写，避免
 // 下面 renameAll 把这段迁移代码自己也换掉。
 (function migrateBrowserKeys() {
   try {
-    var legacyPrefix = "dsh." + "tal" + "k-map" + ".";
-    var nextPrefix = "dsh." + "min" + "d-map" + ".";
+    var nextPrefix = "dsh." + "min" + "d_map" + ".";
+    // 两代旧前缀：dsh.talk-map.*（0.1.66）与 dsh.mind-map.*（我改名前那版）
+    var legacyPrefixes = ["dsh." + "tal" + "k-map" + ".", "dsh." + "min" + "d-map" + "."];
     var index;
     for (index = 0; index < window.localStorage.length; index += 1) {
       var legacyKey = window.localStorage.key(index);
-      if (legacyKey === null || legacyKey.indexOf(legacyPrefix) !== 0) continue;
-      var migratedKey = nextPrefix + legacyKey.slice(legacyPrefix.length);
-      if (window.localStorage.getItem(migratedKey) === null) window.localStorage.setItem(migratedKey, window.localStorage.getItem(legacyKey));
+      if (legacyKey === null) continue;
+      for (var which = 0; which < legacyPrefixes.length; which += 1) {
+        var legacyPrefix = legacyPrefixes[which];
+        if (legacyKey.indexOf(legacyPrefix) !== 0) continue;
+        var migratedKey = nextPrefix + legacyKey.slice(legacyPrefix.length);
+        if (window.localStorage.getItem(migratedKey) === null) window.localStorage.setItem(migratedKey, window.localStorage.getItem(legacyKey));
+        break;
+      }
     }
   } catch (error) { }
 })();
-var GRAPH_MODE_KEY = "dsh.mind-map.graph-mode.v1";
-var GRAPH_LAID_KEY = "dsh.mind-map.graph-laid.v1";
-var HIDE_ARCHIVED_KEY = "dsh.mind-map.hide-archived.v1";
+var GRAPH_MODE_KEY = "dsh.mind_map.graph-mode.v1";
+var GRAPH_LAID_KEY = "dsh.mind_map.graph-laid.v1";
+var HIDE_ARCHIVED_KEY = "dsh.mind_map.hide-archived.v1";
 var graphModeState = true;
 try { graphModeState = window.localStorage.getItem(GRAPH_MODE_KEY) !== "0"; } catch (error) { graphModeState = true; }
 var graphModeListeners = new Set();
@@ -243,7 +251,7 @@ var mindMapCanvasToFlow = { fn: null };
 /** Frames actually painted: lets the verification scripts prove that an idle
  * map stops drawing instead of only looking still. */
 var mindMapDrawCount = 0;
-var FOCUS_MODE_KEY = "dsh.mind-map.focus-mode.v1";
+var FOCUS_MODE_KEY = "dsh.mind_map.focus-mode.v1";
 var FOCUS_DEPTH = 2;
 var DOT_SIZE = 16;
 var focusModeState = true;
@@ -579,7 +587,7 @@ function GraphDotNode(props) {
     ]
   });
 }
-var GRAPH_CAMERA_KEY = "dsh.mind-map.graph-camera.v1";
+var GRAPH_CAMERA_KEY = "dsh.mind_map.graph-camera.v1";
 var GRAPH_CARD_RENDER_H = 124;
 var GRAPH_FONT_STACK = "system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif";
 function readGraphCamera() {
@@ -1539,7 +1547,7 @@ var mindMapSidebarSeat = { service: null, mounted: false };
 var mindMapStandardCache = null;
 var mindMapApplyCtx = null;
 /** 侧栏那一栏的「要不要开着」记在浏览器里：关掉就置 '0'，之后重启不自动弹。 */
-var MIND_MAP_SIDEBAR_TAB_KEY = "dsh.mind-map.sidebar-tab.v1";
+var MIND_MAP_SIDEBAR_TAB_KEY = "dsh.mind_map.sidebar-tab.v1";
 function mindMapSidebarTabWanted() {
   try { return window.localStorage.getItem(MIND_MAP_SIDEBAR_TAB_KEY) !== "0"; } catch (error) { return true; }
 }

@@ -95,7 +95,7 @@ node apply-patch.mjs --revert                # 从 .mindmap-graph-backup 还原
 | 2 | 边按类型分色 | `ws` 冷灰 / `tag` 蓝 / `lineage` 暖橙（`edge.type === "mindMap"` 判定血缘）/ `other` |
 | 3 | LOD 三档 | `zoom>0.42` 全信息；`0.42–0.22` 只标题；`<0.22` 纯色块 |
 | 4 | 归档灰化 | alpha 0.42 + 左下角「已归档」（只在「显示归档」时才看得到，因为默认隐藏） |
-| 5 | 隐藏归档开关 | **默认隐藏**；`🗄 归档 / 🗄 已隐藏归档 N` 切换，`localStorage: dsh.mind-map.hide-archived.v1`（写 `1`=隐藏，`0`=显示） |
+| 5 | 隐藏归档开关 | **默认隐藏**；`🗄 归档 / 🗄 已隐藏归档 N` 切换，`localStorage: dsh.mind_map.hide-archived.v1`（写 `1`=隐藏，`0`=显示） |
 | 6 | 右键菜单 | canvas `contextmenu` → 复用插件自带 `openMenu(fakeEvent, "card"/"pane", id)`；假 event 只需 `clientX/clientY/preventDefault` |
 | 7 | 双击空白新建会话 | 用当前相机换 flow 坐标 → `startSessionIn(folderAt(x,y))`（会关地图、进 shell 的新会话屏） |
 | 8 | 拉线分叉 | **shift + 从卡片拖出**，画虚线橡皮筋，松手在空白处 → 造出与插件原生一致的 `PendingSpawn` → 复用 `SpawnPreview` 对话框 |
@@ -132,7 +132,7 @@ A 与 C 谁都不连，剩下的卡变成孤岛。所以两份图数据都按「
 - 底部那颗「思维图」按钮现在**优先开侧栏那一栏**（`service.openTab({type:"mind-map:map"})`），
   没有 better-sidebar 才退回中间栏面板。
 - **重启后会自己回来**：better-sidebar 只按会话记已开的 tab，冷启动不回填，所以插件自己记一个
-  `localStorage: dsh.mind-map.sidebar-tab.v1`（默认想开）：`apply()` 里检测到有当前会话就
+  `localStorage: dsh.mind_map.sidebar-tab.v1`（默认想开）：`apply()` 里检测到有当前会话就
   `openTab({type:"mind-map:map"})`；还没会话（停在新会话屏）就先订阅 store，等会话出现再开，
   最多等 120s。tab 的 `onOpen/onActivate` 置 `1`、`onClose` 置 `0`（关过就不再自动弹）。
 - **没有当前会话时**：better-sidebar 不接受无会话的 tab，`openMindMapSidebar()` 会返回 false，
@@ -155,7 +155,7 @@ A 与 C 谁都不连，剩下的卡变成孤岛。所以两份图数据都按「
 - 图标组件只画 glyph（`{ size }` → 16px SVG），带 `data-dsh-panel-entry` 供皮肤反查，
   与 dsh-ssh 的做法一致。
 - 顺序落在「记忆系统」(30) 与「SSH」(40) 之间；实测渲染顺序：插件、自动化任务、上下文洞察、
-  任务看板、记忆系统、**思维图 ·v2**、SSH、更多。
+  任务看板、记忆系统、**思维图**、SSH、更多。
 - 改完 `node apply-patch.mjs` 重建，把 `client/client.js` 复制到
   `~/.dsh/profiles/desktop/vendor/mind_map/client/client.js`，**刷新页面即生效**（宿主没动）。
 
@@ -288,7 +288,7 @@ Copy-Item "$pkg\lib\index.js.mindmap-graph-backup"    "$pkg\lib\index.js"    -Fo
 |---|---|---|---|
 | 包/项目名 | `dsh-talk-map` | `mind_map` | 仓库目录 `Documents\DSH\mind_map`；`cordis.patch.yml` 的 `id: mind-map` |
 | 存储单元 | `talk_map` | `mind_map` | `~/.dsh/storages/mind_map.json` |
-| 浏览器偏好键 | `dsh.talk-map.*` | `dsh.mind-map.*` | 客户端启动时把旧键一次性复制到新键（不删旧键） |
+| 浏览器偏好键 | `dsh.talk-map.*` | `dsh.mind_map.*` | 客户端启动时把旧键一次性复制到新键（不删旧键） |
 | 内部标识 | `talkMap*` / `TalkMap*` / `talk-map:map` | `mindMap*` / `MindMap*` / `mind-map:map` | 探针改名：`__mindMapCtx` / `__mindMapLive` / `__mindMapDebug` |
 
 改名靠 `apply-patch.mjs` 的 `RENAME_PAIRS` + `renameAll()`：**先给 pristine 源改名，再匹配锚点**
@@ -388,7 +388,7 @@ dsh: fatal load failure: StorageError: unit 'mind_map': missing or foreign unit 
 ### 9.1 子代理不挂「待查看」灯（2026-11-09 追加）
 
 状态栏（`statusRail.title` = 「队列中的任务」）的灯由 `glowOf()` 决定，其中 `done`（待查看）来自
-`completionUnread` 或插件自己持久化的 `finished` 集合（`dsh.mind-map.lamp-state.v1`）。
+`completionUnread` 或插件自己持久化的 `finished` 集合（`dsh.mind_map.lamp-state.v1`）。
 子代理**永远不会成为主视图**，所以它们一跑完就必然进 `finished`，于是 45 个子代理会一直挂在状态栏里
 ——而"去读一个子代理会话"本身没有意义（结果写在父会话里）。
 
@@ -407,7 +407,7 @@ dsh: fatal load failure: StorageError: unit 'mind_map': missing or foreign unit 
    那一整个页面生命周期就再也不注册这个 tab（连「+」菜单里都不会出现）。现在改成每 500ms 重试、
    最多 60 次（约 30s），拿到服务后再 `registerTab`。
 2. **「上次关过就不再自动弹」的偏好反而在跟用户作对**。现在**启动必定尝试打开**那一栏（忽略该偏好），
-   关闭只对当前这次会话生效；偏好键仍会写（`dsh.mind-map.sidebar-tab.v1`），仅作诊断用。
+   关闭只对当前这次会话生效；偏好键仍会写（`dsh.mind_map.sidebar-tab.v1`），仅作诊断用。
 
 开 tab 本身也还是「轮询到真的挂载为止」（`MapSidebarTab` 的 effect 置 `mounted`，1.2s × 20 次），
 因为 better-sidebar 的 `openTab` 在面板/会话还没就绪时会静默失败。
@@ -455,7 +455,7 @@ systemctl --user restart dsh
 | 服务 | `systemctl --user is-active dsh` = active，127.0.0.1:3080 返回 200 |
 | 客户端 bundle | 聚合 `/plugins/??…` URL 里已含 `mind_map/client.js` |
 | 配置 | `dsh --profile web --dump-config` 命中 3 处 mind-map |
-| 界面 | `mind-map:map` tab 注册、右栏自动出现「思维图 ·v2」、画布正常出卡、**0 console error** |
+| 界面 | `mind-map:map` tab 注册、右栏自动出现「思维图」、画布正常出卡、**0 console error** |
 | 数据 | 远端新建 `~/.dsh/storages/mind_map.json`（unit mind_map v1，55 卡） |
 
 > 远端还留着旧的 `talk_map.json`（11-06，7KB），没动。要搬旧位置/摘要：

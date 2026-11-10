@@ -12,11 +12,11 @@ const before = source
 
 // ---- 1. 存储：被删掉的血缘线 ------------------------------------------------
 source = source.replace(
-  J(["  const LINEAGE_KEY = 'dsh.mind-map.lineage-hidden.v1'"]),
+  J(["  const LINEAGE_KEY = 'dsh.mind_map.lineage-hidden.v1'"]),
   J([
-    "  const LINEAGE_KEY = 'dsh.mind-map.lineage-hidden.v1'",
+    "  const LINEAGE_KEY = 'dsh.mind_map.lineage-hidden.v1'",
     "  /** Fork lines the user deleted one by one; keyed `parent->child`. */",
-    "  const LINEAGE_CUT_KEY = 'dsh.mind-map.lineage-cut.v1'",
+    "  const LINEAGE_CUT_KEY = 'dsh.mind_map.lineage-cut.v1'",
   ]),
 )
 

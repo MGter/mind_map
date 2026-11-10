@@ -16,12 +16,12 @@ const result = await page.evaluate(() => {
   let nativeFired = 0
   tab.addEventListener('click', () => { nativeFired += 1 })
   tab.click()
-  return { nativeFired, stored: window.localStorage.getItem('dsh.mind-map.status-rail.open.v1') }
+  return { nativeFired, stored: window.localStorage.getItem('dsh.mind_map.status-rail.open.v1') }
 })
 console.log('原生监听:', JSON.stringify(result))
 await page.waitForTimeout(400)
 const after = await page.evaluate(() => ({
-  stored: window.localStorage.getItem('dsh.mind-map.status-rail.open.v1'),
+  stored: window.localStorage.getItem('dsh.mind_map.status-rail.open.v1'),
   cls: document.querySelector('[class*="statusRail"]').className,
 }))
 console.log('之后:', JSON.stringify(after))

@@ -305,7 +305,7 @@ await panZoom.setViewport({ x: width/2 - x*nextZoom, y: height/2 - y*nextZoom, z
 
 ```js
 // client.js:17067-17082
-var GRAPH_CAMERA_KEY = "dsh.mind-map.graph-camera.v1";
+var GRAPH_CAMERA_KEY = "dsh.mind_map.graph-camera.v1";
 function readGraphCamera() { ... JSON.parse(localStorage.getItem(GRAPH_CAMERA_KEY)) ... }
 function writeGraphCamera(camera) { ... localStorage.setItem(GRAPH_CAMERA_KEY, JSON.stringify(camera)) ... }
 // client.js:17431-17434  平移松手才回写板级相机
@@ -354,4 +354,4 @@ onDoubleClick={(event) => {
 3. **双击空白**：不要复用它现在的 DOM 选择器（图谱里没有 `.react-flow__pane`）；在 `GraphCanvasSurface` 的 `onDoubleClick`（`client.js:17527`，现在是 `stopPropagation` 空转）里用 `hitTest()` 判空，再 `setPendingSpawn` 或 `session/create` + `canvas.addCards` 原地建卡。
 4. **拉线分叉**：`PendingSpawn` 最少 `{parent:{cardId,sessionId,title}, x, y}`（x/y = flow 落点 − 112/60 后 `snap` 到 16）；图谱画布要自己实现"从卡片拖出 → 松手在空白"再 `setPendingSpawn`，复用 `onConnectEnd` 需造 `{clientX,clientY}` + `{isValid:false, fromNode:{id}}` 并先修第 2 条。
 5. **归档灰化**：字段不在 session summary、也不在 mind_map.json，读 `props.useWorkspaces(s => s.archivedSessionIds)` 即可；同时把 `runActions` 里的 `canvas.removeCard`（`MapCanvas.tsx:1835` / 构建内对应处）改成"保留卡片 + 打灰"，取消归档用 `ui.unarchiveSession(sessionId)`。
-6. **镜头**：图谱里 `setCenter` 恒为 no-op（`panZoom` 空），缓动自己写：rAF 在 `cameraRef.current` 上做 200–320ms 补间并 `writeGraphCamera` + `schedule()`；持久化注意图谱用 localStorage `dsh.mind-map.graph-camera.v1`，只有平移松手才会写进 `canvas.setCamera`（800ms 防抖）。
+6. **镜头**：图谱里 `setCenter` 恒为 no-op（`panZoom` 空），缓动自己写：rAF 在 `cameraRef.current` 上做 200–320ms 补间并 `writeGraphCamera` + `schedule()`；持久化注意图谱用 localStorage `dsh.mind_map.graph-camera.v1`，只有平移松手才会写进 `canvas.setCamera`（800ms 防抖）。

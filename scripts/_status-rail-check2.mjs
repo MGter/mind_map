@@ -85,7 +85,7 @@ const dragged = await page.evaluate(() => {
 })
 await page.waitForTimeout(500)
 const afterDrag = await read()
-const storedOrder = await page.evaluate(() => window.localStorage.getItem('dsh.mind-map.status-rail.order.v1'))
+const storedOrder = await page.evaluate(() => window.localStorage.getItem('dsh.mind_map.status-rail.order.v1'))
 
 await page.reload()
 await page.waitForTimeout(2600)

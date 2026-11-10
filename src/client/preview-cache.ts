@@ -9,7 +9,7 @@ import { cleanPreviewText } from './preview-text.ts'
  * localStorage next to their `updatedAt` stamp: the map paints from the cache
  * immediately and only asks the Host for sessions whose stamp moved.
  */
-const STORAGE_KEY = 'dsh.mind-map.previews.v1'
+const STORAGE_KEY = 'dsh.mind_map.previews.v1'
 /** Raw text is capped before storing; the display cap is applied after cleaning. */
 const MAX_RAW = 600
 /** Enough for a few hundred conversations; each entry is one line of text. */

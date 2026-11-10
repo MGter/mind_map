@@ -236,9 +236,9 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
   /** Bumped after a push: edges recompute their sync state (lineage has no edge row). */
   const [pushEpoch, setPushEpoch] = useState(0)
   /** Lineage lines (fork/subagent provenance) can be switched off entirely. */
-  const LINEAGE_KEY = 'dsh.mind-map.lineage-hidden.v1'
+  const LINEAGE_KEY = 'dsh.mind_map.lineage-hidden.v1'
   /** Fork lines the user deleted one by one; keyed `parent->child`. */
-  const LINEAGE_CUT_KEY = 'dsh.mind-map.lineage-cut.v1'
+  const LINEAGE_CUT_KEY = 'dsh.mind_map.lineage-cut.v1'
   const [lineageCut, setLineageCut] = useState<readonly string[]>(() => {
     try {
       const raw = window.localStorage.getItem(LINEAGE_CUT_KEY)
@@ -261,7 +261,7 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
 
   const [lineageHidden, setLineageHiddenState] = useState(() => {
     try {
-      return localStorage.getItem('dsh.mind-map.lineage-hidden.v1') === '1'
+      return localStorage.getItem('dsh.mind_map.lineage-hidden.v1') === '1'
     } catch {
       return false
     }
@@ -269,7 +269,7 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
   const setLineageHidden = (next: boolean): void => {
     setLineageHiddenState(next)
     try {
-      localStorage.setItem('dsh.mind-map.lineage-hidden.v1', next ? '1' : '0')
+      localStorage.setItem('dsh.mind_map.lineage-hidden.v1', next ? '1' : '0')
     } catch { /* private mode: the choice lasts this session */ }
   }
   const [renameTarget, setRenameTarget] = useState<RenameTarget | null>(null)

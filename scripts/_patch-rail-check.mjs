@@ -35,7 +35,7 @@ if (rowHandles.length >= 2) {
   await rowHandles[1].dragTo(rowHandles[0])
   await page.waitForTimeout(400)
   const after = (await read()).rows.map(row => row.title)
-  const stored = await page.evaluate(() => window.localStorage.getItem('dsh.mind-map.status-rail.order.v1'))
+  const stored = await page.evaluate(() => window.localStorage.getItem('dsh.mind_map.status-rail.order.v1'))
   dragResult = { before: before.slice(0, 3), after: after.slice(0, 3), movedToTop: after[0] === before[1], stored: stored !== null }
 }
 

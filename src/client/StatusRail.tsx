@@ -53,8 +53,8 @@ interface DragState {
   width: number
 }
 
-const OPEN_KEY = 'dsh.mind-map.status-rail.open.v1'
-const ORDER_KEY = 'dsh.mind-map.status-rail.order.v1'
+const OPEN_KEY = 'dsh.mind_map.status-rail.open.v1'
+const ORDER_KEY = 'dsh.mind_map.status-rail.order.v1'
 const FLIP_MS = 180
 
 const LAMP_CLASS: Record<StatusLamp, string> = {

@@ -12,7 +12,7 @@ await page.goto('file:///'+path.resolve('demo/index.html').replace(/\\/g,'/')+'?
 await page.waitForTimeout(2500)
 const read = () => page.evaluate(() => ({
   cls: document.querySelector('.tm_statusRail')?.className ?? null,
-  stored: window.localStorage.getItem('dsh.mind-map.status-rail.open.v1'),
+  stored: window.localStorage.getItem('dsh.mind_map.status-rail.open.v1'),
   transform: getComputedStyle(document.querySelector('.tm_statusRailPanel')).transform,
 }))
 console.log('before:', JSON.stringify(await read()))

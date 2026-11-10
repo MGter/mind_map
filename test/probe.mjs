@@ -133,7 +133,7 @@ try {
     if (sessionStorage.getItem('probe-run') === run) return
     sessionStorage.setItem('probe-run', run)
     for (const key of Object.keys(localStorage)) {
-      if (key.startsWith('dsh.mind-map.')) localStorage.removeItem(key)
+      if (key.startsWith('dsh.mind_map.')) localStorage.removeItem(key)
     }
   })
   await page.goto(`http://127.0.0.1:${PORT}/test/index.html?run=${Date.now()}`)
@@ -1268,8 +1268,8 @@ try {
     }
   })
   const storedDrawer = await page.evaluate(() => ({
-    stored: localStorage.getItem('dsh.mind-map.drawer.v1'),
-    scroll: localStorage.getItem('dsh.mind-map.drawer-scroll.v1'),
+    stored: localStorage.getItem('dsh.mind_map.drawer.v1'),
+    scroll: localStorage.getItem('dsh.mind_map.drawer-scroll.v1'),
   }))
   console.log('   drawer storage:', JSON.stringify(storedDrawer))
   check('回到地图时抽屉还开着（保留打开进度）',

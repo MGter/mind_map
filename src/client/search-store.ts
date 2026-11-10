@@ -19,7 +19,7 @@ export interface StoredSearch<T> {
 }
 
 function keyFor(scope: string): string {
-  return `dsh.mind-map.search.${scope}.v1`
+  return `dsh.mind_map.search.${scope}.v1`
 }
 
 export function saveSearch<T>(scope: string, value: { query: string; hits: T[]; more?: StoredMore }): void {

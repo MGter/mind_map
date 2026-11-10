@@ -28,7 +28,7 @@ source = source.replace(
   J([
     stateAnchor,
     '  /** Lineage lines (fork/subagent provenance) can be switched off. */',
-    "  const LINEAGE_KEY = 'dsh.mind-map.lineage-hidden.v1'",
+    "  const LINEAGE_KEY = 'dsh.mind_map.lineage-hidden.v1'",
     '  const [lineageHidden, setLineageHiddenState] = useState(() => {',
     '    try {',
     '      return localStorage.getItem(LINEAGE_KEY) === \'1\'',

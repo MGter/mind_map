@@ -86,7 +86,7 @@ if (boxes.length >= 2) {
   await page.mouse.up()
   await page.waitForTimeout(500)
   const after = await read()
-  const stored = await page.evaluate(() => window.localStorage.getItem('dsh.mind-map.status-rail.order.v1'))
+  const stored = await page.evaluate(() => window.localStorage.getItem('dsh.mind_map.status-rail.order.v1'))
   dragMoved = after.rows[0]?.title === before[1] && stored !== null
   var dragDebug = { before, afterFirst: after.rows[0]?.title, stored }
   var midDragFloating = midDrag.rows.length === before.length

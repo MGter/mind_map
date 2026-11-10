@@ -12,7 +12,7 @@ export type { LocalePref }
 export type Locale = 'zh' | 'en'
 
 const zh: Record<string, string> = {
-  'map.title': '思维图 ·v2',
+  'map.title': '思维图',
   'map.close': '关闭地图（Esc）',
   'map.back': '返回',
   'map.toggle': '思维图',
@@ -187,7 +187,7 @@ const zh: Record<string, string> = {
   'menu.removeGroup': '删除分组（连同会话）',
 }
 const en: Record<string, string> = {
-  'map.title': 'Mind Map ·v2',
+  'map.title': 'Mind Map',
   'map.close': 'Close map (Esc)',
   'map.back': 'Back',
   'map.toggle': 'Mind Map',

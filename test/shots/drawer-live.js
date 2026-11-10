@@ -24950,8 +24950,8 @@
   }
 
   // src/client/drawer-state.ts
-  var GROUP_KEY = "dsh.mind-map.drawer.v1";
-  var SCROLL_KEY = "dsh.mind-map.drawer-scroll.v1";
+  var GROUP_KEY = "dsh.mind_map.drawer.v1";
+  var SCROLL_KEY = "dsh.mind_map.drawer-scroll.v1";
   function safeRead(key) {
     try {
       return typeof localStorage === "undefined" ? null : localStorage.getItem(key);
@@ -24994,7 +24994,7 @@
   // src/client/search-store.ts
   var TTL_MS = 12 * 60 * 60 * 1e3;
   function keyFor(scope) {
-    return `dsh.mind-map.search.${scope}.v1`;
+    return `dsh.mind_map.search.${scope}.v1`;
   }
   function saveSearch(scope, value) {
     try {

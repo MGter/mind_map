@@ -6,7 +6,7 @@
  * card pair. Stored edges read it as a fallback, which also keeps the state alive
  * if an edge is ever recreated.
  */
-const KEY = 'dsh.mind-map.push-log.v1'
+const KEY = 'dsh.mind_map.push-log.v1'
 
 type PushLog = Record<string, number>
 

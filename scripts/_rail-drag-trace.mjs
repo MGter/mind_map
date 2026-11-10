@@ -27,5 +27,5 @@ console.log('移动后顺序:', JSON.stringify(await page.evaluate(() => [...doc
 await page.mouse.up()
 await page.waitForTimeout(300)
 console.log('松手后顺序:', JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('.tm_statusRailSlot .tm_cardTitle')].map(el => el.textContent?.trim()))))
-console.log('stored:', await page.evaluate(() => window.localStorage.getItem('dsh.mind-map.status-rail.order.v1')))
+console.log('stored:', await page.evaluate(() => window.localStorage.getItem('dsh.mind_map.status-rail.order.v1')))
 await browser.close(); child.kill()

@@ -85,7 +85,7 @@ dsh-app://app/plugins/??mind_map/client.js&rev=...:10
 
 ### 1. 顶部：返回 / 语言 / 关闭
 
-`MapOverlay.tsx`：删掉标题（`思维图 ·v2`）和会话计数徽标。左上「‹ 返回」（38px 高），
+`MapOverlay.tsx`：删掉标题（`思维图`）和会话计数徽标。左上「‹ 返回」（38px 高），
 右上 语言 + ✕（34~38px）。返回与 ✕ 同动作。
 
 表头**不再沿用遮罩层的 top inset**（`--dsh-frame-overlay-top`）——那是给浮在标题栏
@@ -157,7 +157,7 @@ dsh-app://app/plugins/??mind_map/client.js&rev=...:10
 ### 2b3. 跨重启保留灯的状态
 
 草稿本来就在 localStorage（上面那条），另外三类**只存在于客户端订阅里的灯**也落到了本地，
-放在 `dsh.mind-map.lamp-state.v1`（`src/client/state-persist.ts`；不改宿主 schema，
+放在 `dsh.mind_map.lamp-state.v1`（`src/client/state-persist.ts`；不改宿主 schema，
 `MapGlobal` 是 zod 校验的、未知字段会被丢掉）：
 
 | 状态 | 怎么来 | 重启后 |
@@ -194,7 +194,7 @@ dsh-app://app/plugins/??mind_map/client.js&rev=...:10
   测试台补了"列表高频刷新"的判别用例，旧代码返回 `null`、新代码通过）；
 - 宿主：每个会话读一次 surface 约 250ms，**改成并发**（`Promise.all`），21 张卡从 ~5s 降到
   几百毫秒；
-- **本地缓存（关键）**：正文落在 `localStorage["dsh.mind-map.previews.v1"]`，
+- **本地缓存（关键）**：正文落在 `localStorage["dsh.mind_map.previews.v1"]`，
   `sessionId → { text, stamp }`（stamp 就是会话的 `updatedAt`，最多 300 条，超出按 stamp 淘汰）。
   打开地图时**先用缓存画**（`useState(readPreviewTexts)`，同步、零等待），
   再只对 stamp 变了的会话去宿主补一次并写回缓存——"打开就有 + 后台同步"，不是每次全量重拉；
