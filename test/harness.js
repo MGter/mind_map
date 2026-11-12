@@ -398,6 +398,21 @@
     if (saved.global !== undefined) payload.global = saved.global
   }
 
+  // Opt-in fixture (?dupes=1): a second card for one of the seeded sessions.
+  // The map must collapse it back to one card (continuous de-dupe), and the
+  // duplicate must never be recreated afterwards.
+  if (new URLSearchParams(location.search).get('dupes') === '1') {
+    const first = Object.entries(payload.cards)[0]
+    if (first !== undefined) {
+      payload.cards['card-dup-' + first[1].sessionId] = {
+        ...first[1],
+        x: first[1].x + 48,
+        y: first[1].y + 48,
+        createdAt: (first[1].createdAt || 0) + 1,
+      }
+    }
+  }
+
   // ---- fetch / EventSource mocks ------------------------------------
   /** '/mind-map/search' hits, and a switch to make the RPC path fail. */
   const searchRouteCalls = []

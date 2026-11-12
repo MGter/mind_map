@@ -495,8 +495,43 @@ node test/probe.mjs         # 无头 Edge 全链路 19 项（自己起静态服�
 - 路由前缀已改成 `/mind_map/*`，harness 还只匹配 `/mind-map/*` → `/state` 落到空对象，
   客户端把 `cards: undefined` 读进 store 后 `Object.values(undefined)` 崩在首帧；
   现在 fetch 入口统一把 `/mind_map/` 归一成 `/mind-map/` 再匹配；
-- 新增 `__harness.addSubagent(parentSessionId, sessionId, title, running)`，补上子代理夹具；
+- 新增 `__harness.addSubagent(parentSessionId, sessionId, title, running)`，补上子代理夹具；?dupes=1 再给某个会话多塞一张卡（去重断言用）；
 - `test/probe.mjs` 的面板断言同时接受两种 id（probe 还没在本机跑过：缺 `playwright-core`，
   需要 `npm i -D playwright-core` 后 `node test/probe.mjs`）。
 
 **换完必须重启 DSH 桌面端**：client bundle 在宿主启动时下发，F5 也拿不到新文件。
+
+## 2026-11-12（续）一个会话三张卡：多实例补卡 + 兜底去重
+
+现象：用户在图上看到同一个子代理出现 **3 次**。查库（`mind_map.json`）：
+`eb2d201c-5f67-46f0-ba41-df7312e45174` 这个会话有 3 张卡，`createdAt` 全在 **14:02:00 同一秒**、
+位置各不相同 —— 不是"多次打开累积"，而是**同一瞬间被三个地方各建了一张**。
+
+根因（和 2026-11-11「侧栏面板黑底」同源）：DSH 壳把**非当前 session 的整个 pane 留在 DOM 里**
+（只加 `display:none`），同一个思维图主面板可能同时存在好几份实例。每份实例都在跑
+「自动补卡」和「子代理补卡」两个 effect，各自手里的 `boardSessionIds` 都慢一帧：
+
+- 实例 A 补卡后 store 更新，但 B/C 早在同一 tick 里完成渲染、拿着旧快照；
+- B/C 的 `subagentPlacedRef` 是**组件级** ref，各管各的 → 三张卡同时落库；
+- 上游的 `mindMapDedupeCards()` 只在启动后 2.5s / 7s 各跑一次，14:02 产生的重复没人清。
+
+修法（三层，任意一层单独都能兜住）：
+
+1. **隐藏实例不许写板**：两个补卡 effect 开头检查自己宿主盒子的实际尺寸
+   （`wrapperRef` 的 `getBoundingClientRect()` 宽高 < 40 → return）。隐藏 pane 里的实例直接退出。
+2. **模块级补卡节流**：新增 `mindMapPlacedAt` / `mindMapPlaceableNow()` / `mindMapMarkPlaced()`
+   —— 同页所有实例共享"这个 session 刚补过（15s 内）"，补卡前查、建卡后标；
+   自动补卡与子代理补卡都接上。
+3. **持续兜底去重**：`canvasState.cards` 一变就 700ms 后跑一次模块级 `mindMapDedupeCards()`，
+   同一 sessionId 只保留最早创建的那张，多余的 `removeCard`（连线随卡删除，幂等，
+   多实例同时跑也无害）。存量重复卡（用户现在这三张）在重启后地图打开 0.7s 内会被清掉。
+
+验证（离线测试台）：
+
+- 新增 `?dupes=1` 夹具：初始 payload 里给一个会话多塞一张卡。实测 2.6s 后
+  `payload.cards` 恢复 9 张、0 重复，`/cards/delete` 里出现那张 `card-dup-*`；
+- 连加 3 个子代理 + 每 400ms 触发一次 sessions 刷新、连续 4 次：每个会话恰好 **1 张卡**，
+  归属判定不受影响（自己的跑完可见、别人的跑完隐藏、运行中可见）；
+- `node apply-patch.mjs` 75/75 编辑全匹配，`bundle-smoke` PASS。
+
+备注：版本仍 0.1.66；只改 `client/client.js`，**换完要重启桌面端**。

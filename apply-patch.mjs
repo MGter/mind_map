@@ -1872,6 +1872,26 @@ function mindMapDedupeCards() {
 }
 
 
+/**
+ * 多实例补卡节流（2026-11-12）：DSH 壳会把非当前 session 的整个 pane 留在 DOM 里
+ * （只加 display:none），同一个 mind_map 主面板可能同时存在 2~3 份实例。它们各自
+ * 拿到的 boardSessionIds 都有一帧滞后，于是「同一个 session 各建一张卡」——
+ * 实测一个跑着的子代理一次出现 3 张。模块级时间戳让同页所有实例共享「刚补过」状态；
+ * mindMapDedupeCards 每 700ms 再兜底一次。
+ */
+var mindMapPlacedAt = new Map();
+function mindMapPlaceableNow(sessionId) {
+  var at = mindMapPlacedAt.get(sessionId);
+  if (at !== void 0) {
+    if (Date.now() - at < 15000) return false;
+    mindMapPlacedAt.delete(sessionId);
+  }
+  return true;
+}
+function mindMapMarkPlaced(sessionId) {
+  mindMapPlacedAt.set(sessionId, Date.now());
+}
+
 /** A. 二部图：分组节点注册表。由「边构建」每帧重建，只有 count>=2 的分组才有节点。 */
 var mindMapGroupNodes = new Map();
 /** A. 分组节点锚点（每个工作区只算一次，之后固定，避免与力导向互相追）。 */
@@ -2835,6 +2855,12 @@ const CLIENT_EDITS = [
     replace: String.raw`  const subagentPlacedRef = (0, import_react13.useRef)(new Set());
   (0, import_react13.useEffect)(() => {
     if (canvasState.phase !== "ready") return;
+    // 隐藏实例（别的 session 的 pane / 没显示的 tab）不许补卡：否则同一个子代理
+    // 会被每个实例各补一张，板上一会话三张卡（2026-11-12 实测）。
+    const surfaceEl = wrapperRef.current;
+    if (surfaceEl === null) return;
+    const surfaceBox = surfaceEl.getBoundingClientRect();
+    if (surfaceBox.width < 40 || surfaceBox.height < 40) return;
     const cardOfSession = (sessionId) => {
       for (const entry of Object.entries(visibleCards)) {
         if (entry[1].sessionId === sessionId) return entry[1];
@@ -2851,8 +2877,9 @@ const CLIENT_EDITS = [
     for (const sessionId of placeableSessionIds(sessions)) {
       const row = sessions.byId[sessionId];
       if (row === void 0 || row.origin !== "subagent") continue;
-      if (boardSessionIds.has(sessionId) || subagentPlacedRef.current.has(sessionId)) continue;
+      if (boardSessionIds.has(sessionId) || subagentPlacedRef.current.has(sessionId) || mindMapPlaceableNow(sessionId) !== true) continue;
       subagentPlacedRef.current.add(sessionId);
+      mindMapMarkPlaced(sessionId);
       let cursor = row.parentId;
       let hops = 0;
       let anchor = null;
@@ -2873,6 +2900,14 @@ const CLIENT_EDITS = [
     }
     if (Object.keys(batch).length > 0) canvas.addCards(batch);
   }, [canvasState.phase, sessions, visibleCards, boardSessionIds]);
+  // 兜底去重：多实例 / SSE 延迟下同一会话仍可能被建出 2~3 张卡（2026-11-12 实测一个
+  // 子代理一次出现在板上三次）。cards 一变就排一次，保留最早创建的那张；
+  // mindMapDedupeCards 是模块级函数，几个实例同时跑也幂等。
+  (0, import_react13.useEffect)(() => {
+    if (canvasState.phase !== "ready") return;
+    const dedupeTimer = window.setTimeout(mindMapDedupeCards, 700);
+    return function () { window.clearTimeout(dedupeTimer); };
+  }, [canvasState.phase, canvasState.cards]);
 ` + "  const savedCamera = canvas.savedCamera(INBOX_BOARD_ID);"
   },
   {
@@ -2987,6 +3022,12 @@ const CLIENT_EDITS = [
       "  const removedSessionIdsRef = (0, import_react13.useRef)(/* @__PURE__ */ new Set());\n" +
       "  (0, import_react13.useEffect)(() => {\n" +
       "    if (canvasState.phase !== \"ready\" || !workspacesReady) return;\n" +
+      "    // 隐藏实例（别的 session 的 pane）不许补卡：DSH 壳会把旧 pane 留在 DOM 里，\n" +
+      "    // 多份实例各建一张就出现重复卡（2026-11-12 实测一个子代理 3 张）。\n" +
+      "    const surfaceEl = wrapperRef.current;\n" +
+      "    if (surfaceEl === null) return;\n" +
+      "    const surfaceBox = surfaceEl.getBoundingClientRect();\n" +
+      "    if (surfaceBox.width < 40 || surfaceBox.height < 40) return;\n" +
       "    const missingSessionIds = placeableSessionIds(sessions).filter((sessionId) => {\n" +
       "      if (removedSessionIdsRef.current.has(sessionId)) return false;\n" +
       "      // 子代理有自己的补卡逻辑（贴着主卡摆），这里不重复建卡。\n" +
@@ -3017,6 +3058,27 @@ const CLIENT_EDITS = [
     // 白板里 Delete 掉一张卡也属于主动移除：同样记下来，别被自动补卡加回来。
     find: "        } else if (!change.id.startsWith(\"stack-\")) {\n          canvas.removeCard(change.id);\n        }",
     replace: "        } else if (!change.id.startsWith(\"stack-\")) {\n          const removedCard = visibleCards[change.id];\n          if (removedCard !== void 0) removedSessionIdsRef.current.add(removedCard.sessionId);\n          canvas.removeCard(change.id);\n        }"
+  },
+  {
+    label: "auto-sync-newcomer-guard",
+    // 多实例节流：同一秒里几个实例都会看到「这个会话还没卡」，模块级 guard 只放一个进去。
+    find: "    const newcomers = /* @__PURE__ */ new Map();\n    for (const sessionId of missingSessionIds) {\n      const groupId = sessionWs.get(sessionId);\n      if (groupId === void 0 || framed.has(groupId) || boardSessionIds.has(sessionId)) continue;",
+    replace: "    const newcomers = /* @__PURE__ */ new Map();\n    for (const sessionId of missingSessionIds) {\n      if (mindMapPlaceableNow(sessionId) !== true) continue;\n      const groupId = sessionWs.get(sessionId);\n      if (groupId === void 0 || framed.has(groupId) || boardSessionIds.has(sessionId)) continue;"
+  },
+  {
+    label: "auto-sync-newcomer-mark",
+    find: "        for (const card of cards) batch[newCardId()] = card;\n        canvas.addCards(batch);\n        canvas.setWsFrameRect(groupId, rect);",
+    replace: "        for (const card of cards) batch[newCardId()] = card;\n        canvas.addCards(batch);\n        for (const sessionId of ordered) mindMapMarkPlaced(sessionId);\n        canvas.setWsFrameRect(groupId, rect);"
+  },
+  {
+    label: "auto-sync-missing-guard",
+    find: "      const missing = missingSessionIds.filter((id2) => sessionWs.get(id2) === groupId && !boardSessionIds.has(id2)).sort((a, b) => (sessions.byId[b]?.updatedAt ?? 0) - (sessions.byId[a]?.updatedAt ?? 0));",
+    replace: "      const missing = missingSessionIds.filter((id2) => sessionWs.get(id2) === groupId && !boardSessionIds.has(id2) && mindMapPlaceableNow(id2) === true).sort((a, b) => (sessions.byId[b]?.updatedAt ?? 0) - (sessions.byId[a]?.updatedAt ?? 0));"
+  },
+  {
+    label: "auto-sync-missing-mark",
+    find: "        added[newCardId()] = {\n          boardId: INBOX_BOARD_ID,\n          sessionId,",
+    replace: "        mindMapMarkPlaced(sessionId);\n        added[newCardId()] = {\n          boardId: INBOX_BOARD_ID,\n          sessionId,"
   },
 ];
 

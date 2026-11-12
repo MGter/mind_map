@@ -14507,6 +14507,12 @@ function CanvasInner(props) {
   const removedSessionIdsRef = (0, import_react13.useRef)(/* @__PURE__ */ new Set());
   (0, import_react13.useEffect)(() => {
     if (canvasState.phase !== "ready" || !workspacesReady) return;
+    // 隐藏实例（别的 session 的 pane）不许补卡：DSH 壳会把旧 pane 留在 DOM 里，
+    // 多份实例各建一张就出现重复卡（2026-11-12 实测一个子代理 3 张）。
+    const surfaceEl = wrapperRef.current;
+    if (surfaceEl === null) return;
+    const surfaceBox = surfaceEl.getBoundingClientRect();
+    if (surfaceBox.width < 40 || surfaceBox.height < 40) return;
     const missingSessionIds = placeableSessionIds(sessions).filter((sessionId) => {
       if (removedSessionIdsRef.current.has(sessionId)) return false;
       // 子代理有自己的补卡逻辑（贴着主卡摆），这里不重复建卡。
@@ -14517,6 +14523,7 @@ function CanvasInner(props) {
     const framed = new Set(Object.keys(wsFrames));
     const newcomers = /* @__PURE__ */ new Map();
     for (const sessionId of missingSessionIds) {
+      if (mindMapPlaceableNow(sessionId) !== true) continue;
       const groupId = sessionWs.get(sessionId);
       if (groupId === void 0 || framed.has(groupId) || boardSessionIds.has(sessionId)) continue;
       newcomers.set(groupId, [...newcomers.get(groupId) ?? [], sessionId]);
@@ -14538,6 +14545,7 @@ function CanvasInner(props) {
         const batch = {};
         for (const card of cards) batch[newCardId()] = card;
         canvas.addCards(batch);
+        for (const sessionId of ordered) mindMapMarkPlaced(sessionId);
         canvas.setWsFrameRect(groupId, rect);
         cursorY = snap(rect.y + rect.height + GAP_Y);
       }
@@ -14547,7 +14555,7 @@ function CanvasInner(props) {
       const rect = frameRects[groupId];
       if (rect === void 0) continue;
       const existing = (membersByGroup.get(groupId) ?? []).map((cardId) => canvasState.cards[cardId]).filter((card) => card !== void 0);
-      const missing = missingSessionIds.filter((id2) => sessionWs.get(id2) === groupId && !boardSessionIds.has(id2)).sort((a, b) => (sessions.byId[b]?.updatedAt ?? 0) - (sessions.byId[a]?.updatedAt ?? 0));
+      const missing = missingSessionIds.filter((id2) => sessionWs.get(id2) === groupId && !boardSessionIds.has(id2) && mindMapPlaceableNow(id2) === true).sort((a, b) => (sessions.byId[b]?.updatedAt ?? 0) - (sessions.byId[a]?.updatedAt ?? 0));
       if (missing.length === 0) continue;
       const pitchY = CARD_H + GAP_Y;
       const topY = existing.length === 0 ? rect.y + FRAME_PAD + FRAME_LABEL_H : Math.min(...existing.map((card) => card.y));
@@ -14559,6 +14567,7 @@ function CanvasInner(props) {
           x: rect.x + FRAME_PAD + index2 % cols * (CARD_W + GAP_X),
           y: topY - placedBefore * pitchY
         };
+        mindMapMarkPlaced(sessionId);
         added[newCardId()] = {
           boardId: INBOX_BOARD_ID,
           sessionId,
@@ -16211,6 +16220,12 @@ function CanvasInner(props) {
   const subagentPlacedRef = (0, import_react13.useRef)(new Set());
   (0, import_react13.useEffect)(() => {
     if (canvasState.phase !== "ready") return;
+    // 隐藏实例（别的 session 的 pane / 没显示的 tab）不许补卡：否则同一个子代理
+    // 会被每个实例各补一张，板上一会话三张卡（2026-11-12 实测）。
+    const surfaceEl = wrapperRef.current;
+    if (surfaceEl === null) return;
+    const surfaceBox = surfaceEl.getBoundingClientRect();
+    if (surfaceBox.width < 40 || surfaceBox.height < 40) return;
     const cardOfSession = (sessionId) => {
       for (const entry of Object.entries(visibleCards)) {
         if (entry[1].sessionId === sessionId) return entry[1];
@@ -16227,8 +16242,9 @@ function CanvasInner(props) {
     for (const sessionId of placeableSessionIds(sessions)) {
       const row = sessions.byId[sessionId];
       if (row === void 0 || row.origin !== "subagent") continue;
-      if (boardSessionIds.has(sessionId) || subagentPlacedRef.current.has(sessionId)) continue;
+      if (boardSessionIds.has(sessionId) || subagentPlacedRef.current.has(sessionId) || mindMapPlaceableNow(sessionId) !== true) continue;
       subagentPlacedRef.current.add(sessionId);
+      mindMapMarkPlaced(sessionId);
       let cursor = row.parentId;
       let hops = 0;
       let anchor = null;
@@ -16249,6 +16265,14 @@ function CanvasInner(props) {
     }
     if (Object.keys(batch).length > 0) canvas.addCards(batch);
   }, [canvasState.phase, sessions, visibleCards, boardSessionIds]);
+  // 兜底去重：多实例 / SSE 延迟下同一会话仍可能被建出 2~3 张卡（2026-11-12 实测一个
+  // 子代理一次出现在板上三次）。cards 一变就排一次，保留最早创建的那张；
+  // mindMapDedupeCards 是模块级函数，几个实例同时跑也幂等。
+  (0, import_react13.useEffect)(() => {
+    if (canvasState.phase !== "ready") return;
+    const dedupeTimer = window.setTimeout(mindMapDedupeCards, 700);
+    return function () { window.clearTimeout(dedupeTimer); };
+  }, [canvasState.phase, canvasState.cards]);
   const startForkFrom = (forkCardId, flowX, flowY) => {
     const forkCard = visibleCards[forkCardId];
     if (forkCard === void 0) return;
@@ -18694,6 +18718,26 @@ function mindMapDedupeCards() {
   }
 }
 
+
+/**
+ * 多实例补卡节流（2026-11-12）：DSH 壳会把非当前 session 的整个 pane 留在 DOM 里
+ * （只加 display:none），同一个 mind_map 主面板可能同时存在 2~3 份实例。它们各自
+ * 拿到的 boardSessionIds 都有一帧滞后，于是「同一个 session 各建一张卡」——
+ * 实测一个跑着的子代理一次出现 3 张。模块级时间戳让同页所有实例共享「刚补过」状态；
+ * mindMapDedupeCards 每 700ms 再兜底一次。
+ */
+var mindMapPlacedAt = new Map();
+function mindMapPlaceableNow(sessionId) {
+  var at = mindMapPlacedAt.get(sessionId);
+  if (at !== void 0) {
+    if (Date.now() - at < 15000) return false;
+    mindMapPlacedAt.delete(sessionId);
+  }
+  return true;
+}
+function mindMapMarkPlaced(sessionId) {
+  mindMapPlacedAt.set(sessionId, Date.now());
+}
 
 /** A. 二部图：分组节点注册表。由「边构建」每帧重建，只有 count>=2 的分组才有节点。 */
 var mindMapGroupNodes = new Map();
