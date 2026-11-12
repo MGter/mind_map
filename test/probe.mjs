@@ -837,7 +837,7 @@ try {
   await page.waitForTimeout(250)
 
   // ---- 5. panel model --------------------------------------------------
-  check('地图是 main 面板（不是遮罩）', (await page.evaluate(() => window.__harness.panelState())).selectedPanel === 'mind-map')
+  check('地图是 main 面板（不是遮罩）', ['mind-map', 'mind_map'].includes((await page.evaluate(() => window.__harness.panelState())).selectedPanel))
   await page.click('[class*="tm_backButton"]')
   await page.waitForTimeout(400)
   check('返回按钮回到对话', await page.evaluate(() => document.querySelector('[data-harness-placeholder]') !== null))
@@ -1597,7 +1597,7 @@ try {
   // All three live in localStorage, so a reload must bring them back — the
   // harness rebuilds its status map from scratch, exactly like a restart.
   // The panel must be UP for these transitions to be observed at all.
-  if ((await page.evaluate(() => window.__harness.panelState())).selectedPanel !== 'mind-map') await openMap()
+  if (!['mind-map', 'mind_map'].includes((await page.evaluate(() => window.__harness.panelState())).selectedPanel)) await openMap()
   await page.waitForTimeout(400)
   await page.evaluate(() => window.__harness.setRunning('s4', true))
   await page.waitForTimeout(300)
@@ -1610,7 +1610,7 @@ try {
   await page.evaluate(() => window.dispatchEvent(new Event('beforeunload')))
   await page.reload()
   await page.waitForTimeout(1800)
-  if ((await page.evaluate(() => window.__harness.panelState())).selectedPanel !== 'mind-map') await openMap()
+  if (!['mind-map', 'mind_map'].includes((await page.evaluate(() => window.__harness.panelState())).selectedPanel)) await openMap()
   await page.click('.react-flow__node[data-id^="stack-"] [class*="stackFace"]')
   await page.waitForTimeout(500)
   // The drawer restores its last search; clear it so every card is listed.
@@ -1696,7 +1696,7 @@ try {
   }
 
   // A session that still has work must be stopped, then moved — not refused.
-  if ((await page.evaluate(() => window.__harness.panelState())).selectedPanel !== 'mind-map') await openMap()
+  if (!['mind-map', 'mind_map'].includes((await page.evaluate(() => window.__harness.panelState())).selectedPanel)) await openMap()
   await page.waitForTimeout(600)
   await page.evaluate(() => window.__harness.recycleBusy(true, 1))
   // Pick whichever card is on the board right now (this runs after a reload).

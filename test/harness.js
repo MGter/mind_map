@@ -422,7 +422,9 @@
     }))
   }
   window.fetch = function (url, init) {
-    const path = String(url)
+    // The plugin's routes were renamed mind-map/* → mind_map/*; accept both so
+    // the harness keeps working with either build.
+    const path = String(url).replace(/\/mind_map\//g, '/mind-map/')
     if (path.indexOf('dsh-session-recycle-bin/api') >= 0) {
       let body = null
       try { body = JSON.parse(init?.body ?? 'null') } catch { body = null }
@@ -735,7 +737,10 @@
   }
 
   function sync() {
-    const MapPanel = panels['mind-map']
+    // The plugin registers its main entry under MAP_PANEL_ID ("mind_map"), and
+    // older probe revisions assumed "mind-map". Look the panel up by whatever id
+    // the shell was asked to select instead of hard-coding one spelling.
+    const MapPanel = selectedPanel === null ? undefined : panels[selectedPanel]
     const Toggle = registered['sidebar.footer.action']?.component
     if (root === null) {
       root = ReactDOM.createRoot(document.getElementById('host'))
@@ -759,7 +764,7 @@
         },
       }, Toggle === undefined ? null : h(Toggle, { wide: !sidebarCollapsed })),
       h('div', { style: { flex: 1, minWidth: 0, position: 'relative', display: 'flex', flexDirection: 'column' } },
-        selectedPanel === 'mind-map' && MapPanel !== undefined
+        MapPanel !== undefined
           ? h(MapPanel, props)
           : h('div', {
               'data-harness-placeholder': 'conversation',
@@ -836,6 +841,21 @@
       workspace.sessionIds = [...workspace.sessionIds, sessionId]
       sessionsState = { ids: Object.keys(sessionRows), byId: { ...sessionRows } }
       workspacesState = buildWorkspaces()
+      sync()
+    },
+    /**
+     * A subagent session (origin=subagent, parentId=parent). It belongs to the
+     * parent's workspace through the client's own mapping, so it must land on
+     * the board next to the parent and be linked to it and nothing else.
+     */
+    addSubagent(parentSessionId, sessionId, title, running) {
+      sessionRows[sessionId] = session(sessionId, title, {
+        updatedAt: Date.now(),
+        origin: 'subagent',
+        parentId: parentSessionId,
+        running: running === true,
+      })
+      sessionsState = { ids: Object.keys(sessionRows), byId: { ...sessionRows } }
       sync()
     },
     /**

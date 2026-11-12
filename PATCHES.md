@@ -367,3 +367,128 @@ node test/probe.mjs         # 无头 Edge 全链路 19 项（自己起静态服�
 - 文件夹高度不再自动跟随内容：装不下就折叠成堆叠格（这是设计，不是 bug）；
 - 从草稿卡发出的新对话不会自动生成卡片（`startSession` 不返回 sessionId），
   仍要等它出现在侧栏后用「同步该工作区的新会话」。
+
+
+## 2026-11-11 切会话后地图「闪一下变黑底」（侧栏宿主被搬进隐藏面板）
+
+现象：在右栏开着「思维图」时切到某些会话，地图显示一下就消失，只剩面板深色底；
+之后刷新才好，切回原会话也不会自己回来。
+
+根因（远端 10.10.40.32 实测复现，用无头浏览器读 DOM 拿到证据）：
+
+1. DSH 壳把**非当前 session 的整个 pane 留在 DOM 里只加 `display:none`**
+   （`P3OORG_session`），better-sidebar 的 tab body 也是 `keepMounted`。
+   于是切过一次会话后页面上同时存在 2~3 份 `.tm_sbPanel`，其中只有一份看得见。
+2. 单实例宿主每 1.5s 由 `mindMapMountLauncher.ensure()` 补挂，旧代码是
+   `document.querySelector(".tm_sbPanel")` —— **文档序第一份，通常正是上一个
+   session 的隐藏面板**。它把宿主 `appendChild` 搬进去 → 可见 tab 立刻空掉。
+   搬完 `holder.contains(host)` 成立，后续巡检认为「已就位」不再动作；
+   `MapSidebarTab` 的 effect 依赖只有 `[ui.open]`，也不会重跑。
+3. 另外三处用 `document.querySelector(".tm_sbPanel .tm_graphSurface") !== null`
+   判「已在屏」，隐藏面板里的 surface 照样查得到，于是
+   （a）`openTab` 前置直接 return true、（b）`🧠 打开思维图` 占位按钮
+   `display:none`、（c）点击后 2.2s 的兜底也不触发 —— 三条恢复路径全被掐掉。
+
+修复（都在 `apply-patch.mjs` 注入的客户端块里，重跑 `node apply-patch.mjs` 生效）：
+
+- 新增 `mindMapMapSurfaceVisible()`：遍历 `.tm_sbPanel .tm_graphSurface`，
+  只有 `getBoundingClientRect()` 宽高都 ≥ 40 才算「看得见」；
+  `openTab` 前置、占位按钮显示、点击兜底三处都换成它。
+- `ensure()` 改成：遍历全部 `.tm_sbPanel`，跳过宽高 < 40 的隐藏面板，
+  在可见的里面挑**最高**的那份（保留「谁大挂谁」），宿主已经在里面就什么都不做。
+  一份可见的都没有 → 原地不动（绝不往隐藏 holder 搬）。
+- `MapSidebarTab` 的「谁大挂谁」判定：`currentVisible` 改为看盒子
+  （宽高 ≥ 40），不再用 `document.body.contains(host)` ——隐藏占位也算 contains；
+  新占位挂载瞬间高度为 0 时不再静默放弃，改成 `requestAnimationFrame` 下一帧
+  再确认一次（1.5s 巡检只负责「宿主被摘下」的场景）。
+
+验证：`node test/bundle-smoke.mjs` 两次求值 PASS；远端替换后按同一路径复现，
+宿主切会话后稳定留在可见面板（详见本轮对话记录）。
+
+备注：版本号仍保持 **0.1.66**（用户要求）；本次只改客户端产物，`lib/index.js` 未变，
+但 client bundle 在宿主启动时汇总下发，**换完必须重启宿主**（F5 拿不到新文件）。
+
+## 2026-11-12 聚焦=高亮 / 子代理只连主会话 / 新会话实时上板
+
+三件事一起改，全部落在 `apply-patch.mjs` 的客户端补丁里（`client/client.js` 重建产物），
+版本号仍是 **0.1.66**，`lib/index.js` 未变（补丁跑完 hash 与线上一致）。
+
+### 1. 聚焦（spotlight）：只点亮当前会话，其余压暗，不再隐藏
+
+以前 `focusSet` 是一个 BFS 集合：只显示「当前会话 + 2 跳内相关卡」，其余 `hidden: true`，
+边也一起过滤；再加一个「聚焦锚点」把它钉在第一次打开时的那张卡上。
+
+现在（`focus-set` / `focus-center` / `graph-bar-props`）：
+
+- 不再隐藏任何节点：`focusEdges = liveEdges`、`focusNodes = liveNodes`；
+- 新增 `focusAnchorId`（当前会话的卡；当前会话不在板上就退化成最近更新的那张）；
+- 绘制层拿 `props.focusAnchorId`：**被锚定的卡全亮 + 金边**，其余卡片 `alpha 0.26`、
+  连线 `alpha 0.10`、分组药丸 `0.3`（悬停时临时提亮被悬停卡）；聚焦关掉即恢复；
+- 按钮文案 `🎯 聚焦中`，title 说明新语义；`focusCount` 失去意义（=1），不再显示；
+- 镜头：只响应「关 → 开」的那一次，把被点亮的卡居中（顺手关掉 400ms 自动取景守卫，
+  否则它发现内容出界又 fit 回去）。**面板刚打开时不动镜头**，打开即 fit 的既有行为保留；
+- `focusSet` / `FOCUS_DEPTH` / `mindMapFocusAnchor*` 都成了死代码（锚点不再 localStorage 钉住），
+  留着不删以免补丁面再扩大。
+
+### 2. 子代理只和自己的主会话连线
+
+- 边构建（`GRAPH_EDGES_BLOCK`）：`byWorkspace` 跳过 `origin === "subagent"` 的卡 ——
+  它不再连工作区分组药丸，也不进药丸计数；子代理之间因此没有任何边。
+- 悬停星形（同标签虚线）：`graphTagGroups` 直接不收录子代理，
+  「子代理只连主会话」在所有连线形态上都成立。
+- 血缘边（父卡 → 子卡）本来就是唯一连到子代理的线，位置也没变。
+
+### 3. 子代理跑完不再消失（灰化即可）
+
+- 移除「隐藏已归档」开关里针对已跑完子代理的那一条：
+  `hidden` 只由 `archived` 决定；`graphCardIds` 也不再把已跑完的子代理剔出图；
+- 跑完的子代理仍按 `dormant`（alpha 0.42）绘制、角标「子代理 · 已完成」；
+  它与父卡的连线照旧存在 —— 只是变灰，不会消失；
+- `🗄 已隐藏 N` 的计数不再包含子代理，title 同步改掉。
+
+### 4. 新会话实时上板（修「只在开启时生成一次」）
+
+用户反馈：新开的会话不会被思维图记录。查证：`mind_map.json` 里最新卡片的 `createdAt`
+停在 09:00，而 13:xx 之后新建的两个会话（`session-eb64bc25…` / `session-b1a4a44a…`）
+确实没有卡 —— 因为「打开即自动同步」的实现是 `autoSyncedRef` **一次性守卫**：
+
+- 地图是真·单实例，启动时就挂进侧栏，`autoSyncedRef` 这辈子只放行一次；
+- 于是「启动之后新建的会话」永远等不到第二次补卡（右键那条手动同步早在 2a 里删掉了）。
+
+改法（`auto-sync-continuous` / `-newcomers` / `-missing`）：
+
+- 去掉一次性守卫，改成 `useEffect` 每次 `sessions` 更新都补一次缺卡；
+  没有缺卡时只做集合比对，不写库（地图空转成本 ≈ O(sessions + cards)）；
+- 子代理不参与这条补卡（它们有自己的 `subagent-place-cards`，贴着主卡摆）；
+- 新增 `removedSessionIdsRef`：显式「从地图移除」、归档、删除（`runActions`）以及
+  白板里 Delete 掉卡片时记下 sessionId，连续补卡不会把它们加回来；刷新页面后重置，
+  与以前「打开即补齐」的语义一致；
+- 未建文件夹的新工作区仍然走原上限（每次最多 6 个 × 9 张卡）；本机 5 个工作区都已有 frames，
+  所以实测只会补进真正的新会话。
+
+### 验收（离线测试台，一次跑完）
+
+- `node apply-patch.mjs` → 71/71 client + 5/5 host 补丁，语法闸门通过；
+- `node test/bundle-smoke.mjs` 两次求值 PASS；
+- 测试台（`node test/serve.mjs 8791` + 浏览器）实测：
+  - `focus-mode=1`、当前会话 s2 → `focusAnchorId = card-2`，9 张卡 **hidden=0**（不再隐藏）；
+  - 点「聚焦中」→ `focusAnchorId = null`；再点「聚焦」→ 锚点回来并缓动居中（误差 < 30px）；
+  - `addSession('ws-daily','s-live')` 900ms 内出现卡片（连续补卡生效）；
+  - `addSubagent('s1','s-sub-done')` + `addSubagent('s2','s-sub-run')`：两张卡都在、
+    `-done` 为 `subagentFinished: true`；各自只有 **1 条** `lineage` 边指向父卡，
+    不再有 `ws` 边；归档一张卡后 1.2s 内没有被补回来。
+
+### 测试台本身也修了两处陈旧
+
+`test/harness.js` 与线上产物不同步（改名后遗留）：
+
+- main 面板 id 是 `mind_map`，harness 却只认 `mind-map` → 地图根本不渲染；
+  现在按 `selectPanel()` 传来的 id 直接查 `panels[id]`；
+- 路由前缀已改成 `/mind_map/*`，harness 还只匹配 `/mind-map/*` → `/state` 落到空对象，
+  客户端把 `cards: undefined` 读进 store 后 `Object.values(undefined)` 崩在首帧；
+  现在 fetch 入口统一把 `/mind_map/` 归一成 `/mind-map/` 再匹配；
+- 新增 `__harness.addSubagent(parentSessionId, sessionId, title, running)`，补上子代理夹具；
+- `test/probe.mjs` 的面板断言同时接受两种 id（probe 还没在本机跑过：缺 `playwright-core`，
+  需要 `npm i -D playwright-core` 后 `node test/probe.mjs`）。
+
+**换完必须重启 DSH 桌面端**：client bundle 在宿主启动时下发，F5 也拿不到新文件。

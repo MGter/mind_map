@@ -1040,6 +1040,9 @@ function GraphCanvasSurface(props) {
     var lod = zoom < 0.42;
     var lodBlock = zoom < 0.22;
     var hovered = hoverRef.current;
+    // 聚焦（spotlight）锚点：非 null 表示聚焦开着，只点亮这一张卡。
+    var focusAnchor = propsRef.current.focusAnchorId === void 0 ? null : propsRef.current.focusAnchorId;
+    var spotlightOn = focusAnchor !== null && focusAnchor !== void 0;
     var edges = propsRef.current.edges || [];
     context.save();
     context.translate(camera.x, camera.y);
@@ -1065,7 +1068,11 @@ function GraphCanvasSurface(props) {
       // plugin's own fork/draw edges, other = manual links and the rest.
       var kind = edge.data !== void 0 && edge.data.graphKind !== void 0 ? edge.data.graphKind : (edge.type === "mindMap" ? "lineage" : "other");
       var touchesHover = hovered !== null && (edge.source === hovered || edge.target === hovered);
-      context.globalAlpha = hovered === null ? 1 : (touchesHover ? 1 : 0.18);
+      // 聚焦：只有连到「被点亮的那张卡」的线保持原亮度，其余压到几乎看不见。
+      var touchesFocus = spotlightOn && (edge.source === focusAnchor || edge.target === focusAnchor);
+      context.globalAlpha = spotlightOn && !touchesFocus
+        ? (touchesHover ? 0.9 : 0.10)
+        : (hovered === null ? 1 : (touchesHover ? 1 : 0.18));
       context.strokeStyle = edgePalette[kind] === void 0 ? edgePalette.other : edgePalette[kind];
       context.lineWidth = (touchesHover ? 2.2 : 1.1) / zoom;
       var start = graphAnchorPoint(fromCenterX, fromCenterY, fromBox.w, fromBox.h, toCenterX, toCenterY);
@@ -1091,13 +1098,17 @@ function GraphCanvasSurface(props) {
       var dormant = archived || subagentDone;
       var isHovered = hovered === node.id;
       var isDimmed = hovered !== null && hovered !== node.id;
-      context.globalAlpha = dormant ? 0.42 : (isDimmed ? 0.45 : 1);
+      // 聚焦（spotlight）：被点亮的那张卡保持全亮，其余一律压暗（悬停时临时提亮）。
+      var isSpotlight = spotlightOn && node.id === focusAnchor;
+      var isSpotDim = spotlightOn && !isSpotlight;
+      context.globalAlpha = isSpotlight ? 1 : dormant ? (isSpotDim ? 0.22 : 0.42) : (isDimmed ? 0.45 : (isSpotDim ? (isHovered ? 0.8 : 0.26) : 1));
       graphRoundRect(context, box.x, box.y, box.w, box.h, 10);
       context.fillStyle = dark ? "#1b1e25" : "#ffffff";
       context.fill();
       var isCurrent = data.current === true;
-      context.lineWidth = (isCurrent ? 2 : (isHovered ? 2 : 1)) / zoom;
-      context.strokeStyle = isCurrent ? "#ffd66a" : (isHovered ? "#8ab4ff" : (dark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.10)"));
+      var ringed = isCurrent || isSpotlight;
+      context.lineWidth = (ringed ? 2 : (isHovered ? 2 : 1)) / zoom;
+      context.strokeStyle = ringed ? "#ffd66a" : (isHovered ? "#8ab4ff" : (dark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.10)"));
       context.stroke();
       if (dormant) {
         context.fillStyle = dark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.45)";
@@ -1490,6 +1501,33 @@ function GraphCanvasSurface(props) {
       nodes: function () { var sim = simRef.current; var out = {}; if (sim !== null) sim.nodes.forEach(function (value, key) { out[key] = { x: Math.round(value.x), y: Math.round(value.y), vx: value.vx, vy: value.vy }; }); return out; },
       reheat: function () { reheat(1); },
       draws: function () { return mindMapDrawCount; },
+      // 验证探针用：当前这一帧发给画布的节点 / 边，以及聚焦锚点。
+      graph: function () {
+        var nodes = propsRef.current.nodes || [];
+        var edges = propsRef.current.edges || [];
+        return {
+          focusAnchorId: propsRef.current.focusAnchorId === void 0 ? null : propsRef.current.focusAnchorId,
+          nodes: nodes.map(function (node) {
+            return {
+              id: node.id,
+              type: node.type,
+              hidden: node.hidden === true,
+              sessionId: node.data !== void 0 && node.data.sessionId !== void 0 ? node.data.sessionId : null,
+              current: node.data !== void 0 && node.data.current === true,
+              subagent: node.data !== void 0 && node.data.subagent === true,
+              subagentFinished: node.data !== void 0 && node.data.subagentFinished === true
+            };
+          }),
+          edges: edges.map(function (edge) {
+            return {
+              id: edge.id,
+              source: edge.source,
+              target: edge.target,
+              kind: edge.data !== void 0 && edge.data.graphKind !== void 0 ? edge.data.graphKind : (edge.type === "mindMap" ? "lineage" : "other")
+            };
+          })
+        };
+      },
       // 跳转居中的探针：camera() 读当前镜头，viewport() 读画布尺寸，
       // box(cardId) 读那张卡的实时矩形，centerOn(cardId) 直接触发一次跳转。
       camera: function () { var camera = cameraRef.current; return camera === null ? null : { x: camera.x, y: camera.y, zoom: camera.zoom }; },
@@ -1592,7 +1630,10 @@ function GraphCanvasSurface(props) {
 function GraphSurface(props) {
   var graphOn = (0, import_react13.useSyncExternalStore)(graphModeSubscribe, graphModeGet, graphModeGet);
   if (graphOn) return (0, import_jsx_runtime16.jsx)(GraphCanvasSurface, props);
-  return (0, import_jsx_runtime16.jsx)(index, props);
+  // 白板模式是 React Flow（index）；focusAnchorId 只给 canvas 用，别透传给 React Flow。
+  var whiteboardProps = { ...props };
+  delete whiteboardProps.focusAnchorId;
+  return (0, import_jsx_runtime16.jsx)(index, whiteboardProps);
 }
 function GraphBar(props) {
   const graphOn = (0, import_react13.useSyncExternalStore)(graphModeSubscribe, graphModeGet, graphModeGet);
@@ -1608,9 +1649,9 @@ function GraphBar(props) {
     children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("button", {
       type: "button",
       className: "tm_graphBtn" + (props.focusOn === true ? " tm_graphBtnActive" : ""),
-      title: "只显示当前会话和与它相关（连在一起）的对话；点卡片打开会话后，聚焦会跟过去",
+      title: "聚焦：只把当前会话那张卡点亮，其余卡片 / 连线 / 分组药丸全部压暗；再点一次关闭",
       onClick: props.onToggleFocus,
-      children: props.focusOn === true ? "🎯 聚焦 " + props.focusCount : "🎯 聚焦"
+      children: props.focusOn === true ? "🎯 聚焦中" : "🎯 聚焦"
     }, "focus"));
     children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("button", {
       type: "button",
@@ -1630,7 +1671,7 @@ function GraphBar(props) {
     children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("button", {
       type: "button",
       className: "tm_graphBtn" + (props.hideArchived === true ? " tm_graphBtnActive" : ""),
-      title: "隐藏已归档会话和已跑完的子代理（子代理跑完会灰化，和归档一样藏起来）；开合状态记在浏览器里",
+      title: "隐藏已归档会话；子代理始终显示（跑完只灰化，不再跟着归档一起藏起来）；开合状态记在浏览器里",
       onClick: props.onToggleHideArchived,
       children: props.hideArchived === true ? "🗄 已隐藏 " + (props.archivedCount > 0 ? props.archivedCount : "0") : "🗄 显示全部"
     }, "archived"));
@@ -1683,15 +1724,32 @@ function mindMapSidebarTabWanted() {
 function mindMapSidebarTabRemember(open) {
   try { window.localStorage.setItem(MIND_MAP_SIDEBAR_TAB_KEY, open ? "1" : "0"); } catch (error) { }
 }
+/** 屏幕上到底有没有一张「看得见的」地图。
+ *  ⚠️ 2026-11-11：不能只看 "document.querySelector('.tm_sbPanel .tm_graphSurface') !== null"
+ *  就判「已在屏」——DSH 壳把非当前 session 的 pane 留在 DOM 里只加 display:none，
+ *  better-sidebar 的 tab body 也是 keepMounted，所以切过会话之后页面上会同时存在
+ *  好几份 .tm_sbPanel，隐藏那份里的 .tm_graphSurface 照样查得到。历史上这个判定把
+ *  「已在屏」判成 true，于是占位按钮不出现、自动 openTab 也不触发，地图再也没回来。 */
+function mindMapMapSurfaceVisible() {
+  if (typeof document === "undefined" || document === null) return false;
+  var surfaces = document.querySelectorAll(".tm_sbPanel .tm_graphSurface");
+  for (var surfaceIndex = 0; surfaceIndex < surfaces.length; surfaceIndex += 1) {
+    var surfaceBox = surfaces[surfaceIndex].getBoundingClientRect();
+    // 隐藏/未布局的盒子宽高是 0；40px 是「真的能看见」的下限（tab 最窄也有几百 px）。
+    if (surfaceBox.width >= 40 && surfaceBox.height >= 40) return true;
+  }
+  return false;
+}
 /** 开那一栏；没有当前会话时返回 false（better-sidebar 的 tab 必须挂在会话上）。 */
 function mindMapOpenSidebarTab(service) {
   if (service === null || service === void 0 || typeof service.openTab !== "function") return false;
   try {
     var snap = typeof service.getSnapshot === "function" ? service.getSnapshot() : null;
     if (snap === null || snap === void 0 || snap.sessionId === void 0) return false;
-    // 屏幕上已经有一份思维图就别再开新的：切会话时旧 tab 会随会话消失，这里只在
-    // 「当前会话看不到地图」时补一次，避免每切一次就多一个 tab 把界面拖死。
-    if (typeof document !== "undefined" && document !== null && document.querySelector(".tm_sbPanel .tm_graphSurface") !== null) return true;
+    // 屏幕上已经有一份「看得见的」思维图就别再开新的：切会话时旧 tab 会随会话消失，
+    // 这里只在「当前会话看不到地图」时补一次，避免每切一次就多一个 tab 把界面拖死。
+    // 必须是可见性判断：隐藏的那份面板也要算「没开」（2026-11-11）。
+    if (typeof document !== "undefined" && document !== null && mindMapMapSurfaceVisible() === true) return true;
     // 连打开栏会把 better-sidebar 拖进「每帧重排」的死循环（实测 6 次 openTab 后帧率
     // 从 60 掉到 1，且摘掉地图也不恢复），所以这里做冷却：8 秒内最多开一次。
     var now = Date.now();
@@ -1729,7 +1787,7 @@ function mindMapMountLauncher(service) {
         // 侧栏开不出来（没有当前会话 / better-sidebar 不在）时兜底到中间栏，保证点了就有东西。
         if (opened !== true) { try { openMapPanel(); } catch (error) { } }
         window.setTimeout(function () {
-          if (document.querySelector(".tm_sbPanel .tm_graphSurface") === null) {
+          if (mindMapMapSurfaceVisible() !== true) {
             try { openMapPanel(); } catch (error) { }
           }
         }, 2200);
@@ -1737,9 +1795,30 @@ function mindMapMountLauncher(service) {
       if (document.body !== null) document.body.appendChild(button);
     }
     // 自愈：面板在、但地图没挂进去（换占位时漏挂 / 宿主被摘下）就补挂一次。
-    var panel = document.querySelector(".tm_sbPanel");
+    // ⚠️ 2026-11-11 修：只能认「看得见」的面板。以前这里是
+    //   var panel = document.querySelector(".tm_sbPanel");          // 文档序第一份
+    // 切过会话之后页面上有好几份 .tm_sbPanel，文档序第一份通常是**上一个 session
+    // 的隐藏面板**（display:none，宽高 0），于是每 1.5s 就把宿主 appendChild 搬进去：
+    // 可见 tab 里的地图被抢走只剩黑底，而搬完「宿主已在隐藏面板里」又让巡检停手，
+    // 再也不会自己回来（占位按钮和自动 openTab 也被「存在即在屏」的判定骗住）。
+    // 现在的规则：只在宽高都 ≥ 40 的可见面板里挑最高的那份挂；一份可见的都没有就什么都不做。
+    var panel = null;
+    var holder = null;
+    var bestHeight = 0;
+    var allPanels = document.querySelectorAll(".tm_sbPanel");
+    for (var panelIndex = 0; panelIndex < allPanels.length; panelIndex += 1) {
+      var candidate = allPanels[panelIndex];
+      var candidateBox = candidate.getBoundingClientRect();
+      if (candidateBox.width < 40 || candidateBox.height < 40) continue;
+      var candidateHolder = candidate.querySelector(".tm_sbHost");
+      if (candidateHolder === null) continue;
+      if (candidateBox.height > bestHeight) {
+        bestHeight = candidateBox.height;
+        panel = candidate;
+        holder = candidateHolder;
+      }
+    }
     if (panel !== null) {
-      var holder = panel.querySelector(".tm_sbHost");
       var hostEl = mindMapSingleton.host;
       if (hostEl === null) { try { mindMapEnsureSingleton(mindMapSidebarProps()); hostEl = mindMapSingleton.host; } catch (error) { hostEl = null; } }
       if (holder !== null && hostEl !== null && holder.contains(hostEl) !== true) {
@@ -1747,7 +1826,7 @@ function mindMapMountLauncher(service) {
         mindMapPendingFit.until = Date.now() + 8000;
       }
     }
-    var onScreen = document.querySelector(".tm_sbPanel .tm_graphSurface") !== null;
+    var onScreen = mindMapMapSurfaceVisible();
     button.style.display = onScreen ? "none" : "flex";
   };
   ensure();
@@ -1934,13 +2013,37 @@ function MapSidebarTab(tabProps) {
     // 同一个 tab 类型可能同时出现在右栏和底部小面板里：宿主只能待在一处，
     // 规则是「谁大挂谁」——底部小面板先挂上去了，右栏挂载时会把宿主抢过来；
     // 一旦宿主所在占位已经从文档里摘下（切会话/关 tab），新占位直接接管。
+    // ⚠️ 2026-11-11 修：「可见」必须看盒子尺寸。隐藏面板里的占位仍然是
+    // document.body.contains(host) === true，旧代码据此当它有效，于是新占位
+    // 挂载瞬间（高度还是 0）出现 0 >= 0 判定成立 → 直接 return 挂不上，
+    // 之后 effect 依赖只有 [ui.open] 不会重跑，可见 tab 就一直黑着。
     var current = host.parentNode;
-    var currentVisible = current !== null && current !== void 0 && current.nodeType === 1 && document.body.contains(host);
-    var currentHeight = currentVisible ? current.getBoundingClientRect().height : -1;
-    var nextHeight = holder.getBoundingClientRect().height;
-    if (currentVisible && currentHeight >= nextHeight) return;
+    var currentHeight = -1;
+    if (current !== null && current !== void 0 && current.nodeType === 1 && document.body.contains(host)) {
+      var currentBox = current.getBoundingClientRect();
+      if (currentBox.width >= 40 && currentBox.height >= 40) currentHeight = currentBox.height;
+      else currentHeight = 0;
+    }
+    var nextBox = holder.getBoundingClientRect();
+    if (currentHeight >= 40 && nextBox.height >= 40 && currentHeight >= nextBox.height) return;
     holder.appendChild(host);
     mindMapPendingFit.until = Date.now() + 8000;
+    // 挂载时机早于布局（holder 还是 0 高）时，上面那次 appendChild 虽然生效，
+    // 但量不到尺寸；下一帧再确认一次。1.5s 巡检是给「宿主被摘下」兜底用的，
+    // 不该拿来当首次挂载的补救。
+    if (nextBox.height < 40) {
+      var retryHolder = holder;
+      try {
+        window.requestAnimationFrame(function () {
+          try {
+            if (retryHolder.isConnected === true && retryHolder.getBoundingClientRect().height >= 40) {
+              if (host.parentNode !== retryHolder) retryHolder.appendChild(host);
+              mindMapPendingFit.until = Date.now() + 8000;
+            }
+          } catch (error) { }
+        });
+      } catch (error) { }
+    }
   }, [ui.open]);
   var singletonReady = mindMapSingleton.supported === true;
   return (0, import_jsx_runtime16.jsxs)("div", {
@@ -2006,8 +2109,6 @@ const GRAPH_EDGES_BLOCK = String.raw`    if (graphOn) {
       const graphCardIds = Object.keys(visibleCards).filter(function (cardId) {
         if (foldedSet.has(cardId)) return false;
         if (hideArchivedOn && archivedSessionSet.has(visibleCards[cardId].sessionId)) return false;
-        var chainRow = sessions.byId[visibleCards[cardId].sessionId];
-        if (hideArchivedOn && chainRow !== void 0 && chainRow.origin === "subagent" && chainRow.running !== true) return false;
         return true;
       });
       // 不再去重：同一对卡片可能既是同工作区又是同标签，两种关系各画一条。
@@ -2040,6 +2141,10 @@ const GRAPH_EDGES_BLOCK = String.raw`    if (graphOn) {
       for (const cardId of graphCardIds) {
         const card = visibleCards[cardId];
         if (card === void 0) continue;
+        // 子代理不参与工作区分组：它只跟自己的主会话（血缘线）相连，
+        // 不再连到分组药丸，也不算进药丸的成员数（2026-11-12）。
+        const wsRow = sessions.byId[card.sessionId];
+        if (wsRow !== void 0 && wsRow.origin === "subagent") continue;
         const groupId = sessionWs.get(card.sessionId);
         if (groupId === void 0) continue;
         if (!byWorkspace.has(groupId)) byWorkspace.set(groupId, []);
@@ -2096,7 +2201,12 @@ const GRAPH_EDGES_BLOCK = String.raw`    if (graphOn) {
       // B. 标签不再画边（卡身上已经有 tag 徽章）。只留一张「同标签邻居」索引给 C 的悬停星形用。
       mindMapStarIndex.clear();
       for (const group of graphTagGroups) {
-        const members = group[1].filter(function (cardId) { return !foldedSet.has(cardId); });
+        // 子代理不进悬停星形：它只和主会话有关系。
+        const members = group[1].filter(function (cardId) {
+          if (foldedSet.has(cardId)) return false;
+          const starRow = sessions.byId[visibleCards[cardId] === void 0 ? "" : visibleCards[cardId].sessionId];
+          return starRow === void 0 || starRow.origin !== "subagent";
+        });
         if (members.length < 2) continue;
         for (const cardId of members) {
           let list = mindMapStarIndex.get(cardId);
@@ -2267,13 +2377,10 @@ const CLIENT_EDITS = [
   const archivedCardCount = (0, import_react13.useMemo)(() => {
     let count = 0;
     for (const cardId of Object.keys(visibleCards)) {
-      const row = sessions.byId[visibleCards[cardId].sessionId];
-      if (archivedSessionSet.has(visibleCards[cardId].sessionId)) { count += 1; continue; }
-      // 已跑完的子代理和归档一样会被这个开关藏起来，所以一起计数。
-      if (row !== void 0 && row.origin === "subagent" && row.running !== true) count += 1;
+      if (archivedSessionSet.has(visibleCards[cardId].sessionId)) count += 1;
     }
     return count;
-  }, [visibleCards, archivedSessionSet, sessions]);
+  }, [visibleCards, archivedSessionSet]);
   const graphTagIndex = (0, import_react13.useMemo)(() => {
     const derived = graphDeriveTags(canvasState.digests);
     const out = {};
@@ -2291,7 +2398,8 @@ const CLIENT_EDITS = [
       // would chain its neighbours to something nobody can see.
       if (hideArchivedOn && archivedSessionSet.has(entry[1].sessionId)) continue;
       var tagRow = sessions.byId[entry[1].sessionId];
-      if (hideArchivedOn && tagRow !== void 0 && tagRow.origin === "subagent" && tagRow.running !== true) continue;
+      // 子代理只和主会话连线：不参与同标签分组（悬停星形也不连它）。
+      if (tagRow !== void 0 && tagRow.origin === "subagent") continue;
       const tags = graphTagIndex[entry[1].sessionId];
       if (tags === void 0 || tags.length === 0) continue;
       for (const tag of tags) {
@@ -2435,20 +2543,17 @@ const CLIENT_EDITS = [
     label: "focus-set",
     find: "    return out;\n  }, [visibleCards, canvasState.edges, sessions, sessionIdToCardId, liveSelectedEdgeIds, foldedSet, locale, pushEpoch, lineageHidden, liveNodes, boardTick, graphOn, graphTagGroups, hideArchivedOn, archivedSessionSet]);",
     replace: "    return out;\n  }, [visibleCards, canvasState.edges, sessions, sessionIdToCardId, liveSelectedEdgeIds, foldedSet, locale, pushEpoch, lineageHidden, liveNodes, boardTick, graphOn, graphTagGroups, hideArchivedOn, archivedSessionSet]);\n" +
-      String.raw`  // Focus view: keep only the session you are working in plus everything linked
-  // to it (fork lineage, same workspace, shared tag, manual links) within
-  // FOCUS_DEPTH hops. Null means "no filtering".
-  const focusSet = (0, import_react13.useMemo)(() => {
+      String.raw`  // 聚焦（spotlight）：不隐藏任何卡片 —— 只把「当前会话」那张卡点亮，其余卡片、
+  // 连线、分组药丸全部压暗（绘制层用 props.focusAnchorId 决定透明度，见 GraphCanvasSurface）。
+  // 旧实现是「只显示相关的那几张」，切会话会重排 + 重新取景，看起来像地图被换掉了。
+  // 返回 null = 聚焦关闭。
+  const focusAnchorId = (0, import_react13.useMemo)(() => {
     if (!focusOn) { focusAnchorRef.current = null; return null; }
-    // 锚点钉住：优先用上次锚定的卡（切换对话时不再换中心），板上没有它了才退化成
-    // 「当前会话 → 最近更新的卡」并重新钉住。
-    const pinnedAnchor = mindMapFocusAnchorGet();
-    let anchorCardId = pinnedAnchor !== null && visibleCards[pinnedAnchor] !== void 0 ? pinnedAnchor : void 0;
+    const current = currentSessionId();
+    let anchorCardId = current === void 0 ? void 0 : sessionIdToCardId.get(current);
+    if (anchorCardId !== void 0 && visibleCards[anchorCardId] === void 0) anchorCardId = void 0;
     if (anchorCardId === void 0) {
-      const anchorSession = currentSessionId();
-      anchorCardId = anchorSession === void 0 ? void 0 : sessionIdToCardId.get(anchorSession);
-    }
-    if (anchorCardId === void 0) {
+      // 当前会话不在板上（刚删掉 / 还没导入）：退化成最近更新的那张卡。
       let newest;
       for (const entry of Object.entries(visibleCards)) {
         const stamp = sessions.byId[entry[1].sessionId]?.updatedAt ?? 0;
@@ -2457,46 +2562,11 @@ const CLIENT_EDITS = [
       anchorCardId = newest === void 0 ? void 0 : newest.cardId;
     }
     focusAnchorRef.current = anchorCardId === void 0 ? null : anchorCardId;
-    if (anchorCardId !== void 0) mindMapFocusAnchorSet(anchorCardId);
-    if (anchorCardId === void 0) return null;
-    const adjacency = new Map();
-    const connect = function (left, right) {
-      if (!adjacency.has(left)) adjacency.set(left, []);
-      adjacency.get(left).push(right);
-    };
-    for (const drawn of liveEdges) { connect(drawn.source, drawn.target); connect(drawn.target, drawn.source); }
-    const keep = new Map([[anchorCardId, 0]]);
-    let frontier = [anchorCardId];
-    for (let depth = 0; depth < FOCUS_DEPTH; depth += 1) {
-      const next = [];
-      for (const cardId of frontier) {
-        for (const neighbour of adjacency.get(cardId) ?? []) {
-          if (keep.has(neighbour)) continue;
-          keep.set(neighbour, depth + 1);
-          next.push(neighbour);
-        }
-      }
-      frontier = next;
-    }
-    return keep;
-  }, [focusOn, liveEdges, visibleCards, sessions, sessionIdToCardId]);
-  const focusEdges = focusSet === null ? liveEdges : liveEdges.filter(function (drawn) { return focusSet.has(drawn.source) && focusSet.has(drawn.target); });
-  // First ring stays a readable card; everything further out collapses to a dot
-  // you can hover for the details (hundreds of full cards at once is what made
-  // the graph heavy in the first place).
-  const focusNodes = focusSet === null ? liveNodes : liveNodes.map(function (node) {
-    if (node.type !== "sessionCard") return node;
-    const depth = focusSet.get(node.id);
-    if (depth === void 0) return { ...node, hidden: true };
-    if (depth < 2) return node;
-    return {
-      ...node,
-      type: "sessionDot",
-      position: { x: node.position.x + (CARD_W - DOT_SIZE) / 2, y: node.position.y + (CARD_H - DOT_SIZE) / 2 },
-      data: { ...node.data, depth: depth, onHover: handleDotHover }
-    };
-  });
-  const focusCount = focusSet === null ? 0 : focusSet.size;`
+    return anchorCardId === void 0 ? null : anchorCardId;
+  }, [focusOn, visibleCards, sessions, sessionIdToCardId]);
+  const focusEdges = liveEdges;
+  const focusNodes = liveNodes;
+  const focusCount = focusAnchorId === null ? 0 : 1;`
   },
   {
     label: "focus-nodes-edges",
@@ -2506,32 +2576,21 @@ const CLIENT_EDITS = [
   {
     label: "focus-center",
     find: "  const savedCamera = canvas.savedCamera(INBOX_BOARD_ID);",
-    replace: String.raw`  (0, import_react13.useEffect)(() => {
-    if (!focusOn || focusSet === null) return;
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-    for (const cardId of focusSet.keys()) {
-      const card = visibleCards[cardId];
-      if (card === void 0) continue;
-      minX = Math.min(minX, card.x);
-      minY = Math.min(minY, card.y);
-      maxX = Math.max(maxX, card.x + CARD_W);
-      maxY = Math.max(maxY, card.y + CARD_H);
-    }
-    if (!Number.isFinite(minX)) return;
-    const root = wrapperRef.current;
-    const viewWidth = root === null ? 900 : Math.max(240, root.clientWidth - 96);
-    const viewHeight = root === null ? 700 : Math.max(200, root.clientHeight - 150);
-    const spanX = Math.max(CARD_W, maxX - minX);
-    const spanY = Math.max(CARD_H, maxY - minY);
-    const zoom = Math.max(0.25, Math.min(0.92, Math.min(viewWidth / spanX, viewHeight / spanY)));
-    const timer = window.setTimeout(function () {
-      setCenter((minX + maxX) / 2, (minY + maxY) / 2, { zoom: zoom, duration: 320 });
-    }, 160);
-    return function () { window.clearTimeout(timer); };
-  }, [focusOn, focusSet]);
+    replace: String.raw`  // 打开聚焦的那一刻把镜头挪到被点亮的那张卡上（它可能在视口外，不挪过去就只看到一片灰）。
+  // 只响应「关 → 开」：面板刚打开时不动镜头（打开即 fit 的既有行为保留），
+  // 切换会话也只换高亮、不抢视角。挪镜头时顺手关掉自动取景守卫，
+  // 否则它每 400ms 发现内容出界就又 fit 回去，亮点刚居中就被拉走。
+  const focusWasOnRef = (0, import_react13.useRef)(focusOn === true);
+  (0, import_react13.useEffect)(() => {
+    const was = focusWasOnRef.current === true;
+    focusWasOnRef.current = focusOn === true;
+    if (focusOn !== true || was === true || focusAnchorId === null) return;
+    const kick = mindMapCenterKick;
+    if (kick === null || typeof kick.fn !== "function") return;
+    mindMapCameraTouched = true;
+    mindMapPendingFit.until = 0;
+    kick.fn(focusAnchorId);
+  }, [focusOn, focusAnchorId]);
   const savedCamera = canvas.savedCamera(INBOX_BOARD_ID);`
   },
   {
@@ -2552,7 +2611,7 @@ const CLIENT_EDITS = [
   {
     label: "card-node-stable",
     find: "        hidden: foldedSet.has(cardId),\n        className: dragging ? \"tmDragging\" : \"\"\n      };\n    });",
-    replace: "        hidden: foldedSet.has(cardId) || (graphOn && hideArchivedOn && (archivedSessionSet.has(card.sessionId) || (summary !== void 0 && summary.origin === \"subagent\" && summary.running !== true))),\n        className: dragging ? \"tmDragging\" : \"\"\n      };\n      return graphStableNode(nodeCacheRef.current, cardId, node);\n    });\n    for (const cachedId of nodeCacheRef.current.keys()) if (visibleCards[cachedId] === void 0) nodeCacheRef.current.delete(cachedId);"
+    replace: "        hidden: foldedSet.has(cardId) || (graphOn && hideArchivedOn && archivedSessionSet.has(card.sessionId)),\n        className: dragging ? \"tmDragging\" : \"\"\n      };\n      return graphStableNode(nodeCacheRef.current, cardId, node);\n    });\n    for (const cachedId of nodeCacheRef.current.keys()) if (visibleCards[cachedId] === void 0) nodeCacheRef.current.delete(cachedId);"
   },
   {
     label: "lod-onmove",
@@ -2606,16 +2665,6 @@ const CLIENT_EDITS = [
     replace: "var edgeTypes = { mindMap: MindMapEdge, graphLine: GraphLineEdge };"
   },
   {
-    label: "relayout-respects-focus",
-    find: "    const entries = Object.entries(visibleCards).map(function (entry) { return { id: entry[0], x: entry[1].x, y: entry[1].y }; });",
-    replace: "    const entries = Object.entries(visibleCards).filter(function (entry) { return focusSet === null || focusSet.has(entry[0]); }).map(function (entry) { return { id: entry[0], x: entry[1].x, y: entry[1].y }; });"
-  },
-  {
-    label: "relayout-links-respect-focus",
-    find: "    for (const drawn of liveEdges) links.push([drawn.source, drawn.target]);",
-    replace: "    for (const drawn of focusEdges) links.push([drawn.source, drawn.target]);"
-  },
-  {
     label: "card-tags-render",
     find: "/* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(\"div\", { className: mind_map_default[\"cardFooter\"], children: [",
     replace: "data.tags !== void 0 && data.tags.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(\"div\", { className: \"tm_cardTags\", children: data.tags.map((tag) => /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(\"span\", { className: \"tm_tagChip\", children: tag }, tag)) }) : null,\n        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(\"div\", { className: mind_map_default[\"cardFooter\"], children: ["
@@ -2659,11 +2708,6 @@ const CLIENT_EDITS = [
     label: "surface-swap",
     find: "          index,\n          {\n            nodes,\n            edges,",
     replace: "          GraphSurface,\n          {\n            nodes,\n            edges,"
-  },
-  {
-    label: "no-dots",
-    find: "  const focusNodes = focusSet === null ? liveNodes : liveNodes.map(function (node) {\n    if (node.type !== \"sessionCard\") return node;\n    const depth = focusSet.get(node.id);\n    if (depth === void 0) return { ...node, hidden: true };\n    if (depth < 2) return node;\n    return {\n      ...node,\n      type: \"sessionDot\",\n      position: { x: node.position.x + (CARD_W - DOT_SIZE) / 2, y: node.position.y + (CARD_H - DOT_SIZE) / 2 },\n      data: { ...node.data, depth: depth, onHover: handleDotHover }\n    };\n  });",
-    replace: "  const focusNodes = focusSet === null ? liveNodes : liveNodes.map(function (node) {\n    if (node.type !== \"sessionCard\") return node;\n    if (!focusSet.has(node.id)) return { ...node, hidden: true };\n    return node;\n  });"
   },
   {
     label: "live-attach",
@@ -2841,7 +2885,7 @@ const CLIENT_EDITS = [
   {
     label: "group-draw-pills",
     find: "    context.globalAlpha = 1;\n    context.lineWidth = 1.1 / zoom;\n    var nodes = visibleNodes();",
-    replace: "    // C. 悬停星形先画（虚线，压在实体边下面）\n    if (hovered !== null) {\n      var starNeighbours = mindMapStarIndex.get(hovered);\n      var starFrom = boxes.get(hovered);\n      if (starNeighbours !== void 0 && starFrom !== void 0) {\n        context.globalAlpha = 0.8;\n        context.strokeStyle = edgePalette.tag;\n        context.lineWidth = 1.3 / zoom;\n        context.setLineDash([5 / zoom, 4 / zoom]);\n        var starFromX = starFrom.x + starFrom.w / 2;\n        var starFromY = starFrom.y + starFrom.h / 2;\n        for (var starIndex = 0; starIndex < starNeighbours.length; starIndex += 1) {\n          var starTo = boxes.get(starNeighbours[starIndex]);\n          if (starTo === void 0) continue;\n          var starToX = starTo.x + starTo.w / 2;\n          var starToY = starTo.y + starTo.h / 2;\n          var starStart = graphAnchorPoint(starFromX, starFromY, starFrom.w, starFrom.h, starToX, starToY);\n          var starEnd = graphAnchorPoint(starToX, starToY, starTo.w, starTo.h, starFromX, starFromY);\n          context.beginPath();\n          context.moveTo(starStart.x, starStart.y);\n          context.lineTo(starEnd.x, starEnd.y);\n          context.stroke();\n        }\n        context.setLineDash([]);\n      }\n    }\n    context.globalAlpha = 1;\n    context.lineWidth = 1.1 / zoom;\n    var nodes = visibleNodes();\n    // A. 分组节点：小药丸 = 二部图的「分组」一端\n    for (var groupPaint = 0; groupPaint < nodes.length; groupPaint += 1) {\n      if (nodes[groupPaint].type !== \"groupNode\") continue;\n      var groupBox = boxes.get(nodes[groupPaint].id);\n      if (groupBox === void 0) continue;\n      var groupData = nodes[groupPaint].data || {};\n      graphRoundRect(context, groupBox.x, groupBox.y, groupBox.w, groupBox.h, groupBox.h / 2);\n      context.fillStyle = dark ? \"rgba(30,34,44,0.94)\" : \"rgba(255,255,255,0.96)\";\n      context.fill();\n      context.lineWidth = 1 / zoom;\n      context.strokeStyle = dark ? \"rgba(140,170,220,0.55)\" : \"rgba(60,110,180,0.45)\";\n      context.stroke();\n      context.fillStyle = dark ? \"rgba(190,205,230,0.95)\" : \"rgba(40,55,80,0.9)\";\n      context.font = \"11px \" + GRAPH_FONT_STACK;\n      context.fillText((groupData.label === void 0 ? \"\" : groupData.label) + \" · \" + (groupData.count === void 0 ? 0 : groupData.count), groupBox.x + 10, groupBox.y + groupBox.h / 2 + 4);\n    }"
+    replace: "    // C. 悬停星形先画（虚线，压在实体边下面）\n    if (hovered !== null) {\n      var starNeighbours = mindMapStarIndex.get(hovered);\n      var starFrom = boxes.get(hovered);\n      if (starNeighbours !== void 0 && starFrom !== void 0) {\n        context.globalAlpha = spotlightOn ? 0.5 : 0.8;\n        context.strokeStyle = edgePalette.tag;\n        context.lineWidth = 1.3 / zoom;\n        context.setLineDash([5 / zoom, 4 / zoom]);\n        var starFromX = starFrom.x + starFrom.w / 2;\n        var starFromY = starFrom.y + starFrom.h / 2;\n        for (var starIndex = 0; starIndex < starNeighbours.length; starIndex += 1) {\n          var starTo = boxes.get(starNeighbours[starIndex]);\n          if (starTo === void 0) continue;\n          var starToX = starTo.x + starTo.w / 2;\n          var starToY = starTo.y + starTo.h / 2;\n          var starStart = graphAnchorPoint(starFromX, starFromY, starFrom.w, starFrom.h, starToX, starToY);\n          var starEnd = graphAnchorPoint(starToX, starToY, starTo.w, starTo.h, starFromX, starFromY);\n          context.beginPath();\n          context.moveTo(starStart.x, starStart.y);\n          context.lineTo(starEnd.x, starEnd.y);\n          context.stroke();\n        }\n        context.setLineDash([]);\n      }\n    }\n    context.globalAlpha = 1;\n    context.lineWidth = 1.1 / zoom;\n    var nodes = visibleNodes();\n    // A. 分组节点：小药丸 = 二部图的「分组」一端\n    for (var groupPaint = 0; groupPaint < nodes.length; groupPaint += 1) {\n      if (nodes[groupPaint].type !== \"groupNode\") continue;\n      context.globalAlpha = spotlightOn ? 0.3 : 1;\n      var groupBox = boxes.get(nodes[groupPaint].id);\n      if (groupBox === void 0) continue;\n      var groupData = nodes[groupPaint].data || {};\n      graphRoundRect(context, groupBox.x, groupBox.y, groupBox.w, groupBox.h, groupBox.h / 2);\n      context.fillStyle = dark ? \"rgba(30,34,44,0.94)\" : \"rgba(255,255,255,0.96)\";\n      context.fill();\n      context.lineWidth = 1 / zoom;\n      context.strokeStyle = dark ? \"rgba(140,170,220,0.55)\" : \"rgba(60,110,180,0.45)\";\n      context.stroke();\n      context.fillStyle = dark ? \"rgba(190,205,230,0.95)\" : \"rgba(40,55,80,0.9)\";\n      context.font = \"11px \" + GRAPH_FONT_STACK;\n      context.fillText((groupData.label === void 0 ? \"\" : groupData.label) + \" · \" + (groupData.count === void 0 ? 0 : groupData.count), groupBox.x + 10, groupBox.y + groupBox.h / 2 + 4);\n    }"
   },
   {
     label: "group-skip-card-draw",
@@ -2904,6 +2948,57 @@ const CLIENT_EDITS = [
       "  };\n" +
       "  (0, import_react13.useEffect)(() => () => { mindMapTapBridge.live = null; mindMapCanvasBridge.current = null; }, []);\n" +
       "  const savedCamera = canvas.savedCamera(INBOX_BOARD_ID);"
+  },
+  {
+    label: "graph-surface-focus-anchor",
+    // 聚焦锚点交给 canvas 绘制层（propsRef.focusAnchorId）；白板模式在 GraphSurface
+    // 里把这条 prop 摘掉，免得透传给 React Flow。
+    find: "          GraphSurface,\n          {\n            nodes,\n            edges,",
+    replace: "          GraphSurface,\n          {\n            nodes,\n            edges,\n            focusAnchorId: focusAnchorId,"
+  },
+  {
+    label: "auto-sync-continuous",
+    // 自动补卡从「每次挂载只跑一次」改成「跟着会话列表一直补」。地图是单实例、
+    // 启动时就挂好，一次性守卫意味着启动之后新建的会话永远不上板
+    // （2026-11-12 实测：09:00 之后新建的两个会话在 mind_map.json 里查无此卡）。
+    find: "  const autoSyncedRef = (0, import_react13.useRef)(false);\n  (0, import_react13.useEffect)(() => {\n    if (canvasState.phase !== \"ready\" || !workspacesReady || autoSyncedRef.current) return;\n    autoSyncedRef.current = true;\n    const remembered = canvasState.global?.layoutMemory ?? {};",
+    replace: "  // 连续自动补卡（2026-11-12）：原来这里是 autoSyncedRef 一次性守卫——地图是单实例、\n" +
+      "  // 启动时就挂好，所以「只跑一次」等于「启动之后新建的会话永远不上板」。现在每次\n" +
+      "  // sessions 更新都补一次缺卡；没有缺卡时只对比、不写库。用户显式移除 / 归档的会话\n" +
+      "  // 记进 removedSessionIdsRef，不会被补回来（刷新页面后重置，和以前的「打开即补齐」一致）。\n" +
+      "  const removedSessionIdsRef = (0, import_react13.useRef)(/* @__PURE__ */ new Set());\n" +
+      "  (0, import_react13.useEffect)(() => {\n" +
+      "    if (canvasState.phase !== \"ready\" || !workspacesReady) return;\n" +
+      "    const missingSessionIds = placeableSessionIds(sessions).filter((sessionId) => {\n" +
+      "      if (removedSessionIdsRef.current.has(sessionId)) return false;\n" +
+      "      // 子代理有自己的补卡逻辑（贴着主卡摆），这里不重复建卡。\n" +
+      "      const row = sessions.byId[sessionId];\n" +
+      "      return row === void 0 || row.origin !== \"subagent\";\n" +
+      "    });\n" +
+      "    const remembered = canvasState.global?.layoutMemory ?? {};"
+  },
+  {
+    label: "auto-sync-continuous-newcomers",
+    find: "    const newcomers = /* @__PURE__ */ new Map();\n    for (const sessionId of placeableSessionIds(sessions)) {\n      const groupId = sessionWs.get(sessionId);\n      if (groupId === void 0 || framed.has(groupId) || boardSessionIds.has(sessionId)) continue;",
+    replace: "    const newcomers = /* @__PURE__ */ new Map();\n    for (const sessionId of missingSessionIds) {\n      const groupId = sessionWs.get(sessionId);\n      if (groupId === void 0 || framed.has(groupId) || boardSessionIds.has(sessionId)) continue;"
+  },
+  {
+    label: "auto-sync-continuous-missing",
+    find: "      const missing = placeableSessionIds(sessions).filter((id2) => sessionWs.get(id2) === groupId && !boardSessionIds.has(id2)).sort((a, b) => (sessions.byId[b]?.updatedAt ?? 0) - (sessions.byId[a]?.updatedAt ?? 0));",
+    replace: "      const missing = missingSessionIds.filter((id2) => sessionWs.get(id2) === groupId && !boardSessionIds.has(id2)).sort((a, b) => (sessions.byId[b]?.updatedAt ?? 0) - (sessions.byId[a]?.updatedAt ?? 0));"
+  },
+  {
+    label: "removed-card-memory-actions",
+    // 归档 / 删除会连带把卡从板上摘掉；连续补卡必须记住「这是用户主动移除的」，
+    // 否则下一轮 sessions 刷新就又把卡建回来。
+    find: "      for (const cardId of cardIds) canvas.removeCard(cardId);",
+    replace: "      for (const sessionId of sessionIds) removedSessionIdsRef.current.add(sessionId);\n      for (const cardId of cardIds) canvas.removeCard(cardId);"
+  },
+  {
+    label: "removed-card-memory-delete",
+    // 白板里 Delete 掉一张卡也属于主动移除：同样记下来，别被自动补卡加回来。
+    find: "        } else if (!change.id.startsWith(\"stack-\")) {\n          canvas.removeCard(change.id);\n        }",
+    replace: "        } else if (!change.id.startsWith(\"stack-\")) {\n          const removedCard = visibleCards[change.id];\n          if (removedCard !== void 0) removedSessionIdsRef.current.add(removedCard.sessionId);\n          canvas.removeCard(change.id);\n        }"
   },
 ];
 
