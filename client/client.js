@@ -14279,13 +14279,31 @@ function CanvasInner(props) {
   // list and the edge builder all read it.
   const archivedSessionSet = (0, import_react13.useMemo)(() => new Set(workspaces.archivedSessionIds ?? []), [workspaces]);
   const hideArchivedOn = (0, import_react13.useSyncExternalStore)(hideArchivedSubscribe, hideArchivedGet, hideArchivedGet);
+  // 一个会话的血缘根（主会话）：判断「这是不是当前对话自己的子代理」全靠它。
+  const sessionRootOf = (sessionId) => {
+    let cursor = sessionId;
+    for (let hops = 0; hops < 32; hops += 1) {
+      const row = sessions.byId[cursor];
+      if (row === void 0 || row.parentId === void 0 || row.parentId === cursor) return cursor;
+      cursor = row.parentId;
+    }
+    return cursor;
+  };
+  const currentSessionRoot = (() => {
+    const current = currentSessionId();
+    return current === void 0 ? void 0 : sessionRootOf(current);
+  })();
   const archivedCardCount = (0, import_react13.useMemo)(() => {
+    // 「已隐藏」= 已归档会话 + 别人家的已跑完子代理（自己的子代理跑完照样显示，只是灰化）。
     let count = 0;
     for (const cardId of Object.keys(visibleCards)) {
-      if (archivedSessionSet.has(visibleCards[cardId].sessionId)) count += 1;
+      const card = visibleCards[cardId];
+      if (archivedSessionSet.has(card.sessionId)) { count += 1; continue; }
+      const row = sessions.byId[card.sessionId];
+      if (row !== void 0 && row.origin === "subagent" && row.running !== true && (currentSessionRoot === void 0 || sessionRootOf(card.sessionId) !== currentSessionRoot)) count += 1;
     }
     return count;
-  }, [visibleCards, archivedSessionSet]);
+  }, [visibleCards, archivedSessionSet, sessions]);
   const graphTagIndex = (0, import_react13.useMemo)(() => {
     const derived = graphDeriveTags(canvasState.digests);
     const out = {};
@@ -14838,7 +14856,7 @@ function CanvasInner(props) {
         } } } : { data },
         // Cards folded into the stack cell stay in the model (their edges and
         // selection survive) but must not paint over the grid.
-        hidden: foldedSet.has(cardId) || (graphOn && hideArchivedOn && archivedSessionSet.has(card.sessionId)),
+        hidden: foldedSet.has(cardId) || (graphOn && hideArchivedOn && (archivedSessionSet.has(card.sessionId) || (summary !== void 0 && summary.origin === "subagent" && summary.running !== true && (currentSessionRoot === void 0 || sessionRootOf(card.sessionId) !== currentSessionRoot)))),
         className: dragging ? "tmDragging" : ""
       };
       return graphStableNode(nodeCacheRef.current, cardId, node);
@@ -14878,7 +14896,7 @@ function CanvasInner(props) {
       };
     });
     return [...frameNodes, ...cardNodes, ...stackNodes];
-  }, [frameRects, folderLayouts, foldedCards, foldedSet, cardLayout, draggingCardId, membersByGroup, wsTitles, visibleCards, canvasState.digests, canvasState.global, sessions, statusById, alertById, finishedById, interruptedById, draftSessions, previews, pinnedSessions, renamedTitles, renamedWorkspaces, liveSelectedIds, batchMode, batchPicks, locale, graphOn, graphTagIndex, hideArchivedOn, archivedSessionSet]);
+  }, [frameRects, folderLayouts, foldedCards, foldedSet, cardLayout, draggingCardId, membersByGroup, wsTitles, visibleCards, canvasState.digests, canvasState.global, sessions, statusById, alertById, finishedById, interruptedById, draftSessions, previews, pinnedSessions, renamedTitles, renamedWorkspaces, liveSelectedIds, batchMode, batchPicks, locale, graphOn, graphTagIndex, hideArchivedOn, archivedSessionSet, currentSessionRoot]);
   const sessionIdToCardId = (0, import_react13.useMemo)(() => {
     const index2 = /* @__PURE__ */ new Map();
     for (const [cardId, card] of Object.entries(visibleCards)) {
@@ -18476,7 +18494,7 @@ function GraphBar(props) {
     children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("button", {
       type: "button",
       className: "tm_graphBtn" + (props.hideArchived === true ? " tm_graphBtnActive" : ""),
-      title: "隐藏已归档会话；子代理始终显示（跑完只灰化，不再跟着归档一起藏起来）；开合状态记在浏览器里",
+      title: "隐藏已归档会话和别的会话跑完的子代理；当前对话自己的子代理跑完只灰化、不会消失；开合状态记在浏览器里",
       onClick: props.onToggleHideArchived,
       children: props.hideArchived === true ? "🗄 已隐藏 " + (props.archivedCount > 0 ? props.archivedCount : "0") : "🗄 显示全部"
     }, "archived"));
