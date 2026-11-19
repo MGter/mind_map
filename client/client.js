@@ -16417,7 +16417,17 @@ function CanvasInner(props) {
             ]
           }
         ),
-        /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(StatusRail, { entries: statusEntries, cardWidth: CARD_W, onFocus: focusCard }),
+        /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(StatusRail, {
+          entries: statusEntries,
+          cardWidth: CARD_W,
+          onFocus: function (cardId) {
+            // 先挪镜头：万一宿主没有会话打开器（openSession 会保住地图不关），
+            // 至少能看到它落在哪儿。
+            focusCard(cardId);
+            const railCard = visibleCards[cardId];
+            if (railCard !== void 0) openSession(railCard.sessionId);
+          }
+        }),
         /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(GraphBar, { onRelayout: relayoutGraph, onGenerateTags: generateTags, tagBusy: tagBusy, tagCount: graphTagCount, focusOn: focusOn, focusCount: focusCount, onToggleFocus: function () { mindMapFocusAnchorReset(); focusModeSet(!focusOn); }, hideArchived: hideArchivedOn, archivedCount: archivedCardCount, onToggleHideArchived: function () { hideArchivedSet(!hideArchivedOn); } }),
         batchMode ? /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(
           BatchBar,

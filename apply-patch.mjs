@@ -1585,6 +1585,27 @@ const CLIENT_EDITS = [
     replace: "        /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(StatusRail, { entries: statusEntries, cardWidth: CARD_W, onFocus: focusCard }),\n        /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(GraphBar, { onRelayout: relayoutGraph, onGenerateTags: generateTags, tagBusy: tagBusy, tagCount: graphTagCount }),"
   },
   {
+    label: "status-rail-open",
+    // 状态栏那一行是"待办"，点它必须真的打开那个会话：
+    // 宿主只在会话成为主视图时才清 completionUnread（dsh-client-ui-session 里
+    // 没有任何插件可调用的 mark-read 接口），插件自己的「已完成」也只在
+    // openSession 里 acknowledge。以前点行只调 focusCard（挪镜头 + 选中），
+    // 所以在云图里看起来"点了没反应"，而且「待查看」永远消不掉。
+    // ⚠️ 必须排在 graph-bar 之后：那条把同一行扩成两行 JSX（并保留原文）。
+    find: "        /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(StatusRail, { entries: statusEntries, cardWidth: CARD_W, onFocus: focusCard }),",
+    replace: String.raw`        /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(StatusRail, {
+          entries: statusEntries,
+          cardWidth: CARD_W,
+          onFocus: function (cardId) {
+            // 先挪镜头：万一宿主没有会话打开器（openSession 会保住地图不关），
+            // 至少能看到它落在哪儿。
+            focusCard(cardId);
+            const railCard = visibleCards[cardId];
+            if (railCard !== void 0) openSession(railCard.sessionId);
+          }
+        }),`
+  },
+  {
     label: "jump-center",
     find: "    setCenter(point.x + CARD_W / 2, point.y + CARD_H / 2, { zoom: getZoom(), duration: 320 });",
     replace: "    setCenter(point.x + CARD_W / 2, point.y + CARD_H / 2, { zoom: getZoom(), duration: 320 });\n" +
