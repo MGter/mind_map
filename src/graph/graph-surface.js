@@ -661,7 +661,7 @@ function GraphCanvasSurface(props) {
       var kind = edge.data !== void 0 && edge.data.graphKind !== void 0 ? edge.data.graphKind : (edge.type === "mindMap" ? "lineage" : "other");
       var touchesHover = hovered !== null && (edge.source === hovered || edge.target === hovered);
       var touchesFocus = spotlightOn && (edge.source === focusAnchor || edge.target === focusAnchor);
-      if (spotlightOn) context.globalAlpha = touchesFocus ? 0.95 : (touchesHover ? 0.9 : 0.07);
+      if (spotlightOn) context.globalAlpha = touchesFocus ? 0.95 : (touchesHover ? 0.9 : 0.13);
       else if (hovered !== null) context.globalAlpha = touchesHover ? 1 : 0.12;
       else context.globalAlpha = 1;
       context.strokeStyle = edgePalette[kind] === void 0 ? edgePalette.other : edgePalette[kind];
@@ -701,8 +701,10 @@ function GraphCanvasSurface(props) {
       var nearHover = hovered === null || isHovered || (neighbours !== null && neighbours.has(node.id));
       var alpha;
       if (isSpotlight) alpha = 1;
-      else if (dormant) alpha = isSpotDim ? 0.2 : 0.38;
-      else if (spotlightOn) alpha = isHovered ? 0.9 : 0.22;
+      else if (dormant) alpha = isSpotDim ? 0.28 : 0.38;
+      // 聚焦时其余点留到 0.38：点半径只有几 px，再压到 0.22 整张图就黑掉了
+      // （卡片时代压到 0.26 还能看见，是因为卡片有描边和填充）。
+      else if (spotlightOn) alpha = isHovered ? 0.9 : 0.38;
       else if (hovered === null) alpha = 1;
       else alpha = nearHover ? 1 : 0.3;
 
