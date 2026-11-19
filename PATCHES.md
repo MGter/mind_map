@@ -69,6 +69,25 @@
 - 悬停不再截断运行态动画的刷新；浏览关键词整簇时临时暂停会话聚焦压暗，取消后恢复。
 - 回归命令：`node --test test/cloud-surface.test.mjs`，5 项通过；旧客户端的对应逻辑 5 项均失败。
 
+### 状态栏点不动、「待查看」消不掉（2026-11-19 修）
+
+症状：状态栏（左侧「队列中的任务」）里的「待查看」条目点了没反应，也永远消不掉。
+
+根因：`待查看` 来自两处 —— 宿主的 `completionUnread`（`dsh-client-ui-session`
+的客户端投影，内存里的一个 Set）和插件自己的 `sessionActivity.finished`。两者
+**都只在「这个会话变成主视图」时被清掉**（宿主 `reconcileStatus()` 里
+`if (this.isMain(id)) this.completionUnread.delete(id)`；插件只在 `openSession()`
+里 `acknowledge()`）。宿主没有暴露任何插件可调的 mark-read 接口（在 session 客户端
+bundle 里 grep `markRead/markSeen/acknowledge` 全为 0）。而状态栏那行的点击只调
+`focusCard()` —— 挪镜头 + 选中，从不打开会话，于是「点了没动静」，未读也一直留着。
+
+修法（`status-rail-open` 补丁）：点状态栏一行 = `focusCard()` + `openSession()`，
+和点圆点完全一致。必须先挪镜头再打开：宿主没有会话打开器时 `openSession` 会保住
+地图不关，这时至少能看到它落在哪儿。补丁必须排在 `graph-bar` 之后，因为那条把
+同一行 JSX 扩成了两行。
+
+顺带记住：那两处标记都是客户端内存态，**刷新页面也会清空**（服务器重启同理）。
+
 ## 先读这条
 
 **作者发新版时不要直接更新。** 本目录已经和上游差了很多版本、也改了核心代码，
