@@ -371,6 +371,66 @@
     } catch { globalThis.__demoSaved = null }
   }
 
+  // ---- ?many=N: hundreds of sessions ------------------------------------
+  // The cloud view is judged at scale (dot size, overlap, cluster shape), so
+  // the harness can synthesise a big board: ?many=160 makes N sessions spread
+  // over N/12 workspaces, with shared tags, subagents and one running session
+  // per workspace. Cards are created by the same auto-sync the app runs.
+  const manyCount = Number(new URLSearchParams(location.search).get('many') ?? 0) || 0
+  if (manyCount > 0) {
+    const TAG_POOL = ['备份', 'Python', '安装器', 'DSH', '测试', '一键安装', 'xStream', '文档',
+      'xStreamManager', '更新', 'MultViewer', '安装脚本', '打包', '插件', '备份还原', '设计评审',
+      'packer', 'git', '配置', 'xStream2050', '前端', '构建', '调试', '数据库', '部署', '设计',
+      '性能', '脚本', '协议', '监控', '研究', '写作', '重构', '依赖', '图标', '搜索', '索引',
+      '导出', '截图', '权限', '缓存', '日志', '队列', '网络', '存储', '回归', '字体', '动画']
+    const WORKSPACES = ['前端', '后端', '工具链', '文档站', '数据', '构建', '实验', '维护',
+      '设计稿', '调研', '脚本', '发布', '监控', '迁移', '插件', '资料']
+    const WORDS = ['会话', '重构', '修复', '梳理', '对比', '压测', '归档', '拆分', '接入', '排查']
+    const perWorkspace = 12
+    const workspaceTotal = Math.max(1, Math.round(manyCount / perWorkspace))
+    for (let wsIndex = 0; wsIndex < workspaceTotal; wsIndex += 1) {
+      const workspaceId = 'ws-many-' + wsIndex
+      const sessionIds = []
+      const base = wsIndex * perWorkspace
+      const members = Math.min(perWorkspace, manyCount - base)
+      for (let offset = 0; offset < members; offset += 1) {
+        const id = 'm' + (base + offset)
+        const title = (WORKSPACES[wsIndex % WORKSPACES.length] + ' · ' + WORDS[(base + offset) % WORDS.length] + ' ' + (base + offset))
+        const isSubagent = offset === members - 1 && members > 3
+        sessionRows[id] = session(id, title, {
+          updatedAt: T0 - ((base + offset) % 400) * MIN,
+          origin: isSubagent ? 'subagent' : 'user',
+          ...(isSubagent ? { parentId: 'm' + (base + offset - 1) } : {}),
+          ...(offset === 0 ? { running: true } : {}),
+        })
+        if (isSubagent) statusById.set(id, { running: false })
+        // 2–4 个共享关键词。真实数据是长尾的（「备份」30 个会话用到，多数只被
+        // 2-3 个用到），所以这里用 pow(v, 2.2) 把抽取压向前面的词：云图才会长成
+        // "少数大 key + 一圈小 key"的样子。
+        const tagCount = 2 + ((base + offset) % 3)
+        const tags = []
+        for (let tagIndex = 0; tagIndex < tagCount; tagIndex += 1) {
+          const noise = (((base + offset) * 7919 + tagIndex * 104729) % 997) / 997
+          const poolIndex = Math.floor(Math.pow(noise, 2.2) * TAG_POOL.length)
+          const tag = TAG_POOL[Math.min(TAG_POOL.length - 1, poolIndex)]
+          if (!tags.includes(tag)) tags.push(tag)
+        }
+        digests[id] = {
+          atSeq: 3 + (base + offset) % 9,
+          summary: title + '：这里是摘要文本，用来生成关键词标签。',
+          keyFindings: [],
+          nextStep: '下一步',
+          tags,
+          generatedAt: T0 - ((base + offset) % 300) * MIN,
+        }
+        sessionIds.push(id)
+      }
+      workspaceList.push({ workspaceId, title: WORKSPACES[wsIndex % WORKSPACES.length] + ' ' + wsIndex, path: 'D:/Many/' + workspaceId, sessionIds })
+    }
+    sessionsState = { ids: Object.keys(sessionRows), byId: sessionRows }
+    workspacesState = buildWorkspaces()
+  }
+
   const globalState = {
     version: 1,
     activeBoard: 'inbox',

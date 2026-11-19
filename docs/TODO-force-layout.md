@@ -8,9 +8,15 @@
 
 ## 0. 一句话现状
 
-`mind_map@0.1.66` 已被本地改造出 **canvas 图谱视图 + 持续力导向模拟**，
-已装进 `%USERPROFILE%\.dsh\profiles\desktop\node_modules\mind_map`，
-在真实 GUI（63+ 卡 / 88 边）里验证通过：控制台无 error，拖动会带动全场重新平衡并落库。
+> **2026-11-19 大修之后：这里只剩"云图"一种模型。** 卡片白板（槽位布局 / 工作区框 /
+> 溢出抽屉 / 分组药丸 / React Flow 连线）已整体下线，`graphModeGet()` 恒为 true，
+> 画布只画点：半径由度数决定、悬停才显示标题、边只有 ws / tag / lineage 三种、
+> 硬芯保证不重合、运行中的点缓慢闪烁。画布代码已经从 `apply-patch.mjs` 的
+> `String.raw` 里抽到 `src/graph/graph-surface.js`（可单独 `node --check`）。
+> 详见 `PATCHES.md` 的「2026-11-19 · 大修：删掉卡片白板，只留云图」一节。
+
+`mind_map@0.1.66` 已被本地改造出 **canvas 云图视图 + 持续力导向模拟**，
+已装进 `%USERPROFILE%\.dsh\profiles\desktop\node_modules\mind_map`。
 **版本号保持 0.1.66 不变**（用户明确要求）。
 
 ---

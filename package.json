@@ -1,7 +1,7 @@
 {
   "name": "mind_map",
   "version": "0.1.66",
-  "description": "Mind map for DeepSeek Harness: an infinite whiteboard where every session is a card — drag to arrange, double-click to start a chat in place, draw an edge to fork a new session with injected context. Built for ADHD-friendly spatial memory. · DSH 可视化思维图：会话即卡片，双击即聊，连线分叉带上下文的新对话。",
+  "description": "Visual conversation map for DeepSeek Harness: every session is a dot in an Obsidian-style force-directed cloud — hover a dot to read its title, dot size grows with its links, links are same-workspace / shared-tag / subagent relations, running sessions pulse. · DSH 可视化思维图：一个会话一个点的云图，悬停显示标题，连线越多点越大。",
   "type": "module",
   "main": "lib/index.js",
   "license": "MIT",

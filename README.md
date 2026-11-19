@@ -2,24 +2,23 @@
 
 English | [中文](README.zh.md)
 
-A visual conversation map plugin for DeepSeek Harness (dsh): every session becomes a card on an infinite whiteboard.
+A visual conversation map plugin for DeepSeek Harness (dsh): **one session is one dot**, and all sessions form a force-balanced cloud.
 
-> Derived from [Tasihi89/mind_map](https://github.com/Tasihi89/mind_map) (MIT). This repository is a heavily reworked fork: slot layout, resizable workspaces, the overflow drawer and the routed links are additions or rewrites here.
+> Derived from [Tasihi89/mind_map](https://github.com/Tasihi89/mind_map) (MIT). This repository is a heavily reworked fork.
+> **2026-11-19 rework: the card whiteboard (slot layout, workspace frames, overflow drawer, card links) is gone. Only the cloud remains.**
 
-![Workspaces, pinned cards and live status](https://raw.githubusercontent.com/Da0Mine/dsh-talk-map/main/docs/screenshots/workspaces-and-pins.png)
-
-![Cards connected by links, with running / waiting / unread lamps](https://raw.githubusercontent.com/Da0Mine/dsh-talk-map/main/docs/screenshots/cards-and-links.png)
-
-- **Spatial memory instead of working memory**: free placement + grid snapping, and nothing ever rearranges your cards — if you remember "that conversation was bottom-left", it stays bottom-left. Designed for ADHD users, useful for everyone.
-- **Folders stay readable**: a workspace becomes a frame that auto-expands or folds its overflow into a stack cell you can open as a drawer; pinned cards stay in front.
-- **Double-click to chat**: double-click empty canvas to start a new session; the card is born exactly where you clicked.
-- **Draw an edge to fork**: drag a line from a card onto empty space, preview (and edit) the context digest to inject, confirm — a new session starts *knowing* the old conversation.
-- **Card front = resume surface**: title, the last thing you said, relative time and a status lamp (running / finished / unread / waiting / interrupted). One glance tells you what to do next.
-- **Lines mean something**: a link whose context is still up to date disappears; one that has fallen behind stays visible as a dashed line with an arrow. Fork lineage is always drawn.
-- **Automatic digests**: a three-field digest (summary / key findings / next step) is generated on demand through your deployment's default model; hit ⟳ on a card to regenerate.
+- **One dot per session** — like Obsidian's graph view. Nothing but dots until you **hover one, which reveals that session's title** (drawn in screen space, so it stays legible at any zoom).
+- **More links, bigger dot** — the radius is a pure function of degree (`r = 1.7 + 1.3·√degree`, capped at 11px), so hubs stand out immediately.
+- **Keywords are nodes too** — every tag is a hollow blue "key" ring that sessions connect to, so a keyword used by many sessions becomes a big hub. Hover reads `#tag · N sessions`; click pins it (it and its sessions stay lit).
+- **Three relations, three colours** — same workspace (cool grey), shared tag (blue, via those key nodes), subagent / fork lineage (warm amber).
+- **Repulsion plus a hard core, so dots never overlap** — a continuous force simulation pushes every pair apart, and two circles keep a fixed gap; a final geometric pass de-overlaps right before the layout is persisted.
+- **A running session pulses slowly** — a breathing halo with a ~3 s period, not a strobe.
+- **Hover highlight and spotlight** — hovering keeps the dot and its direct neighbours bright, dims the rest and thickens its links; 「聚焦」 lights only the current session and fades everything else.
+- **Double-click empty canvas to chat**; **shift-drag out of a dot** to draw a rubber band, preview (and edit) the context digest to inject, and fork a session that starts knowing the old conversation.
+- **On-demand digests and tags** — a three-field digest (summary / key findings / next step) is generated through your deployment's default model; the toolbar's 🏷 button batch-generates tags for sessions that have none (tags are the blue links).
+- **Archived sessions can be hidden** (default) or shown greyed out; the toggle is remembered per browser.
+- **Status rail** — a collapsible strip on the left edge lists only sessions carrying a lamp (running / waiting / unread / interrupted); clicking one eases the camera onto its dot.
 - **Bilingual interface**: the map's own copy renders in Chinese or English. The pill in the map header cycles Auto → 中文 → English; Auto follows dsh's own language, and the choice is remembered across restarts.
-
-- **Status rail**: a collapsible strip on the left edge lists only the cards that carry a lamp (running / waiting / unread / interrupted). A card whose status changes jumps to the top, the order is yours to drag, a card that settles drops out, and the rail remembers whether you left it open.
 
 ## Install
 

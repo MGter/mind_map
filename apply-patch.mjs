@@ -56,6 +56,8 @@ const CLIENT = path.join(PKG, "client", "client.js");
 const HERE = typeof import.meta.dirname === "string" ? import.meta.dirname : path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
 const LIVE_BLOCK = readFileSync(path.join(HERE, "live-activity.js"), "utf8");
 const HOST = path.join(PKG, "lib", "index.js");
+// 画布这一半单独放一个文件：能 node --check，也不用在 String.raw 里跟转义搏斗。
+const GRAPH_SURFACE_BLOCK = readFileSync(path.join(HERE, "src", "graph", "graph-surface.js"), "utf8");
 const MARK = "MIND_MAP_GRAPH_PATCH_V1";
 const BACKUP_SUFFIX = ".mindmap-graph-backup";
 // 换名：构建产物里的包名/存储域/变量名统一从 mind-map 改成 mind-map。
@@ -207,9 +209,11 @@ var GRAPH_MODE_KEY = "dsh.mind_map.graph-mode.v1";
 var GRAPH_LAID_KEY = "dsh.mind_map.graph-laid.v1";
 var HIDE_ARCHIVED_KEY = "dsh.mind_map.hide-archived.v1";
 var graphModeState = true;
-try { graphModeState = window.localStorage.getItem(GRAPH_MODE_KEY) !== "0"; } catch (error) { graphModeState = true; }
+// 白板（槽位平铺的卡片视图）已经彻底删掉：这里恒为 true，图表面永远走云图。
+// 保留这几个函数是因为下面的补丁点（slot layout / 分组 / 堆叠）都挂在 graphOn 上。
+try { window.localStorage.removeItem(GRAPH_MODE_KEY); } catch (error) { }
 var graphModeListeners = new Set();
-function graphModeGet() { return graphModeState; }
+function graphModeGet() { return true; }
 function graphModeSubscribe(listener) {
   graphModeListeners.add(listener);
   return function () { graphModeListeners.delete(listener); };
@@ -628,1058 +632,46 @@ function graphEllipsis(context, text, maxWidth) {
   }
   return text.slice(0, low) + "…";
 }
-/** Canvas graph surface: one draw call per frame instead of a DOM tree per card.
- * It speaks the same event vocabulary as React Flow (onNodesChange /
- * onMoveEnd), so the persistence, tap-to-open and repulsion logic above keep
- * working unchanged. */
-function GraphCanvasSurface(props) {
-  var react = import_react13;
-  var rootRef = react.useRef(null);
-  var canvasRef = react.useRef(null);
-  var propsRef = react.useRef(props);
-  propsRef.current = props;
-  var cameraRef = react.useRef(null);
-  if (cameraRef.current === null) cameraRef.current = readGraphCamera();
-  var dragRef = react.useRef(null);
-  var frameRef = react.useRef(0);
-  var hoverRef = react.useRef(null);
-  var drawRef = react.useRef(function () { });
-  var fitRef = react.useRef(null);
-
-  // ---- force simulation -------------------------------------------------
-  // Continuous and d3-force shaped: all-pairs Coulomb repulsion, spring edges
-  // with a hard length ceiling, velocity decay and annealing. Unlike the
-  // "shove the neighbour aside when you bump into it" behaviour it replaces,
-  // every node keeps pushing every other node all the time, so the board
-  // settles into an equilibrium instead of only reacting to collisions.
-  // Positions live in this ref; the plugin store is written once per settle.
-  var simRef = react.useRef(null);
-  var tweenRef = react.useRef(null);
-  var forkRef = react.useRef(null);
-  // Set when an outside writer (the "重新排布" button, a restored layout) has
-  // just moved the cards: the next tick re-reads every position from the store
-  // instead of keeping the simulation's old coordinates.
-  var reseedRef = react.useRef(false);
-  /** 「⟲ 重新排布」把坐标写完之后要自动缩放到合适大小（收敛后再来一次）。 */
-  var pendingFitRef = react.useRef(false);
-  var simSettings = {
-    // Sized for 224x120 cards: an isolated pair settles at roughly 420 px
-    // (k*(d-L) = charge/d^2). d3's defaults are for 30 px dots, so they are
-    // useless here — with charge -30 nothing moves at all.
-    charge: -90000,        // 远距斥力调弱：不再把整块板撑开
-    linkDistance: 200,     // 弹簧自然长度压到 200（比一张卡窄），卡会挤在一起
-    collisionGap: 210,     // 近距硬芯：中心距小于它就开始线性弹开
-    collisionPush: 0.5,    // 硬芯强度（线性，比 1/d^2 陡得多）
-    stiffness: 0.02,       // spring constant below the ceiling
-    stiffCeiling: 0.3,     // pull when stretched past maxStretch * linkDistance
-    maxStretch: 1.35,
-    gravity: 0.004,        // 轻微向心：整体更紧凑
-    repulsionRange: 560,   // 斥力半径收到 560：远处的卡不再互相推，整体更紧
-    forceScale: 1,         // multiplier on every force
-    velocityDecay: 0.42,   // 阻尼略降：被硬芯推开时走得更快、更快停住
-    maxVelocity: 30,
-    alphaDecay: 0.955,     // ~2.0 s from rest-heat to a standstill at 60 fps
-    alphaMin: 0.004
-  };
-
-  var ensureSim = function () {
-    var sim = simRef.current;
-    if (sim === null) { sim = { nodes: new Map(), alpha: 0 }; simRef.current = sim; }
-    if (reseedRef.current === true) {
-      reseedRef.current = false;
-      sim.nodes.clear();
-    }
-    var nodes = visibleNodes();
-    var alive = new Set();
-    var idle = sim.alpha <= simSettings.alphaMin;
-    for (var index = 0; index < nodes.length; index += 1) {
-      var node = nodes[index];
-      alive.add(node.id);
-      var state = sim.nodes.get(node.id);
-      if (state === void 0) {
-        sim.nodes.set(node.id, { x: node.position.x, y: node.position.y, vx: 0, vy: 0 });
-        continue;
-      }
-      // While the simulation stands still the store wins: a relayout, a restored
-      // drag or a card placed by the plugin must not be overruled by the last
-      // tick, otherwise the canvas would show stale coordinates forever.
-      if (idle) {
-        state.x = node.position.x;
-        state.y = node.position.y;
-        state.vx = 0;
-        state.vy = 0;
-      }
-    }
-    var stale = [];
-    sim.nodes.forEach(function (value, key) { if (!alive.has(key)) stale.push(key); });
-    for (var drop = 0; drop < stale.length; drop += 1) sim.nodes.delete(stale[drop]);
-    return sim;
-  };
-
-  var reheat = function (value) {
-    var sim = ensureSim();
-    if (sim.alpha < value) sim.alpha = value;
-  };
-
-  var tickSim = function () {
-    var sim = ensureSim();
-    var settings = simSettings;
-    if (sim.alpha <= settings.alphaMin) return false;
-    var ids = [];
-    sim.nodes.forEach(function (value, key) { ids.push(key); });
-    var count = ids.length;
-    var list = [];
-    var centroidX = 0;
-    var centroidY = 0;
-    for (var index = 0; index < count; index += 1) {
-      var state = sim.nodes.get(ids[index]);
-      state.fx = 0;
-      state.fy = 0;
-      list.push(state);
-      centroidX += state.x;
-      centroidY += state.y;
-    }
-    centroidX = count === 0 ? 0 : centroidX / count;
-    centroidY = count === 0 ? 0 : centroidY / count;
-    var alpha = sim.alpha;
-    // All-pairs repulsion. 62 cards are ~2k pairs per frame: cheap, and unlike
-    // a collision test it keeps pushing long before the cards touch.
-    for (var left = 0; left < count; left += 1) {
-      for (var right = left + 1; right < count; right += 1) {
-        var deltaX = list[right].x - list[left].x;
-        var deltaY = list[right].y - list[left].y;
-        var distanceSquared = deltaX * deltaX + deltaY * deltaY;
-        if (distanceSquared < 1) {
-          // Two cards sitting exactly on top of each other: nudge them apart on
-          // a deterministic axis so they cannot stay welded together.
-          deltaX = 0.7 + left * 0.001;
-          deltaY = 0.7 + right * 0.001;
-          distanceSquared = deltaX * deltaX + deltaY * deltaY;
-        }
-        var distance = Math.sqrt(distanceSquared);
-        var push;
-        if (distance < settings.collisionGap) {
-          // 近距硬芯：贴太近时用线性斥力快速弹开
-          push = -((settings.collisionGap - distance) * settings.collisionPush) * alpha * settings.forceScale;
-        } else {
-          if (distance > settings.repulsionRange) continue;
-          push = (settings.charge / distanceSquared) * alpha * settings.forceScale;
-        }
-        var unitX = deltaX / distance;
-        var unitY = deltaY / distance;
-        list[left].fx += unitX * push;
-        list[left].fy += unitY * push;
-        list[right].fx -= unitX * push;
-        list[right].fy -= unitY * push;
-      }
-    }
-    // Spring edges: linear below the ceiling, hard pull above it, so a card can
-    // never be dragged arbitrarily far from the conversations it belongs to.
-    // 组内现在全连接，如果不按度数归一，一个大组会被十几根弹簧压成一团：
-    // 每条弹簧按 2/(degA+degB) 加权，使每个节点受到的总弹力大致恒定。
-    var edges = propsRef.current.edges || [];
-    var edgeDegree = new Map();
-    for (var degreeIndex = 0; degreeIndex < edges.length; degreeIndex += 1) {
-      edgeDegree.set(edges[degreeIndex].source, (edgeDegree.get(edges[degreeIndex].source) || 0) + 1);
-      edgeDegree.set(edges[degreeIndex].target, (edgeDegree.get(edges[degreeIndex].target) || 0) + 1);
-    }
-    for (var edgeIndex = 0; edgeIndex < edges.length; edgeIndex += 1) {
-      var from = sim.nodes.get(edges[edgeIndex].source);
-      var to = sim.nodes.get(edges[edgeIndex].target);
-      if (from === void 0 || to === void 0) continue;
-      var springX = to.x - from.x;
-      var springY = to.y - from.y;
-      var length = Math.sqrt(springX * springX + springY * springY);
-      if (length < 0.5) length = 0.5;
-      var edgeWeight = 2 / ((edgeDegree.get(edges[edgeIndex].source) || 1) + (edgeDegree.get(edges[edgeIndex].target) || 1));
-      var stiffness = (length > settings.linkDistance * settings.maxStretch ? settings.stiffCeiling : settings.stiffness) * edgeWeight;
-      var pull = (length - settings.linkDistance) * stiffness * alpha * settings.forceScale;
-      var springUnitX = springX / length;
-      var springUnitY = springY / length;
-      from.fx += springUnitX * pull;
-      from.fy += springUnitY * pull;
-      to.fx -= springUnitX * pull;
-      to.fy -= springUnitY * pull;
-    }
-    var drag = dragRef.current;
-    var pinned = drag !== null && drag.kind === "node" && drag.preview !== null ? drag.preview : null;
-    for (var step = 0; step < count; step += 1) {
-      var node = list[step];
-      // A dragged card is pinned under the pointer and does not integrate; the
-      // rest of the board keeps sliding around it.
-      if (pinned !== null && ids[step] === drag.id) {
-        node.x = pinned.x;
-        node.y = pinned.y;
-        node.vx = 0;
-        node.vy = 0;
-        continue;
-      }
-      node.fx += (centroidX - node.x) * settings.gravity * alpha;
-      node.fy += (centroidY - node.y) * settings.gravity * alpha;
-      node.vx = (node.vx + node.fx) * settings.velocityDecay;
-      node.vy = (node.vy + node.fy) * settings.velocityDecay;
-      if (node.vx > settings.maxVelocity) node.vx = settings.maxVelocity;
-      if (node.vx < -settings.maxVelocity) node.vx = -settings.maxVelocity;
-      if (node.vy > settings.maxVelocity) node.vy = settings.maxVelocity;
-      if (node.vy < -settings.maxVelocity) node.vy = -settings.maxVelocity;
-      node.x += node.vx;
-      node.y += node.vy;
-    }
-    sim.alpha = alpha * settings.alphaDecay;
-    return true;
-  };
-
-  /** Write the settled layout back to the plugin store — once, not per frame.
-   * Goes through the tap bridge because moveCards is the only entry point
-   * that does not re-enter the drop/click logic of the parent component. */
-  var commitSim = function () {
-    var sim = simRef.current;
-    if (sim === null) return;
-    var live = mindMapTapBridge.live;
-    if (live === null || typeof live.commit !== "function") return;
-    var points = {};
-    var any = false;
-    sim.nodes.forEach(function (state, key) {
-      var x = Math.round(state.x);
-      var y = Math.round(state.y);
-      var node = null;
-      var nodes = propsRef.current.nodes || [];
-      for (var index = 0; index < nodes.length; index += 1) if (nodes[index].id === key) node = nodes[index];
-      if (node === null) return;
-      if (Math.abs(node.position.x - x) < 1 && Math.abs(node.position.y - y) < 1) return;
-      points[key] = { x: x, y: y };
-      any = true;
-    });
-    if (any) live.commit(points);
-    // 收敛后：记住这次布局的成员签名（下次挂载/切会话时成员没变就不再重排），
-    // 并且如果刚才点过「重新排布」，把镜头缩放到合适大小。
-    try { window.localStorage.setItem(MIND_MAP_LAID_SIG_KEY, laidSignatureRef.current); } catch (error) { }
-    if (pendingFitRef.current === true) {
-      pendingFitRef.current = false;
-      fitRef.current({ ease: true });
-      mindMapCameraTouched = false;
-    } else if (mindMapCameraTouched !== true) {
-      // 用户没碰过镜头：布局每次收敛都重新收到合适大小。
-      // （否则一旦内容被力导向撑开，镜头就永久停在旧位置，出现贴边/出界。）
-      fitRef.current({ ease: true });
-    }
-  };
-
-  var animateCameraTo = function (target, duration) {
-    var camera = cameraRef.current;
-    if (camera === null || duration <= 0) {
-      cameraRef.current = target;
-      writeGraphCamera(target);
-      schedule();
-      return;
-    }
-    tweenRef.current = {
-      from: { x: camera.x, y: camera.y, zoom: camera.zoom },
-      to: target,
-      start: typeof performance !== "undefined" ? performance.now() : Date.now(),
-      duration: duration
-    };
-    schedule();
-  };
-
-  var stepTween = function (now) {
-    var tween = tweenRef.current;
-    if (tween === null) return false;
-    var progress = Math.min(1, (now - tween.start) / tween.duration);
-    var eased = 1 - Math.pow(1 - progress, 3);
-    cameraRef.current = {
-      x: tween.from.x + (tween.to.x - tween.from.x) * eased,
-      y: tween.from.y + (tween.to.y - tween.from.y) * eased,
-      zoom: tween.from.zoom + (tween.to.zoom - tween.from.zoom) * eased
-    };
-    if (progress >= 1) {
-      tweenRef.current = null;
-      writeGraphCamera(cameraRef.current);
-    }
-    return true;
-  };
-
-  var schedule = function () {
-    if (frameRef.current !== 0) return;
-    frameRef.current = window.requestAnimationFrame(function () {
-      frameRef.current = 0;
-      drawRef.current();
-    });
-  };
-
-  var visibleNodes = function () {
-    var out = [];
-    var nodes = propsRef.current.nodes || [];
-    for (var index = 0; index < nodes.length; index += 1) {
-      var node = nodes[index];
-      if (node.hidden === true) continue;
-      if (node.type !== "sessionCard" && node.type !== "sessionDot") continue;
-      out.push(node);
-    }
-    return out;
-  };
-
-  var boxMap = function () {
-    var drag = dragRef.current;
-    var boxes = new Map();
-    var nodes = visibleNodes();
-    var sim = simRef.current;
-    for (var index = 0; index < nodes.length; index += 1) {
-      var node = nodes[index];
-      var position = node.position;
-      // The simulation owns the positions while it runs; reading node.position
-      // here would draw the previous frame and fight the layout.
-      var state = sim === null ? null : sim.nodes.get(node.id);
-      if (state !== void 0 && state !== null) position = { x: state.x, y: state.y };
-      if (drag !== null && drag.kind === "node" && drag.id === node.id && drag.preview !== null) position = drag.preview;
-      boxes.set(node.id, { x: position.x, y: position.y, w: CARD_W, h: GRAPH_CARD_RENDER_H });
-    }
-    return boxes;
-  };
-
-  fitRef.current = function (options) {
-    var root = rootRef.current;
-    if (root === null) return;
-    var boxes = boxMap();
-    if (boxes.size === 0) return;
-    var minX = Infinity;
-    var minY = Infinity;
-    var maxX = -Infinity;
-    var maxY = -Infinity;
-    boxes.forEach(function (box) {
-      if (box.x < minX) minX = box.x;
-      if (box.y < minY) minY = box.y;
-      if (box.x + box.w > maxX) maxX = box.x + box.w;
-      if (box.y + box.h > maxY) maxY = box.y + box.h;
-    });
-    var viewWidth = Math.max(160, root.clientWidth - 120);
-    var viewHeight = Math.max(160, root.clientHeight - 160);
-    var spanX = Math.max(CARD_W, maxX - minX);
-    var spanY = Math.max(GRAPH_CARD_RENDER_H, maxY - minY);
-    var zoom = Math.max(0.06, Math.min(1.6, Math.min(viewWidth / spanX, viewHeight / spanY)));
-    var target = {
-      x: root.clientWidth / 2 - ((minX + maxX) / 2) * zoom,
-      y: root.clientHeight / 2 - ((minY + maxY) / 2) * zoom,
-      zoom: zoom
-    };
-    // First paint snaps; everything after eases, so switching focus no longer
-    // teleports the camera (250 ms ease-out, the same beat the plugin's own
-    // setCenter uses).
-    var ease = options !== undefined && options !== null && options.ease === true;
-    mindMapCameraTouched = false;
-  if (ease) animateCameraTo(target, 250);
-    else {
-      cameraRef.current = target;
-      writeGraphCamera(target);
-      schedule();
-    }
-  };
-
-  /** 把一张卡平移到视口正中：这是图模式下的"跳转"。
-   * 位置取 boxMap()（模拟进行中的实时坐标、拖动中的预览都算在内），所以
-   * 镜头落点只取决于那张卡在哪，跟当前视口被拖到过哪儿无关。 */
-  var centerOnCard = function (cardId, options) {
-    var root = rootRef.current;
-    var camera = cameraRef.current;
-    if (root === null || camera === null) return false;
-    var box = boxMap().get(cardId);
-    if (box === void 0) return false;
-    // 跳过去是为了看它：当前比 0.62 还远就先拉到能看清标题+摘要的距离，
-    // 本来就更近则原样保留（上限 1.5，别贴到脸上）。都走 320 ms ease-out。
-    var requested = options !== undefined && options !== null && typeof options.zoom === "number" ? options.zoom : camera.zoom;
-    var zoom = Math.max(0.62, Math.min(1.5, requested));
-    animateCameraTo({
-      x: root.clientWidth / 2 - (box.x + box.w / 2) * zoom,
-      y: root.clientHeight / 2 - (box.y + box.h / 2) * zoom,
-      zoom: zoom
-    }, 320);
-    return true;
-  };
-
-  drawRef.current = function () {
-    mindMapDrawCount += 1;
-    var root = rootRef.current;
-    var canvas = canvasRef.current;
-    if (root === null || canvas === null) return;
-    var width = root.clientWidth;
-    var height = root.clientHeight;
-    if (width < 4 || height < 4) return;
-    if (cameraRef.current === null) {
-      fitRef.current();
-      return;
-    }
-    var dpr = window.devicePixelRatio || 1;
-    var pixelWidth = Math.round(width * dpr);
-    var pixelHeight = Math.round(height * dpr);
-    if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
-      canvas.width = pixelWidth;
-      canvas.height = pixelHeight;
-      canvas.style.width = width + "px";
-      canvas.style.height = height + "px";
-    }
-    var context = canvas.getContext("2d");
-    if (context === null) return;
-    var camera = cameraRef.current;
-    var now = typeof performance !== "undefined" ? performance.now() : Date.now();
-    var dark = propsRef.current.colorMode !== "light";
-    context.setTransform(dpr, 0, 0, dpr, 0, 0);
-    context.clearRect(0, 0, width, height);
-    context.fillStyle = dark ? "#14161b" : "#fbfbfd";
-    context.fillRect(0, 0, width, height);
-    var step = 24 * camera.zoom;
-    if (step > 10) {
-      context.fillStyle = dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.055)";
-      var offsetX = camera.x % step;
-      var offsetY = camera.y % step;
-      for (var dotX = offsetX; dotX < width; dotX += step) {
-        for (var dotY = offsetY; dotY < height; dotY += step) context.fillRect(dotX, dotY, 1, 1);
-      }
-    }
-    var boxes = boxMap();
-    var zoom = camera.zoom;
-    var lod = zoom < 0.42;
-    var lodBlock = zoom < 0.22;
-    var hovered = hoverRef.current;
-    // 聚焦（spotlight）锚点：非 null 表示聚焦开着，只点亮这一张卡。
-    var focusAnchor = propsRef.current.focusAnchorId === void 0 ? null : propsRef.current.focusAnchorId;
-    var spotlightOn = focusAnchor !== null && focusAnchor !== void 0;
-    var edges = propsRef.current.edges || [];
-    context.save();
-    context.translate(camera.x, camera.y);
-    context.scale(zoom, zoom);
-    context.lineWidth = 1.1 / zoom;
-    var edgePalette = {
-      ws: dark ? "rgba(150,165,190,0.34)" : "rgba(70,85,105,0.30)",
-      tag: dark ? "rgba(120,180,255,0.38)" : "rgba(40,110,200,0.34)",
-      lineage: dark ? "rgba(255,206,120,0.42)" : "rgba(190,130,30,0.36)",
-      other: dark ? "rgba(198,206,220,0.26)" : "rgba(40,48,60,0.24)"
-    };
-    context.fillStyle = dark ? "rgba(198,206,220,0.42)" : "rgba(40,48,60,0.34)";
-    for (var edgeIndex = 0; edgeIndex < edges.length; edgeIndex += 1) {
-      var edge = edges[edgeIndex];
-      var fromBox = boxes.get(edge.source);
-      var toBox = boxes.get(edge.target);
-      if (fromBox === void 0 || toBox === void 0) continue;
-      var fromCenterX = fromBox.x + fromBox.w / 2;
-      var fromCenterY = fromBox.y + fromBox.h / 2;
-      var toCenterX = toBox.x + toBox.w / 2;
-      var toCenterY = toBox.y + toBox.h / 2;
-      // ws = same workspace chain, tag = shared tag chain, lineage = the
-      // plugin's own fork/draw edges, other = manual links and the rest.
-      var kind = edge.data !== void 0 && edge.data.graphKind !== void 0 ? edge.data.graphKind : (edge.type === "mindMap" ? "lineage" : "other");
-      var touchesHover = hovered !== null && (edge.source === hovered || edge.target === hovered);
-      // 聚焦：只有连到「被点亮的那张卡」的线保持原亮度，其余压到几乎看不见。
-      var touchesFocus = spotlightOn && (edge.source === focusAnchor || edge.target === focusAnchor);
-      context.globalAlpha = spotlightOn && !touchesFocus
-        ? (touchesHover ? 0.9 : 0.10)
-        : (hovered === null ? 1 : (touchesHover ? 1 : 0.18));
-      context.strokeStyle = edgePalette[kind] === void 0 ? edgePalette.other : edgePalette[kind];
-      context.lineWidth = (touchesHover ? 2.2 : 1.1) / zoom;
-      var start = graphAnchorPoint(fromCenterX, fromCenterY, fromBox.w, fromBox.h, toCenterX, toCenterY);
-      var end = graphAnchorPoint(toCenterX, toCenterY, toBox.w, toBox.h, fromCenterX, fromCenterY);
-      context.beginPath();
-      context.moveTo(start.x, start.y);
-      context.lineTo(end.x, end.y);
-      context.stroke();
-      // No arrowheads: these relationships are undirected, arrows only add noise.
-    }
-    context.globalAlpha = 1;
-    context.lineWidth = 1.1 / zoom;
-    var nodes = visibleNodes();
-    for (var nodeIndex = 0; nodeIndex < nodes.length; nodeIndex += 1) {
-      var node = nodes[nodeIndex];
-      var box = boxes.get(node.id);
-      if (box === void 0) continue;
-      var data = node.data || {};
-      var archived = data.archived === true;
-      // 子会话：跑着时正常显示（角标「子代理 · 运行中」），跑完就和归档一样灰化。
-      var isSubagent = data.subagent === true;
-      var subagentDone = isSubagent && data.subagentFinished === true;
-      var dormant = archived || subagentDone;
-      var isHovered = hovered === node.id;
-      var isDimmed = hovered !== null && hovered !== node.id;
-      // 聚焦（spotlight）：被点亮的那张卡保持全亮，其余一律压暗（悬停时临时提亮）。
-      var isSpotlight = spotlightOn && node.id === focusAnchor;
-      var isSpotDim = spotlightOn && !isSpotlight;
-      context.globalAlpha = isSpotlight ? 1 : dormant ? (isSpotDim ? 0.22 : 0.42) : (isDimmed ? 0.45 : (isSpotDim ? (isHovered ? 0.8 : 0.26) : 1));
-      graphRoundRect(context, box.x, box.y, box.w, box.h, 10);
-      context.fillStyle = dark ? "#1b1e25" : "#ffffff";
-      context.fill();
-      var isCurrent = data.current === true;
-      var ringed = isCurrent || isSpotlight;
-      context.lineWidth = (ringed ? 2 : (isHovered ? 2 : 1)) / zoom;
-      context.strokeStyle = ringed ? "#ffd66a" : (isHovered ? "#8ab4ff" : (dark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.10)"));
-      context.stroke();
-      if (dormant) {
-        context.fillStyle = dark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.45)";
-        context.font = "10px " + GRAPH_FONT_STACK;
-        context.fillText(archived ? "已归档" : "子代理 · 已完成", box.x + 12, box.y + box.h - 8);
-      } else if (isSubagent) {
-        context.fillStyle = "rgba(150,190,255,0.9)";
-        context.font = "10px " + GRAPH_FONT_STACK;
-        context.fillText("子代理 · 运行中", box.x + 12, box.y + box.h - 8);
-      }
-      if (data.running === true || data.glow === "running") {
-        context.beginPath();
-        context.arc(box.x + box.w - 14, box.y + 14, 4, 0, Math.PI * 2);
-        context.fillStyle = "#ffffff";
-        context.fill();
-      } else if (data.waiting === true) {
-        context.beginPath();
-        context.arc(box.x + box.w - 14, box.y + 14, 4, 0, Math.PI * 2);
-        context.fillStyle = "#f5b22e";
-        context.fill();
-      } else if (data.done === true) {
-        context.beginPath();
-        context.arc(box.x + box.w - 14, box.y + 14, 4, 0, Math.PI * 2);
-        context.fillStyle = "#34c759";
-        context.fill();
-      }
-      if (data.running === true || data.glow === "running") {
-        // Travelling light around the card, the canvas version of the CSS ring sweep.
-        var phase = (now % 2400) / 2400;
-        var perimeter = 2 * (box.w + box.h);
-        context.save();
-        context.lineWidth = 2 / zoom;
-        context.strokeStyle = "rgba(255,255,255,0.92)";
-        context.shadowColor = "rgba(255,255,255,0.75)";
-        context.shadowBlur = 10 / zoom;
-        graphRoundRect(context, box.x - 2, box.y - 2, box.w + 4, box.h + 4, 12);
-        context.setLineDash([perimeter * 0.16, perimeter]);
-        context.lineDashOffset = -perimeter * phase;
-        context.stroke();
-        context.restore();
-        var pulse = 0.5 + 0.5 * Math.sin(now / 420);
-        context.save();
-        context.beginPath();
-        context.arc(box.x + box.w - 14, box.y + 14, 4, 0, Math.PI * 2);
-        context.fillStyle = "#ffffff";
-        context.shadowColor = "rgba(255,255,255,0.9)";
-        context.shadowBlur = (4 + 10 * pulse) / zoom;
-        context.fill();
-        context.restore();
-      }
-      if (!lodBlock) {
-        context.fillStyle = dark ? "#e9ebf1" : "#1b1e25";
-        context.font = "600 13px " + GRAPH_FONT_STACK;
-        context.fillText(graphEllipsis(context, String(data.title === void 0 ? "" : data.title), box.w - 28), box.x + 12, box.y + 26);
-        var preview = data.preview === void 0 ? "" : String(data.preview);
-        if (preview !== "" && !lod) {
-          context.fillStyle = dark ? "rgba(233,235,241,0.60)" : "rgba(27,30,37,0.60)";
-          context.font = "12px " + GRAPH_FONT_STACK;
-          context.fillText(graphEllipsis(context, preview, box.w - 24), box.x + 12, box.y + 48);
-        }
-        var activity = mindMapLive.textFor(data.sessionId === void 0 ? "" : data.sessionId);
-        if (activity !== "") {
-          // 正在执行 = 琥珀、正在思考 = 蓝、正在回复 = 绿；一眼能分清这条会话在干什么。
-          context.fillStyle = activity.indexOf("正在执行") === 0 ? "rgba(255,196,110,0.94)" : activity.indexOf("正在思考") === 0 ? "rgba(150,190,255,0.94)" : activity.indexOf("正在分析") === 0 ? "rgba(170,178,196,0.92)" : "rgba(150,235,180,0.94)";
-          context.font = "11px " + GRAPH_FONT_STACK;
-          context.fillText(graphEllipsis(context, activity, box.w - 24), box.x + 12, box.y + 66);
-        }
-        var tags = lod || data.tags === void 0 ? [] : data.tags;
-        var tagX = box.x + 12;
-        context.font = "10px " + GRAPH_FONT_STACK;
-        for (var tagIndex = 0; tagIndex < tags.length && tagIndex < 3; tagIndex += 1) {
-          var tag = String(tags[tagIndex]);
-          var tagWidth = context.measureText(tag).width + 12;
-          if (tagX + tagWidth > box.x + box.w - 12) break;
-          graphRoundRect(context, tagX, box.y + box.h - 30, tagWidth, 16, 4);
-          context.fillStyle = "rgba(90,160,255,0.16)";
-          context.fill();
-          context.fillStyle = "rgba(140,200,255,0.95)";
-          context.fillText(tag, tagX + 6, box.y + box.h - 18);
-          tagX += tagWidth + 5;
-        }
-      }
-      context.globalAlpha = 1;
-    }
-    // Rubber band while shift-dragging out of a card: release over empty canvas
-    // and the plugin's own "spawn a session with injected context" dialog opens.
-    var fork = forkRef.current;
-    if (fork !== null) {
-      var forkBox = boxes.get(fork.id);
-      if (forkBox !== void 0) {
-        var forkStart = graphAnchorPoint(forkBox.x + forkBox.w / 2, forkBox.y + forkBox.h / 2, forkBox.w, forkBox.h, fork.flowX, fork.flowY);
-        context.save();
-        context.setLineDash([6 / zoom, 5 / zoom]);
-        context.lineWidth = 2 / zoom;
-        context.strokeStyle = "rgba(120,180,255,0.92)";
-        context.beginPath();
-        context.moveTo(forkStart.x, forkStart.y);
-        context.lineTo(fork.flowX, fork.flowY);
-        context.stroke();
-        context.setLineDash([]);
-        context.beginPath();
-        context.arc(fork.flowX, fork.flowY, 4 / zoom, 0, Math.PI * 2);
-        context.fillStyle = "rgba(120,180,255,0.92)";
-        context.fill();
-        context.restore();
-      }
-    }
-    context.restore();
-  };
-
-  var emitNodeChange = function (id, position, dragging) {
-    var handler = propsRef.current.onNodesChange;
-    if (typeof handler !== "function") return;
-    handler([{ id: id, type: "position", position: position, dragging: dragging }]);
-  };
-
-  var hitTest = function (flowX, flowY) {
-    var boxes = boxMap();
-    var nodes = visibleNodes();
-    for (var index = nodes.length - 1; index >= 0; index -= 1) {
-      var box = boxes.get(nodes[index].id);
-      if (box === void 0) continue;
-      if (flowX >= box.x && flowX <= box.x + box.w && flowY >= box.y && flowY <= box.y + box.h) return nodes[index];
-    }
-    return null;
-  };
-
-  var toFlow = function (clientX, clientY) {
-    var root = rootRef.current;
-    var camera = cameraRef.current;
-    if (root === null || camera === null) return { x: 0, y: 0 };
-    var rect = root.getBoundingClientRect();
-    return { x: (clientX - rect.left - camera.x) / camera.zoom, y: (clientY - rect.top - camera.y) / camera.zoom };
-  };
-
-  var onWheel = function (event) {
-    event.preventDefault();
-    var root = rootRef.current;
-    var camera = cameraRef.current;
-    if (root === null || camera === null) return;
-    var rect = root.getBoundingClientRect();
-    var pointerX = event.clientX - rect.left;
-    var pointerY = event.clientY - rect.top;
-    var factor = Math.exp(-event.deltaY * 0.0015);
-    var zoom = Math.max(0.05, Math.min(2.6, camera.zoom * factor));
-    var ratio = zoom / camera.zoom;
-    cameraRef.current = { x: pointerX - (pointerX - camera.x) * ratio, y: pointerY - (pointerY - camera.y) * ratio, zoom: zoom };
-    writeGraphCamera(cameraRef.current);
-    schedule();
-  };
-
-  var onPointerDown = function (event) {
-    if (event.button !== 0) return;
-    if (event.target !== null && typeof event.target.closest === "function" && event.target.closest(".tm_canvasCtl") !== null) return;
-    var root = rootRef.current;
-    if (root === null) return;
-    var flow = toFlow(event.clientX, event.clientY);
-    var hit = hitTest(flow.x, flow.y);
-    hoverRef.current = hit === null ? null : hit.id;
-    if (root.setPointerCapture !== void 0) {
-      try { root.setPointerCapture(event.pointerId); } catch (error) { }
-    }
-    if (hit === null) {
-      var camera = cameraRef.current;
-      mindMapCameraTouched = true;
-    dragRef.current = { kind: "pan", startClientX: event.clientX, startClientY: event.clientY, cameraX: camera.x, cameraY: camera.y, moved: false, preview: null };
-    } else if (event.shiftKey === true) {
-      // Shift + drag out of a card is the fork gesture: it never moves the card,
-      // it draws a rubber band and hands the release point to the plugin.
-      dragRef.current = { kind: "fork", id: hit.id, startClientX: event.clientX, startClientY: event.clientY, moved: false, preview: null };
-      forkRef.current = { id: hit.id, flowX: flow.x, flowY: flow.y };
-    } else {
-      dragRef.current = { kind: "node", id: hit.id, offsetX: flow.x - hit.position.x, offsetY: flow.y - hit.position.y, startClientX: event.clientX, startClientY: event.clientY, moved: false, preview: null };
-      // Pressing a card wakes the layout up: neighbours start sliding away
-      // before the card has even moved 1 px.
-      reheat(0.8);
-      emitNodeChange(hit.id, hit.position, true);
-    }
-    event.preventDefault();
-  };
-
-  var onPointerMove = function (event) {
-    var drag = dragRef.current;
-    if (drag === null) {
-      var hoverFlow = toFlow(event.clientX, event.clientY);
-      var hoverNode = hitTest(hoverFlow.x, hoverFlow.y);
-      var hoverId = hoverNode === null ? null : hoverNode.id;
-      if (hoverId !== hoverRef.current) {
-        hoverRef.current = hoverId;
-        schedule();
-      }
-      return;
-    }
-    var deltaX = event.clientX - drag.startClientX;
-    var deltaY = event.clientY - drag.startClientY;
-    if (drag.kind === "fork") {
-      if (!drag.moved && Math.abs(deltaX) + Math.abs(deltaY) > 6) drag.moved = true;
-      var forkPoint = toFlow(event.clientX, event.clientY);
-      if (forkRef.current !== null) {
-        forkRef.current.flowX = forkPoint.x;
-        forkRef.current.flowY = forkPoint.y;
-      }
-      schedule();
-      return;
-    }
-    if (!drag.moved && Math.abs(deltaX) + Math.abs(deltaY) > 6) {
-      drag.moved = true;
-      if (drag.kind === "node") emitNodeChange(drag.id, drag.preview === null ? drag.origin : drag.preview, true);
-    }
-    if (drag.kind === "pan") {
-      cameraRef.current = { x: drag.cameraX + deltaX, y: drag.cameraY + deltaY, zoom: cameraRef.current.zoom };
-      writeGraphCamera(cameraRef.current);
-    } else {
-      var flow = toFlow(event.clientX, event.clientY);
-      var position = { x: Math.round(flow.x - drag.offsetX), y: Math.round(flow.y - drag.offsetY) };
-      drag.preview = position;
-      // Keep the heat high while the pointer is down so the rest of the board
-      // keeps flowing instead of freezing after the first 300 ms.
-      var sim = simRef.current;
-      if (sim !== null && sim.alpha < 0.4) sim.alpha = 0.4;
-      if (drag.moved) emitNodeChange(drag.id, position, true);
-    }
-    schedule();
-  };
-
-  var onPointerUp = function (event) {
-    var drag = dragRef.current;
-    dragRef.current = null;
-    if (drag === null) return;
-    if (drag.kind === "fork") {
-      var fork = forkRef.current;
-      forkRef.current = null;
-      if (drag.moved && fork !== null) {
-        var forkPoint = toFlow(event.clientX, event.clientY);
-        var bridge = mindMapCanvasBridge.current;
-        var landed = hitTest(forkPoint.x, forkPoint.y);
-        if (bridge !== null && landed === null && typeof bridge.forkFrom === "function") bridge.forkFrom(drag.id, forkPoint.x, forkPoint.y);
-      }
-      schedule();
-      return;
-    }
-    if (drag.kind === "node") {
-      if (drag.moved) {
-        var position = drag.preview !== null ? drag.preview : drag.origin;
-        emitNodeChange(drag.id, position, false);
-        // Hand the board back to the simulation: the neighbours are still off
-        // equilibrium after being pushed around, so let them find it.
-        reheat(0.55);
-      } else {
-        // A plain click: hand it to the plugin's own node-click handler, which
-        // knows how to open the session and when not to.
-        var node = null;
-        var nodes = propsRef.current.nodes || [];
-        for (var index = 0; index < nodes.length; index += 1) if (nodes[index].id === drag.id) node = nodes[index];
-        if (node !== null && typeof propsRef.current.onNodeClick === "function") {
-          propsRef.current.onNodeClick(event, node);
-        }
-      }
-    } else {
-      var handler = propsRef.current.onMoveEnd;
-      if (typeof handler === "function") handler(null, cameraRef.current);
-    }
-    schedule();
-  };
-
-  var zoomBy = function (factor) {
-    var root = rootRef.current;
-    var camera = cameraRef.current;
-    if (root === null || camera === null) return;
-    var centerX = root.clientWidth / 2;
-    var centerY = root.clientHeight / 2;
-    var zoom = Math.max(0.05, Math.min(2.6, camera.zoom * factor));
-    var ratio = zoom / camera.zoom;
-    cameraRef.current = { x: centerX - (centerX - camera.x) * ratio, y: centerY - (centerY - camera.y) * ratio, zoom: zoom };
-    writeGraphCamera(cameraRef.current);
-    schedule();
-  };
-
-  react.useEffect(function () {
-    var root = rootRef.current;
-    if (root === null) return;
-    var observer = null;
-    if (typeof ResizeObserver === "function") {
-      observer = new ResizeObserver(function () { schedule(); });
-      observer.observe(root);
-    }
-    // React attaches wheel listeners as passive, where preventDefault() throws;
-    // register a native non-passive one so the canvas can own the zoom gesture.
-    var wheelHandler = function (event) {
-    mindMapCameraTouched = true;
-      event.preventDefault();
-      var target = rootRef.current;
-      var camera = cameraRef.current;
-      if (target === null || camera === null) return;
-      var rect = target.getBoundingClientRect();
-      var pointerX = event.clientX - rect.left;
-      var pointerY = event.clientY - rect.top;
-      var factor = Math.exp(-event.deltaY * 0.0015);
-      var zoom = Math.max(0.05, Math.min(2.6, camera.zoom * factor));
-      var ratio = zoom / camera.zoom;
-      cameraRef.current = { x: pointerX - (pointerX - camera.x) * ratio, y: pointerY - (pointerY - camera.y) * ratio, zoom: zoom };
-      writeGraphCamera(cameraRef.current);
-      schedule();
-    };
-    root.addEventListener("wheel", wheelHandler, { passive: false });
-    // The frame loop does three jobs in priority order: advance the force
-    // simulation, advance the camera tween, otherwise repaint only while a
-    // session is actually running. Everything is driven from one rAF so an idle
-    // map still costs zero.
-    var animationFrame = 0;
-    var animationTick = 0;
-    var animate = function () {
-      animationFrame = window.requestAnimationFrame(animate);
-      // 宿主节点被摘下（全屏接管 / 正在换会话）时不跑模拟也不画：既省 CPU，也避免
-      // 往 0 尺寸的容器里反复绘制 —— 那是「切过去像卡死」的来源之一。
-      if (root.isConnected !== true) return;
-      // 自动取景守卫（常驻 rAF，空闲时也在跑）：每 400ms 看一次内容是否出界或留白过大，
-      // 用户没亲手拖过镜头就重新 fit —— 面板尺寸变化、布局收敛、切聚焦都会自愈。
-      if (mindMapCameraTouched !== true && Date.now() - mindMapAutoFitAt >= 400) {
-        mindMapAutoFitAt = Date.now();
-        var autoRoot = rootRef.current;
-        if (autoRoot !== null && autoRoot.clientWidth >= 40 && autoRoot.clientHeight >= 40) {
-          var autoCam = cameraRef.current;
-          if (autoCam !== null) {
-            var autoBoxes = boxMap();
-            if (autoBoxes.size > 0) {
-              var autoMinX = Infinity;
-              var autoMinY = Infinity;
-              var autoMaxX = -Infinity;
-              var autoMaxY = -Infinity;
-              autoBoxes.forEach(function (autoBox) {
-                if (autoBox.x < autoMinX) autoMinX = autoBox.x;
-                if (autoBox.y < autoMinY) autoMinY = autoBox.y;
-                if (autoBox.x + autoBox.w > autoMaxX) autoMaxX = autoBox.x + autoBox.w;
-                if (autoBox.y + autoBox.h > autoMaxY) autoMaxY = autoBox.y + autoBox.h;
-              });
-              if (autoMaxX > autoMinX) {
-                var autoScrMinX = autoCam.x + autoMinX * autoCam.zoom;
-                var autoScrMaxX = autoCam.x + autoMaxX * autoCam.zoom;
-                var autoScrMinY = autoCam.y + autoMinY * autoCam.zoom;
-                var autoScrMaxY = autoCam.y + autoMaxY * autoCam.zoom;
-                var autoOverflow = autoScrMinX < 6 || autoScrMinY < 6 || autoScrMaxX > autoRoot.clientWidth - 6 || autoScrMaxY > autoRoot.clientHeight - 6;
-                var autoTooSmall = autoScrMaxX - autoScrMinX < autoRoot.clientWidth * 0.55 && autoScrMaxY - autoScrMinY < autoRoot.clientHeight * 0.55;
-                if (autoOverflow || autoTooSmall) fitRef.current({ ease: true });
-              }
-            }
-          }
-        }
-      }
-      animationTick += 1;
-      var now = typeof performance !== "undefined" ? performance.now() : Date.now();
-      var sim = simRef.current;
-      var simRunning = sim !== null && sim.alpha > simSettings.alphaMin;
-      if (simRunning) tickSim();
-      var tweening = stepTween(now);
-      if (simRunning || tweening) {
-        drawRef.current();
-        if (simRunning && simRef.current !== null && simRef.current.alpha <= simSettings.alphaMin) commitSim();
-        return;
-      }
-      if (animationTick % 2 !== 0) return;
-      var nodes = propsRef.current.nodes || [];
-      for (var index = 0; index < nodes.length; index += 1) {
-        var node = nodes[index];
-        if (node.hidden !== true && node.data !== void 0 && node.data.running === true) {
-          drawRef.current();
-          return;
-        }
-      }
-    };
-    // Deliberately does NOT call ensureSim here: the store write that triggered
-    // this may not have re-rendered yet, and re-seeding from the old props would
-    // throw the new layout away. The next tick re-seeds from the fresh props.
-    var offLive = mindMapLive.subscribe(function () { schedule(); });
-    mindMapFitKick.fn = function () { pendingFitRef.current = true; reheat(1); schedule(); };
-    mindMapSimKick.fn = function (heat) {
-      reseedRef.current = true;
-      var sim = simRef.current;
-      if (sim === null) { sim = { nodes: new Map(), alpha: 0 }; simRef.current = sim; }
-      sim.alpha = heat === void 0 ? 1 : heat;
-      schedule();
-    };
-    mindMapCanvasToFlow.fn = function (clientX, clientY) { return toFlow(clientX, clientY); };
-    mindMapCenterKick.fn = centerOnCard;
-    // Read-only introspection for the verification scripts (alpha, node count,
-    // committed positions); nothing in the UI reads it.
-    window.__mindMapDebug = {
-      alpha: function () { var sim = simRef.current; return sim === null ? null : sim.alpha; },
-      size: function () { var sim = simRef.current; return sim === null ? 0 : sim.nodes.size; },
-      nodes: function () { var sim = simRef.current; var out = {}; if (sim !== null) sim.nodes.forEach(function (value, key) { out[key] = { x: Math.round(value.x), y: Math.round(value.y), vx: value.vx, vy: value.vy }; }); return out; },
-      reheat: function () { reheat(1); },
-      draws: function () { return mindMapDrawCount; },
-      // 验证探针用：当前这一帧发给画布的节点 / 边，以及聚焦锚点。
-      graph: function () {
-        var nodes = propsRef.current.nodes || [];
-        var edges = propsRef.current.edges || [];
-        return {
-          focusAnchorId: propsRef.current.focusAnchorId === void 0 ? null : propsRef.current.focusAnchorId,
-          nodes: nodes.map(function (node) {
-            return {
-              id: node.id,
-              type: node.type,
-              hidden: node.hidden === true,
-              sessionId: node.data !== void 0 && node.data.sessionId !== void 0 ? node.data.sessionId : null,
-              current: node.data !== void 0 && node.data.current === true,
-              subagent: node.data !== void 0 && node.data.subagent === true,
-              subagentFinished: node.data !== void 0 && node.data.subagentFinished === true
-            };
-          }),
-          edges: edges.map(function (edge) {
-            return {
-              id: edge.id,
-              source: edge.source,
-              target: edge.target,
-              kind: edge.data !== void 0 && edge.data.graphKind !== void 0 ? edge.data.graphKind : (edge.type === "mindMap" ? "lineage" : "other")
-            };
-          })
-        };
-      },
-      // 跳转居中的探针：camera() 读当前镜头，viewport() 读画布尺寸，
-      // box(cardId) 读那张卡的实时矩形，centerOn(cardId) 直接触发一次跳转。
-      camera: function () { var camera = cameraRef.current; return camera === null ? null : { x: camera.x, y: camera.y, zoom: camera.zoom }; },
-      viewport: function () { var root = rootRef.current; return root === null ? null : { width: root.clientWidth, height: root.clientHeight }; },
-      box: function (cardId) { var box = boxMap().get(cardId); return box === void 0 ? null : { x: box.x, y: box.y, w: box.w, h: box.h }; },
-      centerOn: function (cardId, zoom) { return centerOnCard(cardId, { zoom: zoom }); },
-      tweening: function () { return tweenRef.current !== null; },
-      // Live force tuning: mutate these from the console to feel the difference
-      // without a rebuild, e.g. __mindMapDebug.settings.velocityDecay = 0.55
-      settings: simSettings
-    };
-    animationFrame = window.requestAnimationFrame(animate);
-    if (cameraRef.current === null) fitRef.current();
-    schedule();
-    return function () {
-      root.removeEventListener("wheel", wheelHandler);
-      if (typeof offLive === "function") offLive();
-      mindMapSimKick.fn = null;
-      mindMapFitKick.fn = null;
-      mindMapCanvasToFlow.fn = null;
-      mindMapCenterKick.fn = null;
-      if (animationFrame !== 0) window.cancelAnimationFrame(animationFrame);
-      if (observer !== null) observer.disconnect();
-      if (frameRef.current !== 0) window.cancelAnimationFrame(frameRef.current);
-      frameRef.current = 0;
-    };
-  }, []);
-
-  var signatureRef = react.useRef("");
-  var laidSignatureRef = react.useRef("");
-  react.useEffect(function () {
-    var nodes = props.nodes || [];
-    var ids = [];
-    for (var index = 0; index < nodes.length; index += 1) if (nodes[index].hidden !== true) ids.push(nodes[index].id);
-    ids.sort();
-    var signature = ids.join(",");
-    var laidSignature = "";
-    try { laidSignature = window.localStorage.getItem(MIND_MAP_LAID_SIG_KEY) || ""; } catch (error) { laidSignature = ""; }
-    if (signature !== signatureRef.current) {
-      signatureRef.current = signature;
-      laidSignatureRef.current = signature;
-      if (signature !== laidSignature) {
-        // A different set of cards is in play (focus switched, a card appeared):
-        // re-seed from the store, heat the layout up and ease the camera onto the
-        // new bounding box instead of snapping.
-        simRef.current = null;
-        reheat(1);
-        fitRef.current({ ease: cameraRef.current !== null });
-      } else {
-        // 成员和上次收敛时一模一样：只可能是面板重挂（切对话/切 tab）——
-        // 保持原样，不重跑布局也不动镜头，图看起来就没变。
-        schedule();
-      }
-    } else {
-      schedule();
-    }
-  }, [props.nodes, props.edges, props.colorMode]);
-
-  return (0, import_jsx_runtime16.jsxs)("div", {
-    className: "tm_graphSurface",
-    ref: rootRef,
-    onPointerDown: onPointerDown,
-    onPointerMove: onPointerMove,
-    onPointerUp: onPointerUp,
-    onPointerCancel: onPointerUp,
-    onPointerLeave: function () {
-      if (hoverRef.current !== null) {
-        hoverRef.current = null;
-        schedule();
-      }
-    },
-    onDoubleClick: function (event) {
-      event.stopPropagation();
-      var flow = toFlow(event.clientX, event.clientY);
-      var bridge = mindMapCanvasBridge.current;
-      if (bridge !== null && hitTest(flow.x, flow.y) === null && typeof bridge.startSessionAt === "function") bridge.startSessionAt(flow.x, flow.y);
-    },
-    onContextMenu: function (event) {
-      event.preventDefault();
-      var bridge = mindMapCanvasBridge.current;
-      if (bridge === null) return;
-      var flow = toFlow(event.clientX, event.clientY);
-      var node = hitTest(flow.x, flow.y);
-      var fake = { clientX: event.clientX, clientY: event.clientY, preventDefault: function () { }, stopPropagation: function () { } };
-      if (node === null) { if (typeof bridge.openPaneMenu === "function") bridge.openPaneMenu(fake); }
-      else if (typeof bridge.openCardMenu === "function") bridge.openCardMenu(fake, node.id);
-    },
-    children: [
-      (0, import_jsx_runtime16.jsx)("canvas", { ref: canvasRef, className: "tm_graphCanvas" }),
-      (0, import_jsx_runtime16.jsxs)("div", { className: "tm_canvasCtl", children: [
-        (0, import_jsx_runtime16.jsx)("button", { type: "button", title: "放大", onClick: function () { zoomBy(1.25); }, children: "+" }),
-        (0, import_jsx_runtime16.jsx)("button", { type: "button", title: "缩小", onClick: function () { zoomBy(0.8); }, children: "−" }),
-        (0, import_jsx_runtime16.jsx)("button", { type: "button", title: "适配视图", onClick: function () { fitRef.current(); }, children: "⤢" })
-      ] })
-    ]
-  });
-}
-/** Switches the renderer: canvas in graph mode, React Flow in whiteboard mode.
- * Both receive the exact same props object. */
+${GRAPH_SURFACE_BLOCK}
+/** 只有一种视图：云图（canvas）。白板 / React Flow 那一套已经删掉，不再挂载。 */
 function GraphSurface(props) {
-  var graphOn = (0, import_react13.useSyncExternalStore)(graphModeSubscribe, graphModeGet, graphModeGet);
-  if (graphOn) return (0, import_jsx_runtime16.jsx)(GraphCanvasSurface, props);
-  // 白板模式是 React Flow（index）；focusAnchorId 只给 canvas 用，别透传给 React Flow。
-  var whiteboardProps = { ...props };
-  delete whiteboardProps.focusAnchorId;
-  return (0, import_jsx_runtime16.jsx)(index, whiteboardProps);
+  return (0, import_jsx_runtime16.jsx)(GraphCanvasSurface, props);
 }
 function GraphBar(props) {
-  const graphOn = (0, import_react13.useSyncExternalStore)(graphModeSubscribe, graphModeGet, graphModeGet);
   const children = [];
   children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("button", {
     type: "button",
-    className: "tm_graphBtn" + (graphOn ? " tm_graphBtnActive" : ""),
-    title: graphOn ? "切回白板（槽位平铺）视图" : "切换到图谱视图：节点按关系连线、自动排布、可拖动",
-    onClick: function () { graphModeSet(!graphOn); },
-    children: graphOn ? "🕸 图谱" : "▦ 白板"
-  }, "mode"));
-  if (graphOn) {
-    children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("button", {
-      type: "button",
-      className: "tm_graphBtn" + (props.focusOn === true ? " tm_graphBtnActive" : ""),
-      title: "聚焦：只把当前会话那张卡点亮，其余卡片 / 连线 / 分组药丸全部压暗；再点一次关闭",
-      onClick: props.onToggleFocus,
-      children: props.focusOn === true ? "🎯 聚焦中" : "🎯 聚焦"
-    }, "focus"));
-    children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("button", {
-      type: "button",
-      className: "tm_graphBtn",
-      title: "按连线关系重新做力导向排布（拖动过的卡片也会重新排）",
-      onClick: props.onRelayout,
-      children: "⟲ 重新排布"
-    }, "relayout"));
-    children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("button", {
-      type: "button",
-      className: "tm_graphBtn",
-      disabled: props.tagBusy === true,
-      title: "用默认模型给还没有标签的会话生成标签（每个会话一次 LLM 调用）",
-      onClick: props.onGenerateTags,
-      children: props.tagBusy === true ? "标签生成中…" : "🏷 生成标签"
-    }, "tags"));
-    children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("button", {
-      type: "button",
-      className: "tm_graphBtn" + (props.hideArchived === true ? " tm_graphBtnActive" : ""),
-      title: "隐藏已归档会话和别的会话跑完的子代理；当前对话自己的子代理跑完只灰化、不会消失；开合状态记在浏览器里",
-      onClick: props.onToggleHideArchived,
-      children: props.hideArchived === true ? "🗄 已隐藏 " + (props.archivedCount > 0 ? props.archivedCount : "0") : "🗄 显示全部"
-    }, "archived"));
-    if (props.tagCount > 0) children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("span", {
-      className: "tm_graphHint",
-      children: props.tagCount + " 个标签"
-    }, "count"));
-  }
+    className: "tm_graphBtn" + (props.focusOn === true ? " tm_graphBtnActive" : ""),
+    title: "聚焦：只把当前会话那个点点亮，其余点 / 连线全部压暗；再点一次关闭",
+    onClick: props.onToggleFocus,
+    children: props.focusOn === true ? "🎯 聚焦中" : "🎯 聚焦"
+  }, "focus"));
+  children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("button", {
+    type: "button",
+    className: "tm_graphBtn",
+    title: "按连线关系重新做一次力导向排布（拖动过的点也会重新排）",
+    onClick: props.onRelayout,
+    children: "⟲ 重新排布"
+  }, "relayout"));
+  children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("button", {
+    type: "button",
+    className: "tm_graphBtn",
+    disabled: props.tagBusy === true,
+    title: "用默认模型给还没有标签的会话生成标签（每个会话一次 LLM 调用）",
+    onClick: props.onGenerateTags,
+    children: props.tagBusy === true ? "标签生成中…" : "🏷 生成标签"
+  }, "tags"));
+  children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("button", {
+    type: "button",
+    className: "tm_graphBtn" + (props.hideArchived === true ? " tm_graphBtnActive" : ""),
+    title: "隐藏已归档会话和别的会话跑完的子代理；当前对话自己的子代理跑完只灰化、不会消失；开合状态记在浏览器里",
+    onClick: props.onToggleHideArchived,
+    children: props.hideArchived === true ? "🗄 已隐藏 " + (props.archivedCount > 0 ? props.archivedCount : "0") : "🗄 显示全部"
+  }, "archived"));
+  if (props.tagCount > 0) children.push(/* @__PURE__ */ (0, import_jsx_runtime16.jsx)("span", {
+    className: "tm_graphHint",
+    children: props.tagCount + " 个标签"
+  }, "count"));
   return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("div", { className: "tm_graphBar", role: "toolbar", children: children });
 }
 /* ---- 侧栏席位：把同一张地图挂进 dsh-better-sidebar 的一栏 ---------------
@@ -2123,26 +1115,22 @@ const GRAPH_CSS = String.raw` .tm_graphBar { position: absolute; top: 12px; righ
 const GRAPH_SIDEBAR_CSS = String.raw` .tm_sbPanel { display: flex; flex-direction: column; height: 100%; min-height: 0; gap: 6px; } .tm_sbPanel > :last-child { flex: 1 1 0; min-height: 0; } .tm_sbBar { display: flex; align-items: center; gap: 8px; padding: 2px 2px 6px; } .tm_sbTitle { font-size: calc(12px + var(--tm-font-step, 0px)); font-weight: 600; color: var(--dsw-alias-label-primary); } .tm_sbBar .tm_sbFull { margin-left: auto; } .tm_launcher { position: fixed; right: 18px; top: 120px; z-index: 9999; display: none; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 10px; border: 1px solid rgba(126, 136, 158, 0.42); background: rgba(24, 26, 33, 0.94); color: #cfd6e4; font-size: 12px; line-height: 1; cursor: pointer; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); } .tm_launcher:hover { border-color: #5b8cff; color: #fff; } .tm_sbHost { position: relative; flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; } .tm_sbHostInner { position: relative; flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; } .tm_sbHostInner > * { flex: 1 1 0; min-height: 0; } .tm_sbNote { display: flex; align-items: center; justify-content: center; height: 100%; padding: 16px; font-size: calc(12px + var(--tm-font-step, 0px)); color: var(--dsw-alias-label-tertiary); text-align: center; }
 `;
 const GRAPH_EDGES_BLOCK = String.raw`    if (graphOn) {
-      // Hidden archived cards are out of the graph entirely, so the chains are
-      // rebuilt between the cards that are actually on screen: hiding a card
-      // must re-link its two neighbours, not cut the chain in half.
+      // 云图只有三种关系：同一个工作区 / 同一个标签 / 子代理（血缘）。
+      // 分组节点（药丸）已经删掉 —— 同工作区的点直接互相连线。
+      // 隐藏归档后按「当前可见集合」重建，链才不会从中间断掉。
       const graphCardIds = Object.keys(visibleCards).filter(function (cardId) {
         if (foldedSet.has(cardId)) return false;
         if (hideArchivedOn && archivedSessionSet.has(visibleCards[cardId].sessionId)) return false;
         return true;
       });
-      // 不再去重：同一对卡片可能既是同工作区又是同标签，两种关系各画一条。
-      // 这样「链式」也不会再让中间的卡把两端的连线挡掉。
-      const pushGraphEdge = function (fromCardId, toCardId, tag, idTag) {
+      const pushGraphEdge = function (fromCardId, toCardId, kind, idTag) {
         if (fromCardId === toCardId) return;
-        // id 里带上关系本身（标签名），两个标签共享同一对时是两条独立的边而不是重复 id。
+        // id 里带上关系本身（标签名 / 工作区 id），同一对既是同组又是同标签时
+        // 是两条独立的边，而不是重复 id。
         out.push({
-          id: "graph-" + tag + "-" + (idTag === void 0 ? "" : idTag + "-") + fromCardId + "-" + toCardId,
+          id: "graph-" + kind + "-" + (idTag === void 0 ? "" : idTag + "-") + fromCardId + "-" + toCardId,
           source: fromCardId,
           target: toCardId,
-          // No handles: the renderer intersects the centre line with each
-          // card's rectangle, so the line always leaves from the side that
-          // faces the other node and re-routes live while dragging.
           type: "graphLine",
           selectable: false,
           data: {
@@ -2151,18 +1139,38 @@ const GRAPH_EDGES_BLOCK = String.raw`    if (graphOn) {
             sync: "idle",
             structural: true,
             graph: true,
-            graphKind: tag,
+            graphKind: kind,
             ready: boardTick > 0
           },
-          style: { stroke: "rgba(198, 206, 220, 0.34)", strokeWidth: 1.1 }
+          style: { stroke: "rgba(198, 206, 220, 0.34)", strokeWidth: 1 }
         });
       };
+      // 成员多的时候绝不去连完全图：n(n-1)/2 条边会把 200 个会话变成两万条线。
+      // 小簇全连接（看得出一团团），大簇连成环 —— 视觉上仍是一团，边数只有 n 条。
+      const LINK_CLIQUE_MAX = { ws: 8, tag: 5 };
+      const linkCluster = function (members, kind, idTag) {
+        if (members.length < 2) return;
+        const cap = LINK_CLIQUE_MAX[kind] === void 0 ? 8 : LINK_CLIQUE_MAX[kind];
+        if (members.length <= cap) {
+          for (let left = 0; left < members.length; left += 1) {
+            for (let right = left + 1; right < members.length; right += 1) pushGraphEdge(members[left], members[right], kind, idTag);
+          }
+          return;
+        }
+        for (let index = 0; index < members.length; index += 1) {
+          pushGraphEdge(members[index], members[(index + 1) % members.length], kind, idTag);
+        }
+      };
+      const byNewest = function (left, right) {
+        const leftSession = sessions.byId[visibleCards[left] === void 0 ? "" : visibleCards[left].sessionId];
+        const rightSession = sessions.byId[visibleCards[right] === void 0 ? "" : visibleCards[right].sessionId];
+        return (rightSession === void 0 ? 0 : rightSession.updatedAt || 0) - (leftSession === void 0 ? 0 : leftSession.updatedAt || 0);
+      };
+      // A. 同一个工作区直接互连（子代理不参与：它只跟自己的主会话有关系）。
       const byWorkspace = new Map();
       for (const cardId of graphCardIds) {
         const card = visibleCards[cardId];
         if (card === void 0) continue;
-        // 子代理不参与工作区分组：它只跟自己的主会话（血缘线）相连，
-        // 不再连到分组药丸，也不算进药丸的成员数（2026-11-12）。
         const wsRow = sessions.byId[card.sessionId];
         if (wsRow !== void 0 && wsRow.origin === "subagent") continue;
         const groupId = sessionWs.get(card.sessionId);
@@ -2170,73 +1178,32 @@ const GRAPH_EDGES_BLOCK = String.raw`    if (graphOn) {
         if (!byWorkspace.has(groupId)) byWorkspace.set(groupId, []);
         byWorkspace.get(groupId).push(cardId);
       }
-      // A. 二部图：同组不再两两互连，而是「每张卡连到它的分组节点」，边数从 O(n²) 变 O(n)。
       mindMapGroupNodes.clear();
-      for (const [groupId, members] of byWorkspace.entries()) {
-        members.sort(function (left, right) {
-          const leftSession = sessions.byId[visibleCards[left].sessionId];
-          const rightSession = sessions.byId[visibleCards[right].sessionId];
-          return (leftSession === void 0 ? 0 : leftSession.updatedAt || 0) - (rightSession === void 0 ? 0 : rightSession.updatedAt || 0);
-        });
-        const groupNodeId = "group-ws-" + groupId;
-        // 锚点跟着成员走：每次重建都按当前坐标重算并做一次平滑（0.4/0.6）。
-        // 以前只在第一次算完就固定，成员一搬走药丸就孤零零留在原地，
-        // 把 fit 的包围盒撑大，整块内容被挤到角落（用户看到的「留白巨大」）。
-        let sumX = 0;
-        let sumY = 0;
-        for (const cardId of members) {
-          const card = visibleCards[cardId];
-          sumX += (card === void 0 ? 0 : card.x) + 112;
-          sumY += (card === void 0 ? 0 : card.y) + 62;
-        }
-        const targetX = sumX / (members.length || 1) - MIND_MAP_GROUP_W / 2;
-        const targetY = sumY / (members.length || 1) - MIND_MAP_GROUP_H / 2;
-        let anchor = mindMapGroupAnchors.get(groupId);
-        if (anchor === void 0) anchor = { x: targetX, y: targetY };
-        else {
-          anchor.x = anchor.x * 0.4 + targetX * 0.6;
-          anchor.y = anchor.y * 0.4 + targetY * 0.6;
-        }
-        mindMapGroupAnchors.set(groupId, anchor);
-        mindMapGroupNodes.set(groupNodeId, {
-          id: groupNodeId,
-          type: "groupNode",
-          position: { x: anchor.x, y: anchor.y },
-          draggable: false,
-          selectable: false,
-          data: {
-            anchor: true,
-            wsId: groupId,
-            label: wsTitles.get(groupId) === void 0 ? "工作区" : wsTitles.get(groupId),
-            count: members.length,
-            memberIds: members.slice()
-          }
-        });
-        for (const cardId of members) pushGraphEdge(cardId, groupNodeId, "ws");
+      mindMapGroupAnchors.clear();
+      for (const group of byWorkspace.entries()) {
+        group[1].sort(byNewest);
+        linkCluster(group[1], "ws", group[0]);
       }
-      // 已经不存在的分组：把它的锚点一起丢掉，免得下次同名复用旧位置
-      mindMapGroupAnchors.forEach(function (value, key) {
-        if (byWorkspace.has(key) !== true) mindMapGroupAnchors.delete(key);
-      });
-      // B. 标签不再画边（卡身上已经有 tag 徽章）。只留一张「同标签邻居」索引给 C 的悬停星形用。
+      // B. 关键词（标签）：会话不再两两互连，而是连到它命中的「标签点」。
+      //    一个标签被 N 个会话用到 → 那个 key 点度数 N（点更大），会话之间
+      //    也就通过它连在一起。只有一个成员用的标签不上图（不是 key，是噪音）。
+      //    过滤条件必须和 graphTagNodes 完全一致，否则会出现悬空边 / 孤立的 key 点。
       mindMapStarIndex.clear();
       for (const group of graphTagGroups) {
-        // 子代理不进悬停星形：它只和主会话有关系。
+        const tag = group[0];
         const members = group[1].filter(function (cardId) {
           if (foldedSet.has(cardId)) return false;
-          const starRow = sessions.byId[visibleCards[cardId] === void 0 ? "" : visibleCards[cardId].sessionId];
+          const card = visibleCards[cardId];
+          if (card === void 0) return false;
+          if (hideArchivedOn && archivedSessionSet.has(card.sessionId)) return false;
+          const starRow = sessions.byId[card.sessionId];
           return starRow === void 0 || starRow.origin !== "subagent";
         });
         if (members.length < 2) continue;
-        for (const cardId of members) {
-          let list = mindMapStarIndex.get(cardId);
-          if (list === void 0) { list = []; mindMapStarIndex.set(cardId, list); }
-          for (const other of members) {
-            if (other === cardId) continue;
-            if (list.indexOf(other) === -1 && list.length < 24) list.push(other);
-          }
-        }
+        for (const cardId of members) pushGraphEdge(cardId, "tag-" + tag, "tag", tag);
       }
+      // C. 子代理 / 血缘：上面 DRAW_LINEAGE_LINKS 那一段已经按 parentId 画好了，
+      //    这里不再重复（否则一对母子会出现两根线）。
     }
 `;
 
@@ -2247,10 +1214,10 @@ const AUTO_LAYOUT_BLOCK = String.raw`  const graphCardIds = Object.keys(visibleC
     if (entries.length === 0) return;
     const links = [];
     for (const drawn of liveEdges) links.push([drawn.source, drawn.target]);
-    // ideal 从默认的 ~390 收到 232：重排后卡片紧挨着（略大于一张卡宽），
-    // 再由画布的近距硬芯把重叠推开 —— 「先紧凑、再被阻力快速弹开」。
+    // 云图的理想间距是「几十 px」而不是「一张卡宽」：ideal 按点的尺度给 70，
+    // 剩下的交给画布的斥力/硬芯去微调。
     const layoutStart = typeof performance !== "undefined" ? performance.now() : Date.now();
-    const placed = graphLayoutForce(entries, links, { width: CARD_W, height: CARD_H, ideal: 232 });
+    const placed = graphLayoutForce(entries, links, { width: 16, height: 16, ideal: 70 });
     try {
       mindMapLastRelayoutMs = (typeof performance !== "undefined" ? performance.now() : Date.now()) - layoutStart;
       if (window.__mindMapDebug !== void 0 && window.__mindMapDebug !== null) window.__mindMapDebug.lastRelayoutMs = mindMapLastRelayoutMs;
@@ -2299,13 +1266,15 @@ const AUTO_LAYOUT_BLOCK = String.raw`  const graphCardIds = Object.keys(visibleC
       const centerY = groupCount === 0 ? globalY : groupY / groupCount;
       let spot;
       for (let step = 0; step < 700; step += 1) {
-        const radius = step === 0 ? 0 : 48 + step * 13;
+        // 云图的点很小：螺线间距按 44px 起步，撞上已有节点也算「有位」，
+        // 反正下一步模拟会把它们推开。
+        const radius = step === 0 ? 0 : 44 + step * 9;
         const angle = step * 0.55;
         const pointX = Math.round(centerX + Math.cos(angle) * radius);
         const pointY = Math.round(centerY + Math.sin(angle) * radius);
         let free = true;
         for (const box of occupied) {
-          if (Math.abs(box.x - pointX) < CARD_W + 32 && Math.abs(box.y - pointY) < CARD_H + 28) { free = false; break; }
+          if (Math.abs(box.x - pointX) < 40 && Math.abs(box.y - pointY) < 40) { free = false; break; }
         }
         if (free) { spot = { x: pointX, y: pointY }; break; }
       }
@@ -2553,6 +1522,57 @@ const CLIENT_EDITS = [
     label: "live-nodes-deps",
     find: "batchMode, batchPicks, locale]);",
     replace: "batchMode, batchPicks, locale, graphOn, graphTagIndex, hideArchivedOn, archivedSessionSet, currentSessionRoot]);"
+  },
+  {
+    label: "tag-nodes",
+    // 关键词（标签）也上云图：一个标签 = 一个"key 点"，会话连到它，
+    // 而不是让同标签的会话两两互连。度数 = 有多少会话用到这个 key，
+    // 所以"重点的 key"自己就是大点，相关会话通过它连成一片。
+    find: "  const liveNodes = (0, import_react13.useMemo)(() => {",
+    replace: String.raw`  /** 关键词节点：从 graphTagGroups 派生，只有一个会话用到的标签不算 key。 */
+  const graphTagNodes = (0, import_react13.useMemo)(() => {
+    if (!graphOn) return [];
+    const out = [];
+    for (const group of graphTagGroups) {
+      const tag = group[0];
+      const members = group[1].filter(function (cardId) {
+        if (foldedSet.has(cardId)) return false;
+        const card = visibleCards[cardId];
+        if (card === void 0) return false;
+        if (hideArchivedOn && archivedSessionSet.has(card.sessionId)) return false;
+        return true;
+      });
+      if (members.length < 2) continue;
+      let sumX = 0;
+      let sumY = 0;
+      for (const cardId of members) {
+        const card = visibleCards[cardId];
+        sumX += card.x;
+        sumY += card.y;
+      }
+      out.push({
+        id: "tag-" + tag,
+        type: "tagNode",
+        // 先落在成员会话的质心；画布的模拟会按真实连线把它拉到该在的位置。
+        position: { x: Math.round(sumX / members.length), y: Math.round(sumY / members.length) },
+        draggable: false,
+        selectable: false,
+        data: { tagNode: true, tag: tag, title: "#" + tag, count: members.length }
+      });
+    }
+    return out;
+  }, [graphOn, graphTagGroups, visibleCards, hideArchivedOn, archivedSessionSet, foldedSet]);
+  const liveNodes = (0, import_react13.useMemo)(() => {`
+  },
+  {
+    label: "tag-nodes-append",
+    find: "    return [...frameNodes, ...cardNodes, ...stackNodes];",
+    replace: "    return [...frameNodes, ...cardNodes, ...stackNodes, ...graphTagNodes];"
+  },
+  {
+    label: "tag-nodes-deps",
+    find: "batchMode, batchPicks, locale, graphOn, graphTagIndex, hideArchivedOn, archivedSessionSet, currentSessionRoot]);",
+    replace: "batchMode, batchPicks, locale, graphOn, graphTagIndex, hideArchivedOn, archivedSessionSet, currentSessionRoot, graphTagNodes]);"
   },
   {
     label: "auto-layout",
@@ -2909,51 +1929,6 @@ const CLIENT_EDITS = [
     return function () { window.clearTimeout(dedupeTimer); };
   }, [canvasState.phase, canvasState.cards]);
 ` + "  const savedCamera = canvas.savedCamera(INBOX_BOARD_ID);"
-  },
-  {
-    label: "group-visible-nodes",
-    find: "      if (node.hidden === true) continue;\n      if (node.type !== \"sessionCard\" && node.type !== \"sessionDot\") continue;\n      out.push(node);\n    }\n    return out;",
-    replace: "      if (node.hidden === true) continue;\n      if (node.type !== \"sessionCard\" && node.type !== \"sessionDot\") continue;\n      out.push(node);\n    }\n    // A. 分组节点也参与可见集合（boxMap / 力导向 / 绘制都要用到），但只放「当前仍有 ≥2 个可见成员」的分组：\n    //    聚焦模式会 hidden 掉大部分卡，若药丸照旧全放进来，它们的锚点还在视口外，\n    //    fit 的包围盒被撑大，整块内容就被挤到角落（「留白巨大」的根因）。\n    var shownIds = new Set();\n    for (var shownIndex = 0; shownIndex < out.length; shownIndex += 1) shownIds.add(out[shownIndex].id);\n    var groupNodes = mindMapGroupNodesList();\n    for (var groupIndex = 0; groupIndex < groupNodes.length; groupIndex += 1) {\n      var groupEntry = groupNodes[groupIndex];\n      var members = groupEntry.data !== void 0 && groupEntry.data.memberIds !== void 0 ? groupEntry.data.memberIds : [];\n      var shownCount = 0;\n      for (var memberIndex = 0; memberIndex < members.length; memberIndex += 1) {\n        if (shownIds.has(members[memberIndex])) shownCount += 1;\n      }\n      if (shownCount < 2) continue;\n      out.push(groupEntry);\n    }\n    return out;"
-  },
-  {
-    label: "group-box",
-    find: "      boxes.set(node.id, { x: position.x, y: position.y, w: CARD_W, h: GRAPH_CARD_RENDER_H });",
-    replace: "      if (node.type === \"groupNode\") {\n        boxes.set(node.id, { x: position.x, y: position.y, w: MIND_MAP_GROUP_W, h: MIND_MAP_GROUP_H });\n      } else {\n        boxes.set(node.id, { x: position.x, y: position.y, w: CARD_W, h: GRAPH_CARD_RENDER_H });\n      }"
-  },
-  {
-    label: "group-sim-anchor",
-    find: "        sim.nodes.set(node.id, { x: node.position.x, y: node.position.y, vx: 0, vy: 0 });",
-    replace: "        sim.nodes.set(node.id, { x: node.position.x, y: node.position.y, vx: 0, vy: 0, anchor: node.type === \"groupNode\" });"
-  },
-  {
-    label: "group-repulsion-skip",
-    find: "for (var right = left + 1; right < count; right += 1) {",
-    replace: "for (var right = left + 1; right < count; right += 1) {\n          if (list[left].anchor === true || list[right].anchor === true) continue;"
-  },
-  {
-    label: "group-integration-skip",
-    find: "      var node = list[step];\n      // A dragged card is pinned under the pointer and does not integrate; the",
-    replace: "      var node = list[step];\n      // 分组节点固定不动：它是二部图的「分组」一端，只负责吸引成员\n      if (node.anchor === true) { node.fx = 0; node.fy = 0; node.vx = 0; node.vy = 0; continue; }\n      // A dragged card is pinned under the pointer and does not integrate; the"
-  },
-  {
-    label: "group-draw-pills",
-    find: "    context.globalAlpha = 1;\n    context.lineWidth = 1.1 / zoom;\n    var nodes = visibleNodes();",
-    replace: "    // C. 悬停星形先画（虚线，压在实体边下面）\n    if (hovered !== null) {\n      var starNeighbours = mindMapStarIndex.get(hovered);\n      var starFrom = boxes.get(hovered);\n      if (starNeighbours !== void 0 && starFrom !== void 0) {\n        context.globalAlpha = spotlightOn ? 0.5 : 0.8;\n        context.strokeStyle = edgePalette.tag;\n        context.lineWidth = 1.3 / zoom;\n        context.setLineDash([5 / zoom, 4 / zoom]);\n        var starFromX = starFrom.x + starFrom.w / 2;\n        var starFromY = starFrom.y + starFrom.h / 2;\n        for (var starIndex = 0; starIndex < starNeighbours.length; starIndex += 1) {\n          var starTo = boxes.get(starNeighbours[starIndex]);\n          if (starTo === void 0) continue;\n          var starToX = starTo.x + starTo.w / 2;\n          var starToY = starTo.y + starTo.h / 2;\n          var starStart = graphAnchorPoint(starFromX, starFromY, starFrom.w, starFrom.h, starToX, starToY);\n          var starEnd = graphAnchorPoint(starToX, starToY, starTo.w, starTo.h, starFromX, starFromY);\n          context.beginPath();\n          context.moveTo(starStart.x, starStart.y);\n          context.lineTo(starEnd.x, starEnd.y);\n          context.stroke();\n        }\n        context.setLineDash([]);\n      }\n    }\n    context.globalAlpha = 1;\n    context.lineWidth = 1.1 / zoom;\n    var nodes = visibleNodes();\n    // A. 分组节点：小药丸 = 二部图的「分组」一端\n    for (var groupPaint = 0; groupPaint < nodes.length; groupPaint += 1) {\n      if (nodes[groupPaint].type !== \"groupNode\") continue;\n      context.globalAlpha = spotlightOn ? 0.3 : 1;\n      var groupBox = boxes.get(nodes[groupPaint].id);\n      if (groupBox === void 0) continue;\n      var groupData = nodes[groupPaint].data || {};\n      graphRoundRect(context, groupBox.x, groupBox.y, groupBox.w, groupBox.h, groupBox.h / 2);\n      context.fillStyle = dark ? \"rgba(30,34,44,0.94)\" : \"rgba(255,255,255,0.96)\";\n      context.fill();\n      context.lineWidth = 1 / zoom;\n      context.strokeStyle = dark ? \"rgba(140,170,220,0.55)\" : \"rgba(60,110,180,0.45)\";\n      context.stroke();\n      context.fillStyle = dark ? \"rgba(190,205,230,0.95)\" : \"rgba(40,55,80,0.9)\";\n      context.font = \"11px \" + GRAPH_FONT_STACK;\n      context.fillText((groupData.label === void 0 ? \"\" : groupData.label) + \" · \" + (groupData.count === void 0 ? 0 : groupData.count), groupBox.x + 10, groupBox.y + groupBox.h / 2 + 4);\n    }"
-  },
-  {
-    label: "group-skip-card-draw",
-    find: "      var node = nodes[nodeIndex];\n      var box = boxes.get(node.id);",
-    replace: "      var node = nodes[nodeIndex];\n      if (node.type === \"groupNode\") continue;\n      var box = boxes.get(node.id);"
-  },
-  {
-    label: "fit-on-open",
-    find: "    var width = root.clientWidth;\n    var height = root.clientHeight;\n    if (width < 4 || height < 4) return;",
-    replace: "    var width = root.clientWidth;\n    var height = root.clientHeight;\n    if (width < 4 || height < 4) return;\n    // 面板刚打开（或刚挂回侧栏）：先按当前内容做一次初始 fit，避免用户面对一个\n    // 偏到屏幕外 / 留白过大的旧镜头。\n    if (mindMapPendingFit.until > Date.now()) {\n      // 刚打开的 8 秒内：布局在收敛、面板尺寸在变化（右栏展开动画），两者都会让首帧的 fit 失准，\n      // 所以这里每 150ms 或尺寸变化时重算一次，等稳定时镜头自然收到位。\n      var fitNow = Date.now();\n      var sizeChanged = Math.abs(mindMapPendingFit.width - width) > 8 || Math.abs(mindMapPendingFit.height - height) > 8;\n      if (sizeChanged || fitNow - mindMapPendingFit.last >= 150) {\n        mindMapPendingFit.last = fitNow;\n        mindMapPendingFit.width = width;\n        mindMapPendingFit.height = height;\n        fitRef.current({ ease: false });\n      }\n    }"
-  },
-  {
-    label: "fit-tight-padding",
-    find: "    var viewWidth = Math.max(160, root.clientWidth - 120);\n    var viewHeight = Math.max(160, root.clientHeight - 160);",
-    replace: "    // 留白收紧：左右各 24px、上下各 36px（原来 60/80），内容尽量占满主界面。\n    var viewWidth = Math.max(160, root.clientWidth - 48);\n    var viewHeight = Math.max(160, root.clientHeight - 72);"
   },
   {
     label: "start-fork",
