@@ -65,6 +65,7 @@ function makeContext() {
   return vm.createContext(context)
 }
 
+const evaluationErrors = []
 const loaded = []
 function loaderFor(context) {
   return {
@@ -106,6 +107,10 @@ function loaderFor(context) {
 
 const context = makeContext()
 context.__ModuleLoader__ = loaderFor(context)
+context.console = { ...console, error: (...args) => {
+  if (String(args[0]).includes('failed to evaluate')) evaluationErrors.push(args.map(String).join(' '))
+  else console.error(...args)
+} }
 
 let failures = 0
 function check(label, condition, detail) {
@@ -130,7 +135,8 @@ const first = evaluate('first')
 check('第一次求值（冷启动）', first.ok, first.error ?? '')
 const second = evaluate('second')
 check('同一 realm 内第二次求值（重载）', second.ok, second.error ?? '')
-check('两次都注册了同一个 id', loaded.length >= 1, JSON.stringify(loaded.slice(0, 3)))
+check('两次都注册了同一个 id', loaded.length === 2 && loaded[0] === loaded[1], JSON.stringify(loaded.slice(0, 3)))
+check('没有被容错包装吞掉的求值错误', evaluationErrors.length === 0, evaluationErrors.join('\n'))
 
 // NOTE: a fake-ctx apply() test used to live here. It could not reproduce the
 // real loader's behaviour (the harness's second apply saw an empty body), so it

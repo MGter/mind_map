@@ -13722,19 +13722,22 @@ function StackNode(props) {
 }
 
 // src/client/StatusRail.tsx
-var import_react11 = require("react");
-var import_jsx_runtime15 = require("react/jsx-runtime");
-var OPEN_KEY = "dsh.mind_map.status-rail.open.v1";
-var ORDER_KEY = "dsh.mind_map.status-rail.order.v1";
-var FLIP_MS = 180;
-var LAMP_CLASS3 = {
+// Compiled from the current TSX source.
+var StatusRail = (() => {
+const React = require("react");
+const { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } = React;
+const styles = mind_map_default;
+const OPEN_KEY = "dsh.mind_map.status-rail.open.v1";
+const ORDER_KEY = "dsh.mind_map.status-rail.order.v1";
+const FLIP_MS = 180;
+const LAMP_CLASS = {
   running: "cardLampRunning",
   done: "cardLampDone",
   error: "cardLampError",
   waiting: "cardLampWaiting"
 };
-var openState;
-var openListeners = /* @__PURE__ */ new Set();
+let openState;
+const openListeners = /* @__PURE__ */ new Set();
 function readOpen() {
   if (typeof window === "undefined") return false;
   try {
@@ -13781,30 +13784,31 @@ function writeOrder(order) {
   }
 }
 function StatusRail(props) {
-  const open = (0, import_react11.useSyncExternalStore)(subscribeOpen, openSnapshot, openSnapshot);
-  const [order, setOrder] = (0, import_react11.useState)(() => readOrder());
-  const [drag, setDrag] = (0, import_react11.useState)(null);
-  const [shift, setShift] = (0, import_react11.useState)({});
-  const seenRef = (0, import_react11.useRef)(/* @__PURE__ */ new Map());
-  const slotsRef = (0, import_react11.useRef)(/* @__PURE__ */ new Map());
-  const prevTops = (0, import_react11.useRef)(/* @__PURE__ */ new Map());
-  const panelRef = (0, import_react11.useRef)(null);
-  const orderRef = (0, import_react11.useRef)(order);
+  const open = useSyncExternalStore(subscribeOpen, openSnapshot, openSnapshot);
+  const [order, setOrder] = useState(() => readOrder());
+  const [drag, setDrag] = useState(null);
+  const [shift, setShift] = useState({});
+  const seenRef = useRef(/* @__PURE__ */ new Map());
+  const slotsRef = useRef(/* @__PURE__ */ new Map());
+  const prevTops = useRef(/* @__PURE__ */ new Map());
+  const panelRef = useRef(null);
+  const orderRef = useRef(order);
   orderRef.current = order;
-  const dragRef = (0, import_react11.useRef)(null);
-  dragRef.current = drag;
-  const signature = (0, import_react11.useMemo)(
+  const gestureRef = useRef(null);
+  const propsRef = useRef(props);
+  propsRef.current = props;
+  const signature = useMemo(
     () => props.entries.map((entry) => `${entry.cardId}:${entry.lamp}:${entry.stamp}`).join("|"),
     [props.entries]
   );
-  (0, import_react11.useEffect)(() => {
+  useEffect(() => {
     const seen = seenRef.current;
     const fresh = [];
     for (const entry of props.entries) {
       const before = seen.get(entry.cardId);
-      const now2 = `${entry.lamp}:${entry.stamp}`;
-      if (before !== void 0 && before !== now2) fresh.push(entry.cardId);
-      seen.set(entry.cardId, now2);
+      const now = `${entry.lamp}:${entry.stamp}`;
+      if (before !== void 0 && before !== now) fresh.push(entry.cardId);
+      seen.set(entry.cardId, now);
     }
     const alive = new Set(props.entries.map((entry) => entry.cardId));
     setOrder((current) => {
@@ -13813,7 +13817,7 @@ function StatusRail(props) {
       for (const entry of props.entries) {
         if (!next.includes(entry.cardId)) next.push(entry.cardId);
       }
-      if (next.length === kept.length && next.every((cardId, index2) => cardId === kept[index2])) return kept;
+      if (next.length === kept.length && next.every((cardId, index) => cardId === kept[index])) return kept;
       writeOrder(next);
       return next;
     });
@@ -13821,11 +13825,11 @@ function StatusRail(props) {
       if (!alive.has(cardId)) seen.delete(cardId);
     }
   }, [signature]);
-  const ordered = (0, import_react11.useMemo)(() => {
-    const byId2 = new Map(props.entries.map((entry) => [entry.cardId, entry]));
+  const ordered = useMemo(() => {
+    const byId = new Map(props.entries.map((entry) => [entry.cardId, entry]));
     const rows = [];
     for (const cardId of order) {
-      const entry = byId2.get(cardId);
+      const entry = byId.get(cardId);
       if (entry !== void 0) rows.push(entry);
     }
     for (const entry of props.entries) {
@@ -13833,7 +13837,7 @@ function StatusRail(props) {
     }
     return rows;
   }, [order, props.entries]);
-  (0, import_react11.useLayoutEffect)(() => {
+  useLayoutEffect(() => {
     if (drag !== null) return;
     const next = /* @__PURE__ */ new Map();
     const deltas = {};
@@ -13858,177 +13862,186 @@ function StatusRail(props) {
       if (inner !== 0) cancelAnimationFrame(inner);
     };
   }, [order, drag === null]);
-  (0, import_react11.useEffect)(() => {
-    if (drag === null) return;
-    const { cardId } = drag;
+  useEffect(() => {
     const indexUnder = (pointerY) => {
       const ids = orderRef.current;
       let best = 0;
       let bestDistance = Number.POSITIVE_INFINITY;
-      for (let index2 = 0; index2 < ids.length; index2 += 1) {
-        const element = slotsRef.current.get(ids[index2]);
+      for (let index = 0; index < ids.length; index += 1) {
+        const element = slotsRef.current.get(ids[index]);
         if (element === void 0) continue;
         const rect = element.getBoundingClientRect();
-        const distance2 = Math.abs(pointerY - (rect.top + rect.height / 2));
-        if (distance2 < bestDistance) {
-          bestDistance = distance2;
-          best = index2;
+        const distance = Math.abs(pointerY - (rect.top + rect.height / 2));
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          best = index;
         }
       }
       return best;
     };
     const onMove = (event) => {
-      const hover = indexUnder(event.clientY);
-      setDrag((current) => current === null ? null : { ...current, pointerY: event.clientY, hover });
+      const current = gestureRef.current;
+      if (current === null || current.pointerId !== event.pointerId) return;
+      if (!current.moved && Math.hypot(event.clientX - current.startPointerX, event.clientY - current.startPointerY) < 6) return;
+      current.moved = true;
+      current.pointerY = event.clientY;
+      current.hover = indexUnder(event.clientY);
+      setDrag({ ...current });
     };
-    const onUp = () => {
-      const current = dragRef.current;
-      if (current !== null && current.hover !== current.origin) {
-        setOrder((existing) => {
-          const from = existing.indexOf(current.cardId);
-          if (from < 0) return existing;
-          const next = [...existing];
-          next.splice(from, 1);
-          const to = Math.min(Math.max(current.hover, 0), next.length);
-          next.splice(to, 0, current.cardId);
-          writeOrder(next);
-          return next;
-        });
-      }
+    const clearGesture = () => {
+      const current = gestureRef.current;
+      gestureRef.current = null;
       prevTops.current.clear();
       setDrag(null);
+      return current;
+    };
+    const onUp = (event) => {
+      if (gestureRef.current === null || gestureRef.current.pointerId !== event.pointerId) return;
+      const current = clearGesture();
+      const moved = current.moved || Math.hypot(event.clientX - current.startPointerX, event.clientY - current.startPointerY) >= 6;
+      if (!moved) {
+        if (propsRef.current.entries.some((entry) => entry.cardId === current.cardId)) propsRef.current.onFocus(current.cardId);
+        return;
+      }
+      if (current.hover === current.origin) return;
+      setOrder((existing) => {
+        const from = existing.indexOf(current.cardId);
+        if (from < 0) return existing;
+        const next = [...existing];
+        next.splice(from, 1);
+        next.splice(Math.min(Math.max(current.hover, 0), next.length), 0, current.cardId);
+        writeOrder(next);
+        return next;
+      });
+    };
+    const onCancel = (event) => {
+      if (gestureRef.current?.pointerId === event.pointerId) clearGesture();
+    };
+    const onBlur = () => {
+      if (gestureRef.current !== null) clearGesture();
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointercancel", onUp);
+    window.addEventListener("pointercancel", onCancel);
+    window.addEventListener("blur", onBlur);
     return () => {
+      gestureRef.current = null;
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
-      window.removeEventListener("pointercancel", onUp);
+      window.removeEventListener("pointercancel", onCancel);
+      window.removeEventListener("blur", onBlur);
     };
-  }, [drag === null]);
-  const toggle = (0, import_react11.useCallback)(() => {
+  }, []);
+  const toggle = useCallback(() => {
     setOpenState(!openSnapshot());
   }, []);
-  const beginDrag = (0, import_react11.useCallback)((event, cardId) => {
-    if (event.button !== 0) return;
+  const beginDrag = useCallback((event, cardId) => {
+    if (event.button !== 0 || gestureRef.current !== null) return;
     const element = slotsRef.current.get(cardId);
     if (element === void 0) return;
     const rect = element.getBoundingClientRect();
     event.preventDefault();
-    const index2 = Math.max(0, orderRef.current.indexOf(cardId));
-    setDrag({
+    const index = Math.max(0, orderRef.current.indexOf(cardId));
+    gestureRef.current = {
       cardId,
-      origin: index2,
-      hover: index2,
+      pointerId: event.pointerId,
+      startPointerX: event.clientX,
+      moved: false,
+      origin: index,
+      hover: index,
       step: rect.height + 10,
       startPointerY: event.clientY,
       pointerY: event.clientY,
       left: rect.left,
       baseTop: rect.top,
       width: rect.width
-    });
+    };
+    try {
+      element.setPointerCapture(event.pointerId);
+    } catch {
+    }
   }, []);
-  const renderCard = (entry, floating) => /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)(
+  const renderCard = (entry, floating) => /* @__PURE__ */ React.createElement(
     "div",
     {
-      className: `${mind_map_default["card"]} ${mind_map_default[LAMP_CLASS3[entry.lamp]] ?? ""} ${mind_map_default["statusRailCard"]}${floating ? ` ${mind_map_default["statusRailCardDragging"]}` : ""}`,
+      className: `${styles["card"]} ${styles[LAMP_CLASS[entry.lamp]] ?? ""} ${styles["statusRailCard"]}${floating ? ` ${styles["statusRailCardDragging"]}` : ""}`,
       onPointerDown: floating ? void 0 : (event) => {
         beginDrag(event, entry.cardId);
       },
-      onClick: () => {
-        if (!floating && dragRef.current === null) props.onFocus(entry.cardId);
+      role: floating ? void 0 : "button",
+      tabIndex: floating ? -1 : 0,
+      onKeyDown: floating ? void 0 : (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        props.onFocus(entry.cardId);
       },
-      title: entry.title,
-      children: [
-        /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("div", { className: mind_map_default["cardTop"], children: /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: mind_map_default["cardTitle"], children: entry.title }) }),
-        entry.preview !== void 0 && entry.preview !== "" ? /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("div", { className: mind_map_default["cardSummary"], children: entry.preview }) : null,
-        /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: mind_map_default["cardFooter"], children: [
-          /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: mind_map_default["cardTime"], children: relativeTime(entry.updatedAt) }),
-          /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("span", { className: `${mind_map_default["cardChip"]} ${mind_map_default[LAMP_CHIP[entry.lamp].className]}`, children: [
-            LAMP_CHIP[entry.lamp].dot ? /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: mind_map_default["runningDot"] }) : null,
-            t(LAMP_CHIP[entry.lamp].key)
-          ] })
-        ] })
-      ]
-    }
+      title: entry.title
+    },
+    /* @__PURE__ */ React.createElement("div", { className: styles["cardTop"] }, /* @__PURE__ */ React.createElement("span", { className: styles["cardTitle"] }, entry.title)),
+    entry.preview !== void 0 && entry.preview !== "" ? /* @__PURE__ */ React.createElement("div", { className: styles["cardSummary"] }, entry.preview) : null,
+    /* @__PURE__ */ React.createElement("div", { className: styles["cardFooter"] }, /* @__PURE__ */ React.createElement("span", { className: styles["cardTime"] }, relativeTime(entry.updatedAt)), /* @__PURE__ */ React.createElement("span", { className: `${styles["cardChip"]} ${styles[LAMP_CHIP[entry.lamp].className]}` }, LAMP_CHIP[entry.lamp].dot ? /* @__PURE__ */ React.createElement("span", { className: styles["runningDot"] }) : null, t(LAMP_CHIP[entry.lamp].key)))
   );
   const floatingEntry = drag === null ? void 0 : ordered.find((entry) => entry.cardId === drag.cardId);
-  return /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)(
+  return /* @__PURE__ */ React.createElement(
     "div",
     {
-      className: mind_map_default["statusRail"],
+      className: styles["statusRail"],
       "data-open": open ? "1" : "0",
-      style: { ["--rail-card-w"]: `${props.cardWidth}px` },
-      children: [
-        /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: mind_map_default["statusRailPanel"], "aria-hidden": !open, ref: panelRef, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: mind_map_default["statusRailHead"], children: [
-            /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: mind_map_default["statusRailTitle"], children: t("statusRail.title") }),
-            /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: mind_map_default["statusRailCount"], children: props.entries.length })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: mind_map_default["statusRailList"], role: "list", children: [
-            ordered.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("div", { className: mind_map_default["statusRailEmpty"], children: t("statusRail.empty") }) : null,
-            ordered.map((entry, index2) => {
-              const dragging = drag !== null && drag.cardId === entry.cardId;
-              let moved = 0;
-              if (drag !== null && !dragging) {
-                if (drag.hover > drag.origin && index2 > drag.origin && index2 <= drag.hover) moved = -drag.step;
-                else if (drag.hover < drag.origin && index2 >= drag.hover && index2 < drag.origin) moved = drag.step;
-              }
-              const style2 = drag !== null ? { transform: `translateY(${moved}px)`, transition: `transform ${FLIP_MS}ms cubic-bezier(0.22, 0.61, 0.36, 1)` } : shift[entry.cardId] !== void 0 ? { transform: `translateY(${shift[entry.cardId]}px)`, transition: "none" } : { transition: `transform ${FLIP_MS}ms cubic-bezier(0.22, 0.61, 0.36, 1)` };
-              return /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(
-                "div",
-                {
-                  role: "listitem",
-                  ref: (element) => {
-                    if (element === null) slotsRef.current.delete(entry.cardId);
-                    else slotsRef.current.set(entry.cardId, element);
-                  },
-                  className: mind_map_default["statusRailSlot"],
-                  style: style2,
-                  children: dragging ? /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("div", { className: mind_map_default["statusRailGhost"], children: renderCard(entry, false) }) : renderCard(entry, false)
-                },
-                entry.cardId
-              );
-            })
-          ] })
-        ] }),
-        drag !== null && floatingEntry !== void 0 ? /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(
-          "div",
-          {
-            className: mind_map_default["statusRailFloating"],
-            style: {
-              left: drag.left,
-              width: drag.width,
-              top: drag.baseTop + (drag.pointerY - drag.startPointerY)
-            },
-            children: renderCard(floatingEntry, true)
-          }
-        ) : null,
-        /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)(
-          "button",
-          {
-            type: "button",
-            className: mind_map_default["statusRailTab"],
-            "aria-expanded": open,
-            "aria-label": open ? t("statusRail.close") : t("statusRail.open"),
-            title: open ? t("statusRail.close") : t("statusRail.open"),
-            onClick: toggle,
-            children: [
-              /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("svg", { viewBox: "0 0 12 28", width: "14", height: "30", "aria-hidden": "true", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("rect", { x: "1.4", y: "1", width: "2", height: "20", rx: "1", fill: "currentColor" }),
-                /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("rect", { x: "8.6", y: "1", width: "2", height: "20", rx: "1", fill: "currentColor" }),
-                /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("circle", { cx: "2.4", cy: "25", r: "1.5", fill: "currentColor" }),
-                /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("circle", { cx: "9.6", cy: "25", r: "1.5", fill: "currentColor" })
-              ] }),
-              props.entries.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: mind_map_default["statusRailTabCount"], children: props.entries.length }) : null
-            ]
-          }
-        )
-      ]
-    }
+      style: { ["--rail-card-w"]: `${props.cardWidth}px` }
+    },
+    /* @__PURE__ */ React.createElement("div", { className: styles["statusRailPanel"], "aria-hidden": !open, ref: panelRef }, /* @__PURE__ */ React.createElement("div", { className: styles["statusRailHead"] }, /* @__PURE__ */ React.createElement("span", { className: styles["statusRailTitle"] }, t("statusRail.title")), /* @__PURE__ */ React.createElement("span", { className: styles["statusRailCount"] }, props.entries.length)), /* @__PURE__ */ React.createElement("div", { className: styles["statusRailList"], role: "list" }, ordered.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: styles["statusRailEmpty"] }, t("statusRail.empty")) : null, ordered.map((entry, index) => {
+      const dragging = drag !== null && drag.cardId === entry.cardId;
+      let moved = 0;
+      if (drag !== null && !dragging) {
+        if (drag.hover > drag.origin && index > drag.origin && index <= drag.hover) moved = -drag.step;
+        else if (drag.hover < drag.origin && index >= drag.hover && index < drag.origin) moved = drag.step;
+      }
+      const style = drag !== null ? { transform: `translateY(${moved}px)`, transition: `transform ${FLIP_MS}ms cubic-bezier(0.22, 0.61, 0.36, 1)` } : shift[entry.cardId] !== void 0 ? { transform: `translateY(${shift[entry.cardId]}px)`, transition: "none" } : { transition: `transform ${FLIP_MS}ms cubic-bezier(0.22, 0.61, 0.36, 1)` };
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          key: entry.cardId,
+          role: "listitem",
+          ref: (element) => {
+            if (element === null) slotsRef.current.delete(entry.cardId);
+            else slotsRef.current.set(entry.cardId, element);
+          },
+          className: styles["statusRailSlot"],
+          style
+        },
+        dragging ? /* @__PURE__ */ React.createElement("div", { className: styles["statusRailGhost"] }, renderCard(entry, false)) : renderCard(entry, false)
+      );
+    }))),
+    drag !== null && floatingEntry !== void 0 ? /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: styles["statusRailFloating"],
+        style: {
+          left: drag.left,
+          width: drag.width,
+          top: drag.baseTop + (drag.pointerY - drag.startPointerY)
+        }
+      },
+      renderCard(floatingEntry, true)
+    ) : null,
+    /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        className: styles["statusRailTab"],
+        "aria-expanded": open,
+        "aria-label": open ? t("statusRail.close") : t("statusRail.open"),
+        title: open ? t("statusRail.close") : t("statusRail.open"),
+        onClick: toggle
+      },
+      /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 12 28", width: "14", height: "30", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("rect", { x: "1.4", y: "1", width: "2", height: "20", rx: "1", fill: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "8.6", y: "1", width: "2", height: "20", rx: "1", fill: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "2.4", cy: "25", r: "1.5", fill: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "9.6", cy: "25", r: "1.5", fill: "currentColor" })),
+      props.entries.length > 0 ? /* @__PURE__ */ React.createElement("span", { className: styles["statusRailTabCount"] }, props.entries.length) : null
+    )
   );
 }
+
+return StatusRail;
+})();
 
 // src/client/use-dark.ts
 var import_react12 = require("react");
@@ -15502,8 +15515,10 @@ function CanvasInner(props) {
     });
   };
   const openSession = (sessionId) => {
-    sessionActivity.acknowledge(sessionId);
-    if (openSessionInUi(sessionId)) closeMapPanel();
+    if (openSessionInUi(sessionId)) {
+      sessionActivity.acknowledge(sessionId);
+      closeMapPanel();
+    }
   };
   const openSearchHit = (sessionId) => {
     openSession(sessionId);

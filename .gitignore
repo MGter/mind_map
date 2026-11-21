@@ -10,3 +10,4 @@ client/.client.check.js
 backups/
 .tmp-diff/
 *.tgz
+.cache/

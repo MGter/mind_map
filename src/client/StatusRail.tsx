@@ -53,6 +53,12 @@ interface DragState {
   width: number
 }
 
+interface PointerGesture extends DragState {
+  pointerId: number
+  startPointerX: number
+  moved: boolean
+}
+
 const OPEN_KEY = 'dsh.mind_map.status-rail.open.v1'
 const ORDER_KEY = 'dsh.mind_map.status-rail.order.v1'
 const FLIP_MS = 180
@@ -130,8 +136,9 @@ export function StatusRail(props: StatusRailProps): React.JSX.Element {
   const panelRef = useRef<HTMLDivElement | null>(null)
   const orderRef = useRef(order)
   orderRef.current = order
-  const dragRef = useRef<DragState | null>(null)
-  dragRef.current = drag
+  const gestureRef = useRef<PointerGesture | null>(null)
+  const propsRef = useRef(props)
+  propsRef.current = props
 
   const signature = useMemo(
     () => props.entries.map(entry => `${entry.cardId}:${entry.lamp}:${entry.stamp}`).join('|'),
@@ -205,11 +212,10 @@ export function StatusRail(props: StatusRailProps): React.JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order, drag === null])
 
-  // Pointer drag: pick the row, follow the pointer, open a gap both ways, commit on drop.
+  // Keep the pressed row intact until the pointer really starts dragging. Turning it
+  // into a hidden ghost on pointerdown destroys the browser's eventual click target.
+  // Gesture decisions live in a ref so a fast move/up cannot observe stale React state.
   useEffect(() => {
-    if (drag === null) return
-    const { cardId } = drag
-
     const indexUnder = (pointerY: number): number => {
       const ids = orderRef.current
       let best = 0
@@ -226,49 +232,65 @@ export function StatusRail(props: StatusRailProps): React.JSX.Element {
       }
       return best
     }
-
     const onMove = (event: PointerEvent): void => {
-      const hover = indexUnder(event.clientY)
-      setDrag(current => (current === null
-        ? null
-        : { ...current, pointerY: event.clientY, hover }))
+      const current = gestureRef.current
+      if (current === null || current.pointerId !== event.pointerId) return
+      if (!current.moved && Math.hypot(event.clientX - current.startPointerX, event.clientY - current.startPointerY) < 6) return
+      current.moved = true
+      current.pointerY = event.clientY
+      current.hover = indexUnder(event.clientY)
+      setDrag({ ...current })
     }
-
-    const onUp = (): void => {
-      const current = dragRef.current
-      if (current !== null && current.hover !== current.origin) {
-        setOrder(existing => {
-          const from = existing.indexOf(current.cardId)
-          if (from < 0) return existing
-          const next = [...existing]
-          next.splice(from, 1)
-          const to = Math.min(Math.max(current.hover, 0), next.length)
-          next.splice(to, 0, current.cardId)
-          writeOrder(next)
-          return next
-        })
-      }
+    const clearGesture = (): PointerGesture | null => {
+      const current = gestureRef.current
+      gestureRef.current = null
       prevTops.current.clear()
       setDrag(null)
+      return current
     }
-
+    const onUp = (event: PointerEvent): void => {
+      if (gestureRef.current === null || gestureRef.current.pointerId !== event.pointerId) return
+      const current = clearGesture()!
+      // Account for a coalesced/omitted move just before release as well.
+      const moved = current.moved || Math.hypot(event.clientX - current.startPointerX, event.clientY - current.startPointerY) >= 6
+      if (!moved) {
+        if (propsRef.current.entries.some(entry => entry.cardId === current.cardId)) propsRef.current.onFocus(current.cardId)
+        return
+      }
+      if (current.hover === current.origin) return
+      setOrder(existing => {
+        const from = existing.indexOf(current.cardId)
+        if (from < 0) return existing
+        const next = [...existing]
+        next.splice(from, 1)
+        next.splice(Math.min(Math.max(current.hover, 0), next.length), 0, current.cardId)
+        writeOrder(next)
+        return next
+      })
+    }
+    const onCancel = (event: PointerEvent): void => {
+      if (gestureRef.current?.pointerId === event.pointerId) clearGesture()
+    }
+    const onBlur = (): void => { if (gestureRef.current !== null) clearGesture() }
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
-    window.addEventListener('pointercancel', onUp)
+    window.addEventListener('pointercancel', onCancel)
+    window.addEventListener('blur', onBlur)
     return () => {
+      gestureRef.current = null
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
-      window.removeEventListener('pointercancel', onUp)
+      window.removeEventListener('pointercancel', onCancel)
+      window.removeEventListener('blur', onBlur)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drag === null])
+  }, [])
 
   const toggle = useCallback(() => {
     setOpenState(!openSnapshot())
   }, [])
 
   const beginDrag = useCallback((event: React.PointerEvent<HTMLDivElement>, cardId: string) => {
-    if (event.button !== 0) return
+    if (event.button !== 0 || gestureRef.current !== null) return
     const element = slotsRef.current.get(cardId)
     if (element === undefined) return
     const rect = element.getBoundingClientRect()
@@ -276,8 +298,11 @@ export function StatusRail(props: StatusRailProps): React.JSX.Element {
     // so position:fixed there is viewport-relative — use viewport numbers, not panel ones.
     event.preventDefault()
     const index = Math.max(0, orderRef.current.indexOf(cardId))
-    setDrag({
+    gestureRef.current = {
       cardId,
+      pointerId: event.pointerId,
+      startPointerX: event.clientX,
+      moved: false,
       origin: index,
       hover: index,
       step: rect.height + 10,
@@ -286,14 +311,22 @@ export function StatusRail(props: StatusRailProps): React.JSX.Element {
       left: rect.left,
       baseTop: rect.top,
       width: rect.width,
-    })
+    }
+    // The slot survives the floating/ghost rendering, so it is the capture target.
+    try { element.setPointerCapture(event.pointerId) } catch { /* detached/test element */ }
   }, [])
 
   const renderCard = (entry: StatusRailEntry, floating: boolean): React.JSX.Element => (
     <div
       className={`${styles['card']} ${styles[LAMP_CLASS[entry.lamp]] ?? ''} ${styles['statusRailCard']}${floating ? ` ${styles['statusRailCardDragging']}` : ''}`}
       onPointerDown={floating ? undefined : (event) => { beginDrag(event, entry.cardId) }}
-      onClick={() => { if (!floating && dragRef.current === null) props.onFocus(entry.cardId) }}
+      role={floating ? undefined : 'button'}
+      tabIndex={floating ? -1 : 0}
+      onKeyDown={floating ? undefined : (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return
+        event.preventDefault()
+        props.onFocus(entry.cardId)
+      }}
       title={entry.title}
     >
       <div className={styles['cardTop']}>

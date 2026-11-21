@@ -31,6 +31,7 @@ import { spawnSync } from "node:child_process";
 import os from "node:os";
 import vm from "node:vm";
 import path from "node:path";
+import { compileStatusRail, readLegacyStatusRail } from "./scripts/compile-status-rail.mjs";
 
 const ARGS = process.argv.slice(2);
 function argValue(name) {
@@ -1328,6 +1329,13 @@ const AUTO_LAYOUT_BLOCK = String.raw`  const graphCardIds = Object.keys(visibleC
 
 const CLIENT_EDITS = [
   {
+    label: "status-rail-pointer-gesture",
+    // Compile just this module from TSX so the shipped pointer logic cannot drift
+    // from the regression-tested source. The rest still uses the verified base.
+    find: readLegacyStatusRail(renameAll(readFileSync(existsSync(CLIENT + BACKUP_SUFFIX) ? CLIENT + BACKUP_SUFFIX : CLIENT, "utf8").replace(/\r\n/g, "\n"))),
+    replace: compileStatusRail()
+  },
+  {
     label: "ctx-hook",
     // Exposes the cordis context on window so a verification script (or the
     // console) can inspect the live services this plugin was given: what the
@@ -1604,6 +1612,11 @@ const CLIENT_EDITS = [
             if (railCard !== void 0) openSession(railCard.sessionId);
           }
         }),`
+  },
+  {
+    label: "acknowledge-after-open",
+    find: "  const openSession = (sessionId) => {\n    sessionActivity.acknowledge(sessionId);\n    if (openSessionInUi(sessionId)) closeMapPanel();\n  };",
+    replace: "  const openSession = (sessionId) => {\n    if (openSessionInUi(sessionId)) {\n      sessionActivity.acknowledge(sessionId);\n      closeMapPanel();\n    }\n  };"
   },
   {
     label: "jump-center",

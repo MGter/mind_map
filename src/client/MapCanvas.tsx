@@ -1680,11 +1680,12 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
   }
 
   const openSession = (sessionId: string): void => {
-    // Looking at it counts as reading it: drop the map's own "finished, unread".
-    sessionActivity.acknowledge(sessionId)
-    // Open first: if the runtime has no session opener, the map stays up (and
-    // the reason lands in the console) instead of closing onto the old chat.
-    if (openSessionInUi(sessionId)) closeMapPanel()
+    // Only acknowledge once the host accepts navigation; a failed opener must
+    // leave both the map and its unread indication intact.
+    if (openSessionInUi(sessionId)) {
+      sessionActivity.acknowledge(sessionId)
+      closeMapPanel()
+    }
   }
 
   /**
@@ -2500,7 +2501,11 @@ function CanvasInner(props: RootSlotStandardProps): React.JSX.Element {
           </ControlButton>
         </Controls>
       </ReactFlow>
-      <StatusRail entries={statusEntries} cardWidth={CARD_W} onFocus={focusCard} />
+      <StatusRail entries={statusEntries} cardWidth={CARD_W} onFocus={(cardId) => {
+        focusCard(cardId)
+        const card = visibleCards[cardId]
+        if (card !== undefined) openSession(card.sessionId)
+      }} />
       {batchMode
         ? (
             <BatchBar
