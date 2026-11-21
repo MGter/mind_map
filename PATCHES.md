@@ -651,3 +651,21 @@ node test/probe.mjs         # 无头 Edge 全链路 19 项（自己起静态服�
 
 版本仍 0.1.66。当前 DSH 有 `client-hmr`（500ms stat 轮询 + SSE rebuilt 帧），
 正常情况下改完 `client.js` 会自动重载；面板没变就 F5，再不行重启桌面端。
+
+### 部署到 10.10.40.32（MGter）
+
+2026-11-21 14:37：Ubuntu，profile=`web`，`systemd --user` 的 `dsh.service` 跑 `dsh web`（127.0.0.1:3080）。
+
+1. 用远程已有的 `mind_map-0.1.66-cloud-dismiss.tgz` 解包，把 `package/client/client.js` 换成打好补丁的
+   bundle（sha256 `05c2d891…`），重新 `tar -czf mind_map-0.1.66-cloud-labels.tgz package`；
+2. 放到 `~/.dsh/profiles/web/vendor/`，`package.json` 的 `mind_map` 指向它；
+3. 安装要**显式用 Linuxbrew 的 node 24**：
+   `/home/linuxbrew/.linuxbrew/bin/node /home/linuxbrew/.linuxbrew/bin/pnpm install --prefer-offline`
+   （直接跑 `pnpm` 会落到 `/usr/bin/node` 18 的 corepack 上，报 `ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING`）；
+4. `systemctl --user restart dsh.service`；
+5. 验证：启动页里含 `mind_map/client.js` 的那个聚合脚本（`plugins/??…`）已经不是 404 的独立路径，
+   curl 下来 `grep -c 'mindmap.dotLabels.all'` = 1；`node_modules/mind_map/client/client.js` 的
+   sha256 与本地一致。
+
+备份：`~/.dsh/deployments/mind-map-labels-20261121/`（改动前的 profile `package.json`、lock、新 tgz）。
+服务重启会换掉 `dsh web` 打印的 token 链接，浏览器那侧要重新打开一次。
