@@ -620,3 +620,34 @@ node test/probe.mjs         # 无头 Edge 全链路 19 项（自己起静态服�
 - `node apply-patch.mjs` 75/75 编辑全匹配，`bundle-smoke` PASS。
 
 备注：版本仍 0.1.66；只改 `client/client.js`，**换完要重启桌面端**。
+
+## 2026-11-21 云图上常驻显示节点名（谁在跑 / 哪个是当前会话）
+
+现象：思维图上只看得见「几个点在亮」，不知道亮的是谁 —— 标题只有悬停/点选才出现。
+
+改法（只动 `client/client.js`，4 处）：
+
+- **常驻节点名**：绘制循环末尾加一段，给「正在跑 / 等待接手 / 当前会话」这三种点常驻名字，
+  画在点的下方（屏幕空间，字号不随缩放变）；位置被占就依次往右下、右上、右、左让位，
+  实在没地方就跳过，被挤走的牵一根短引线；
+- **子代理不标名字**（它只是某次对话的附属）—— 默认和「Aa」全标模式下都跳过；
+- **当前会话**是琥珀色胶囊 + `▸ 当前 · ` 前缀，跟它原有的琥珀色高亮环对应；
+- 左下角缩放条新增 **`Aa`** 开关：打开后所有会话点都标名字，状态记在
+  `localStorage['mindmap.dotLabels.all']`，刷新后保持。
+
+补丁可复现：`C:\Users\suma\Documents\DSH\tools\mindmap-labels\patch.mjs`
+（`node patch.mjs` 打安装副本；`--file=<path>` 打别的产物；`--dry` 只预演；
+每个锚点都断言「必须恰好命中一次」，已打过会直接 SKIP）。
+
+验证（离线测试台，`client.dev.js` 换成打过补丁的 bundle）：
+运行中的白点、等你回复的琥珀点各自带名字；强制 `current` 的点出现琥珀色
+「▸ 当前 · DSH 会话日志解析」；`Aa` 打开后 10 个点全部标名且互不重叠；F5 后开关保持。
+
+**顺带记一笔（重要）**：这份 checkout 的 `src/` 和线上 0.1.66 的 bundle 已经不是同一代 ——
+`src/client/*.tsx` 里 18 处 `import './mind-map.module.css'`，仓库里实际只有
+`src/client/mind_map.module.css`；`src/graph/graph-surface.js` 也没有任何 `src/` 文件 import（是 bundle 的抄件）。
+`node scripts/build-client.mjs` 补个别名文件能跑通，但产物里**没有** `GraphCanvasSurface`、
+也没有「我知道了」等线上功能 —— 也就是说**它重建不出当前线上 bundle**，这次改动只能落在 bundle 上。
+
+版本仍 0.1.66。当前 DSH 有 `client-hmr`（500ms stat 轮询 + SSE rebuilt 帧），
+正常情况下改完 `client.js` 会自动重载；面板没变就 F5，再不行重启桌面端。

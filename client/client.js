@@ -17503,6 +17503,14 @@ function graphEllipsis(context, text, maxWidth) {
  *  线分叉、右键卡片菜单、单击打开会话；悬停高亮 / 聚焦（spotlight）压暗规则
  *  也保持原样，只是从「卡片描边」换成了「点的高亮环」。
  */
+/** 节点名常驻开关，记在浏览器里：'1' = 所有会话点都标名字。 */
+var MIND_MAP_LABELS_KEY = "mindmap.dotLabels.all";
+function readShowAllLabels() {
+  try { return window.localStorage.getItem(MIND_MAP_LABELS_KEY) === "1"; } catch (error) { return false; }
+}
+function writeShowAllLabels(value) {
+  try { window.localStorage.setItem(MIND_MAP_LABELS_KEY, value === true ? "1" : "0"); } catch (error) { }
+}
 function GraphCanvasSurface(props) {
   var react = import_react13;
   var rootRef = react.useRef(null);
@@ -17516,6 +17524,12 @@ function GraphCanvasSurface(props) {
   var hoverRef = react.useRef(null);
   /** 点选（pin）住的关键词点：鼠标移开也继续高亮它和它的会话，点空白处取消。 */
   var pickedRef = react.useRef(null);
+  /** 「节点名」开关：默认只标正在跑 / 等待 / 当前会话，打开后所有会话都标。 */
+  var showAllLabelsState = react.useState(readShowAllLabels());
+  var showAllLabels = showAllLabelsState[0];
+  var setShowAllLabels = showAllLabelsState[1];
+  var showAllLabelsRef = react.useRef(showAllLabels);
+  showAllLabelsRef.current = showAllLabels;
   var drawRef = react.useRef(function () { });
   var fitRef = react.useRef(null);
 
@@ -18305,6 +18319,99 @@ function GraphCanvasSurface(props) {
       }
     }
 
+    // ---- 常驻节点名 -----------------------------------------------------
+    // 否则只看得见「几个点在亮」，不知道是谁。规则：
+    //   · 正在跑 / 等待接手 / 当前会话：点旁边常驻一个名字，并带上状态前缀；
+    //   · 子代理不标（它只是某次对话的附属，标出来只会把主图挤满）；
+    //   · 左下角「Aa」开关打开后，所有会话点都标名字。
+    // 名字画在屏幕空间，任何缩放下字号一致；位置被占就依次让位，实在放不下就跳过。
+    var labelAll = showAllLabelsRef.current === true;
+    if (spotlightOn !== true) {
+      var labelCandidates = [];
+      for (var labelIndex = 0; labelIndex < nodes.length; labelIndex += 1) {
+        var labelNode = nodes[labelIndex];
+        var labelData = labelNode.data || {};
+        if (labelData.tagNode === true) continue;
+        if (labelData.subagent === true) continue;
+        if (showId !== null && showId !== void 0 && labelNode.id === showId) continue;
+        var labelGeometry = boxes.get(labelNode.id);
+        if (labelGeometry === void 0) continue;
+        var labelIsCurrent = labelData.current === true;
+        var labelActive = labelData.running === true || labelData.glow === "running" || labelData.waiting === true;
+        if (labelAll !== true && labelActive !== true && labelIsCurrent !== true) continue;
+        if (labelAll === true && labelData.archived === true && labelIsCurrent !== true) continue;
+        labelCandidates.push({ node: labelNode, data: labelData, box: labelGeometry, current: labelIsCurrent, active: labelActive });
+      }
+      // 当前会话最后画，压在别人上面。
+      labelCandidates.sort(function (left, right) {
+        if (left.current === right.current) return 0;
+        return left.current === true ? 1 : -1;
+      });
+      var placedLabels = [];
+      for (var placeIndex = 0; placeIndex < labelCandidates.length; placeIndex += 1) {
+        var entry = labelCandidates[placeIndex];
+        var anchorX = camera.x + entry.box.cx * zoom;
+        var anchorY = camera.y + entry.box.cy * zoom;
+        if (anchorX < -160 || anchorX > width + 160 || anchorY < -160 || anchorY > height + 160) continue;
+        var entryTitle = entry.data.title === void 0 || String(entry.data.title) === "" ? "未命名会话" : String(entry.data.title);
+        var entryPrefix = entry.current === true ? "▸ 当前 · " : "";
+        var shownText = entryPrefix + entryTitle;
+        context.font = (entry.current === true ? "700 " : "600 ") + "11.5px " + GRAPH_FONT_STACK;
+        var labelLimit = Math.max(80, Math.min(entry.current === true || labelAll !== true ? 260 : 190, width * 0.42));
+        shownText = graphEllipsis(context, shownText, labelLimit);
+        var pillW = Math.ceil(context.measureText(shownText).width) + 14;
+        var pillH = 20;
+        var anchorR = Math.max(2, entry.box.r * zoom);
+        var samples = [
+          [Math.round(anchorX - pillW / 2), Math.round(anchorY + anchorR + 5)],
+          [Math.round(anchorX - pillW / 2), Math.round(anchorY + anchorR + 5 + pillH + 3)],
+          [Math.round(anchorX - pillW / 2), Math.round(anchorY - anchorR - 5 - pillH)],
+          [Math.round(anchorX + anchorR + 5), Math.round(anchorY - pillH / 2)],
+          [Math.round(anchorX - anchorR - 5 - pillW), Math.round(anchorY - pillH / 2)]
+        ];
+        var spot = null;
+        var spotIndex = 0;
+        for (var sampleIndex = 0; sampleIndex < samples.length; sampleIndex += 1) {
+          var sampleX = samples[sampleIndex][0];
+          var sampleY = samples[sampleIndex][1];
+          if (sampleX < 4 || sampleY < 4 || sampleX + pillW > width - 4 || sampleY + pillH > height - 4) continue;
+          var blocked = false;
+          for (var placedIndex = 0; placedIndex < placedLabels.length; placedIndex += 1) {
+            var other = placedLabels[placedIndex];
+            if (sampleX < other.x + other.w + 3 && sampleX + pillW + 3 > other.x && sampleY < other.y + other.h + 3 && sampleY + pillH + 3 > other.y) { blocked = true; break; }
+          }
+          if (blocked === true) continue;
+          spot = { x: sampleX, y: sampleY };
+          spotIndex = sampleIndex;
+          break;
+        }
+        if (spot === null) continue;
+        placedLabels.push({ x: spot.x, y: spot.y, w: pillW, h: pillH });
+        // 名字被挤到旁边 / 上方时牵一根短引线，免得认错点。
+        if (spotIndex > 1) {
+          context.globalAlpha = 0.45;
+          context.strokeStyle = dark ? "rgba(220,228,240,0.5)" : "rgba(40,48,60,0.45)";
+          context.lineWidth = 1;
+          context.beginPath();
+          context.moveTo(anchorX, anchorY);
+          context.lineTo(spot.x + pillW / 2, spot.y + pillH / 2);
+          context.stroke();
+        }
+        context.globalAlpha = entry.current === true ? 1 : 0.94;
+        graphRoundRect(context, spot.x, spot.y, pillW, pillH, 6);
+        context.fillStyle = dark ? "rgba(19,22,29,0.92)" : "rgba(255,255,255,0.96)";
+        context.fill();
+        context.strokeStyle = entry.current === true ? "rgba(255,214,106,0.9)" : (dark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.14)");
+        context.lineWidth = entry.current === true ? 1.4 : 1;
+        context.stroke();
+        context.fillStyle = entry.current === true ? "#ffd66a" : (dark ? "#e7ebf3" : "#1b1f27");
+        context.textBaseline = "middle";
+        context.fillText(shownText, spot.x + 7, spot.y + pillH / 2 + 0.5);
+        context.textBaseline = "alphabetic";
+      }
+      context.globalAlpha = 1;
+    }
+
     // ---- 拉线分叉的橡皮筋 ----------------------------------------------
     var fork = forkRef.current;
     if (fork !== null) {
@@ -18769,7 +18876,20 @@ function GraphCanvasSurface(props) {
       (0, import_jsx_runtime16.jsxs)("div", { className: "tm_canvasCtl", children: [
         (0, import_jsx_runtime16.jsx)("button", { type: "button", title: "放大", onClick: function () { zoomBy(1.25); }, children: "+" }),
         (0, import_jsx_runtime16.jsx)("button", { type: "button", title: "缩小", onClick: function () { zoomBy(0.8); }, children: "−" }),
-        (0, import_jsx_runtime16.jsx)("button", { type: "button", title: "适配视图", onClick: function () { fitRef.current(); }, children: "⤢" })
+        (0, import_jsx_runtime16.jsx)("button", { type: "button", title: "适配视图", onClick: function () { fitRef.current(); }, children: "⤢" }),
+        (0, import_jsx_runtime16.jsx)("button", {
+          type: "button",
+          title: showAllLabels === true ? "节点名：所有会话都标着（点一下只标正在跑 / 等待 / 当前会话）" : "节点名：只标正在跑 / 等待 / 当前会话（点一下给所有会话都标上）",
+          "aria-pressed": showAllLabels === true,
+          style: showAllLabels === true ? { color: "var(--dsw-alias-brand-primary)", borderColor: "var(--dsw-alias-brand-primary)" } : void 0,
+          onClick: function () {
+            var next = showAllLabels !== true;
+            setShowAllLabels(next);
+            writeShowAllLabels(next);
+            schedule();
+          },
+          children: "Aa"
+        })
       ] })
     ]
   });
