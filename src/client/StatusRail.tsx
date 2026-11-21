@@ -35,6 +35,8 @@ export interface StatusRailProps {
   /** The board's card width, so a rail card is exactly as wide as a map card. */
   cardWidth: number
   onFocus: (cardId: string) => void
+  /** "我知道了": drop the unread mark without navigating to the session. */
+  onAcknowledge?: (sessionId: string) => void
 }
 
 interface DragState {
@@ -61,6 +63,8 @@ interface PointerGesture extends DragState {
 
 const OPEN_KEY = 'dsh.mind_map.status-rail.open.v1'
 const ORDER_KEY = 'dsh.mind_map.status-rail.order.v1'
+/** sessionId → the stamp the user acknowledged; a newer completion shows again. */
+const DISMISS_KEY = '{{SECRET_k4npt6md}}'
 const FLIP_MS = 180
 
 const LAMP_CLASS: Record<StatusLamp, string> = {
@@ -106,6 +110,30 @@ function setOpenState(next: boolean): void {
   for (const listener of openListeners) listener()
 }
 
+function readDismissed(): Record<string, number> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = window.localStorage.getItem(DISMISS_KEY)
+    const parsed: unknown = raw === null ? null : JSON.parse(raw)
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+    const out: Record<string, number> = {}
+    for (const [sessionId, stamp] of Object.entries(parsed as Record<string, unknown>)) {
+      if (typeof stamp === 'number' && Number.isFinite(stamp)) out[sessionId] = stamp
+    }
+    return out
+  } catch {
+    return {}
+  }
+}
+
+function writeDismissed(next: Record<string, number>): void {
+  try {
+    window.localStorage.setItem(DISMISS_KEY, JSON.stringify(next))
+  } catch {
+    /* a blocked store must not break the rail */
+  }
+}
+
 function readOrder(): string[] {
   if (typeof window === 'undefined') return []
   try {
@@ -140,9 +168,28 @@ export function StatusRail(props: StatusRailProps): React.JSX.Element {
   const propsRef = useRef(props)
   propsRef.current = props
 
+  const [dismissed, setDismissed] = useState<Record<string, number>>(() => readDismissed())
+  // 点了「我知道了」的行不再显示；同一个会话之后又有新的完成/失败（stamp 变大）
+  // 就重新出现，所以"我知道了"只压掉这一次。
+  const entries = useMemo(() => props.entries.filter((entry) => {
+    const at = dismissed[entry.sessionId]
+    if (at === undefined) return true
+    if (entry.lamp !== 'done' && entry.lamp !== 'error') return true
+    return entry.stamp > at
+  }), [props.entries, dismissed])
+
+  const dismiss = (entry: StatusRailEntry): void => {
+    setDismissed((current) => {
+      const next = { ...current, [entry.sessionId]: entry.stamp }
+      writeDismissed(next)
+      return next
+    })
+    props.onAcknowledge?.(entry.sessionId)
+  }
+
   const signature = useMemo(
-    () => props.entries.map(entry => `${entry.cardId}:${entry.lamp}:${entry.stamp}`).join('|'),
-    [props.entries],
+    () => entries.map(entry => `${entry.cardId}:${entry.lamp}:${entry.stamp}`).join('|'),
+    [entries],
   )
 
   // A card that just changed its lamp (or advanced its stamp) goes to the top; rows for
@@ -150,17 +197,17 @@ export function StatusRail(props: StatusRailProps): React.JSX.Element {
   useEffect(() => {
     const seen = seenRef.current
     const fresh: string[] = []
-    for (const entry of props.entries) {
+    for (const entry of entries) {
       const before = seen.get(entry.cardId)
       const now = `${entry.lamp}:${entry.stamp}`
       if (before !== undefined && before !== now) fresh.push(entry.cardId)
       seen.set(entry.cardId, now)
     }
-    const alive = new Set(props.entries.map(entry => entry.cardId))
+    const alive = new Set(entries.map(entry => entry.cardId))
     setOrder((current) => {
       const kept = current.filter(cardId => alive.has(cardId))
       const next = [...new Set([...fresh.reverse(), ...kept])]
-      for (const entry of props.entries) {
+      for (const entry of entries) {
         if (!next.includes(entry.cardId)) next.push(entry.cardId)
       }
       if (next.length === kept.length && next.every((cardId, index) => cardId === kept[index])) return kept
@@ -174,17 +221,17 @@ export function StatusRail(props: StatusRailProps): React.JSX.Element {
   }, [signature])
 
   const ordered = useMemo(() => {
-    const byId = new Map(props.entries.map(entry => [entry.cardId, entry]))
+    const byId = new Map(entries.map(entry => [entry.cardId, entry]))
     const rows: StatusRailEntry[] = []
     for (const cardId of order) {
       const entry = byId.get(cardId)
       if (entry !== undefined) rows.push(entry)
     }
-    for (const entry of props.entries) {
+    for (const entry of entries) {
       if (!order.includes(entry.cardId)) rows.push(entry)
     }
     return rows
-  }, [order, props.entries])
+  }, [order, entries])
 
   // FLIP for status-driven moves; dragging has its own gap logic below.
   useLayoutEffect(() => {
@@ -341,6 +388,16 @@ export function StatusRail(props: StatusRailProps): React.JSX.Element {
           {LAMP_CHIP[entry.lamp].dot ? <span className={styles['runningDot']} /> : null}
           {t(LAMP_CHIP[entry.lamp].key)}
         </span>
+        {floating ? null : (
+          <button
+            type="button"
+            className="tm_statusRailDismiss"
+            // Never start the reorder gesture, and never bubble into the row's open.
+            onPointerDown={(event) => { event.stopPropagation() }}
+            onClick={(event) => { event.stopPropagation(); dismiss(entry) }}
+            title={t('statusRail.dismissHint')}
+          >{t('statusRail.dismiss')}</button>
+        )}
       </div>
     </div>
   )
@@ -356,7 +413,7 @@ export function StatusRail(props: StatusRailProps): React.JSX.Element {
       <div className={styles['statusRailPanel']} aria-hidden={!open} ref={panelRef}>
         <div className={styles['statusRailHead']}>
           <span className={styles['statusRailTitle']}>{t('statusRail.title')}</span>
-          <span className={styles['statusRailCount']}>{props.entries.length}</span>
+          <span className={styles['statusRailCount']}>{entries.length}</span>
         </div>
         <div className={styles['statusRailList']} role="list">
           {ordered.length === 0
@@ -424,10 +481,12 @@ export function StatusRail(props: StatusRailProps): React.JSX.Element {
           <circle cx="2.4" cy="25" r="1.5" fill="currentColor" />
           <circle cx="9.6" cy="25" r="1.5" fill="currentColor" />
         </svg>
-        {props.entries.length > 0
-          ? <span className={styles['statusRailTabCount']}>{props.entries.length}</span>
+        {entries.length > 0
+          ? <span className={styles['statusRailTabCount']}>{entries.length}</span>
           : null}
       </button>
     </div>
   )
 }
+
+
